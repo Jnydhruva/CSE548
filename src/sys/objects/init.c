@@ -38,6 +38,7 @@ PetscBool   PetscBeganMPI         = PETSC_FALSE;
 PetscBool   PetscInitializeCalled = PETSC_FALSE;
 PetscBool   PetscFinalizeCalled   = PETSC_FALSE;
 PetscBool   PetscCUDAInitialized  = PETSC_FALSE;
+PetscBool   PetscCUDAInitHYPRE    = PETSC_FALSE;
 
 PetscMPIInt PetscGlobalRank       = -1;
 PetscMPIInt PetscGlobalSize       = -1;
@@ -194,6 +195,12 @@ void Petsc_MPI_DebuggerOnError(MPI_Comm *comm,PetscMPIInt *flag,...)
 }
 
 #if defined(PETSC_HAVE_CUDA)
+
+#if defined(PETSC_HAVE_HYPRE)
+#include <petsc/private/petschypre.h>
+#include <_hypre_utilities.h>
+#endif
+
 /*@C
      PetscCUDAInitialize - Initializes the CUDA device and cuBLAS on the device
 
@@ -242,7 +249,10 @@ PetscErrorCode PetscCUDAInitialize(MPI_Comm comm)
   ierr = PetscOptionsDeprecated("-cuda_show_devices","-cuda_view","3.12",NULL);CHKERRQ(ierr);
   ierr = PetscOptionsName("-cuda_view","Display CUDA device information and assignments",NULL,&cuda_view_flag);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
+
   if (!PetscCUDAInitialized) {
+    PetscBool setflg = PETSC_TRUE;
+
     ierr = MPI_Comm_size(comm,&size);CHKERRQ(ierr);
 
     if (size>1 && !flg) {
@@ -250,24 +260,38 @@ PetscErrorCode PetscCUDAInitialize(MPI_Comm comm)
       /* we're not using the same GPU on multiple MPI threads. So try to allocated different   GPUs to different processes */
 
       /* First get the device count */
-      err   = cudaGetDeviceCount(&devCount);
+      err = cudaGetDeviceCount(&devCount);
       if (err != cudaSuccess) SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_SYS,"error in cudaGetDeviceCount %s",cudaGetErrorString(err));
 
       /* next determine the rank and then set the device via a mod */
       ierr   = MPI_Comm_rank(comm,&rank);CHKERRQ(ierr);
       device = rank % devCount;
+      setflg = rank/devCount ? PETSC_FALSE : PETSC_TRUE;
     }
     err = cudaSetDevice(device);
     if (err != cudaSuccess) SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_SYS,"error in cudaSetDevice %s",cudaGetErrorString(err));
 
     /* set the device flags so that it can map host memory */
-    err = cudaSetDeviceFlags(cudaDeviceMapHost);
-    if (err != cudaSuccess) SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_SYS,"error in cudaSetDeviceFlags %s",cudaGetErrorString(err));
+    if (setflg) {
+      err = cudaSetDeviceFlags(cudaDeviceMapHost);
+      if (err != cudaSuccess) SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_SYS,"error in cudaSetDeviceFlags %s",cudaGetErrorString(err));
+    }
 
     ierr = PetscCUBLASInitializeHandle();CHKERRQ(ierr);
     ierr = PetscCUSOLVERDnInitializeHandle();CHKERRQ(ierr);
     PetscCUDAInitialized = PETSC_TRUE;
+
+    /* TODO: add finalize? */
+#if defined(PETSC_HAVE_HYPRE) && defined(HYPRE_USING_GPU)
+    {
+      if (!HYPRE_GPU_HANDLE) {
+        hypre_GPUInit(device);
+        PetscCUDAInitHYPRE = PETSC_TRUE;
+      }
+    }
+#endif
   }
+
   if (cuda_view_flag) {
     ierr = MPI_Comm_rank(comm,&rank);CHKERRQ(ierr);
     err  = cudaGetDeviceCount(&devCount);
@@ -276,6 +300,8 @@ PetscErrorCode PetscCUDAInitialize(MPI_Comm comm)
       err = cudaGetDeviceProperties(&prop,devicecnt);
       if (err != cudaSuccess) SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_SYS,"error in cudaGetDeviceProperties %s",cudaGetErrorString(err));
       ierr = PetscPrintf(comm, "CUDA device %d: %s\n", devicecnt, prop.name);CHKERRQ(ierr);
+      ierr = PetscPrintf(comm, "  concurrentManagedAcess: %d\n", prop.concurrentManagedAccess);CHKERRQ(ierr);
+      ierr = PetscPrintf(comm, "  major*100 + minor*10: %d\n", prop.major*100+prop.minor*10);CHKERRQ(ierr);
     }
     ierr = PetscSynchronizedPrintf(comm,"[%d] Using CUDA device %d.\n",rank,device);CHKERRQ(ierr);
     ierr = PetscSynchronizedFlush(comm,PETSC_STDOUT);CHKERRQ(ierr);

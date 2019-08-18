@@ -3,6 +3,10 @@
 
 #include <petscsys.h>
 #include <petscpkg_version.h>
+/* workaround for C++/CUDA code in public header */
+#if !defined(HYPRE_SKIP_CUDA_PUBLIC)
+#define HYPRE_SKIP_CUDA_PUBLIC 1
+#endif
 #include <HYPRE_config.h>
 #include <HYPRE_utilities.h>
 
@@ -10,6 +14,10 @@
    and 32 bit for 32bit installations -> not the best name for a variable */
 #if PETSC_PKG_HYPRE_VERSION_LT(2,16,0)
 typedef PetscInt HYPRE_BigInt;
+#endif
+
+#if defined(HYPRE_USING_CUDA)
+typedef HYPRE_Int hypre_Index[3];
 #endif
 
 /*

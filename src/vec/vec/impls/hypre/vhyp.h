@@ -2,6 +2,7 @@
 #define _VHYP_H
 
 #include <petscsys.h>
+#include <petsc/private/petschypre.h>
 #include <HYPRE_IJ_mv.h>
 #include <_hypre_IJ_mv.h>
 /*

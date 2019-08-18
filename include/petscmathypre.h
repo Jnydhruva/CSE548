@@ -2,8 +2,8 @@
 #define PETSCMATHYPRE_H
 
 #include <petscmat.h>
-#include <_hypre_parcsr_mv.h>
 
+typedef struct hypre_ParCSRMatrix_struct hypre_ParCSRMatrix;
 PETSC_EXTERN PetscErrorCode MatCreateFromParCSR(hypre_ParCSRMatrix*,MatType,PetscCopyMode,Mat*);
 PETSC_EXTERN PetscErrorCode MatHYPREGetParCSR(Mat,hypre_ParCSRMatrix**);
 

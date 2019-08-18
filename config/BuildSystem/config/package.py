@@ -36,7 +36,7 @@ class Package(config.base.Configure):
     self.minversion       = ''   # minimum version of the package that is supported
     self.maxversion       = ''   # maximum version of the package that is supported
     self.foundversion     = ''   # version of the package actually found
-    self.version_tuple    = ''   # version of the package actually found (tuple)
+    self.version_tuple    = ()   # version of the package actually found (tuple)
     self.requiresversion  = 0    # error if the version information is not found
 
     # These are specified for the package
@@ -85,7 +85,7 @@ class Package(config.base.Configure):
     self.alternativedownload    = [] # Used by, for example mpi.py to print useful error messages, which does not support --download-mpi but one can use --download-mpich
     self.requirec99flag         = 0  # package must be compiled with C99 flags
     self.usesopenmp             = 'no'  # yes, no, unknow package is built to use OpenMP
-
+    self.usesgpu                = 'no'  # no, Cuda, OpenCL, ...
     # Outside coupling
     self.defaultInstallDir      = ''
     self.installSudo            = '' # if user does not have write access to prefix directory then this is set to sudo
@@ -119,6 +119,7 @@ class Package(config.base.Configure):
       if self.executablename: output += '  '+getattr(self,self.executablename)+'\n'
       if self.usesopenmp == 'yes': output += '  uses OpenMP; use export OMP_NUM_THREADS=<p> or -omp_num_threads <p> to control the number of threads\n'
       if self.usesopenmp == 'unknown': output += '  Unknown if this uses OpenMP (try export OMP_NUM_THREADS=<1-4> yourprogram -log_view) \n'
+      if not self.usesgpu == 'no': output += '  uses GPU with '+self.usesgpu+' \n'
     return output
 
   def setupDependencies(self, framework):
@@ -1052,14 +1053,7 @@ If its a remote branch, use: origin/'+self.gitcommit+' for commit.')
 
     self.log.write('For '+self.package+' need '+self.minversion+' <= '+self.foundversion+' <= '+self.maxversion+'\n')
 
-    try:
-      foundversiontuple = self.versionToTuple(self.foundversion)
-    except:
-      self.log.write('For '+self.package+' unable to convert version string to tuple, skipping version check\n')
-      if self.requiresversion:
-        raise RuntimeError('Configure must be able to determined the version information for '+self.name+'. It was unable to, please send configure.log to petsc-maint@mcs.anl.gov')
-      return
-
+    foundversiontuple = self.version_tuple
     suggest = ''
     if self.download: suggest = '\nSuggest using --download-'+self.package+' for a compatible '+self.name
     if self.minversion:

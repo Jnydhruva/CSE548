@@ -2086,6 +2086,10 @@ PETSC_EXTERN PetscErrorCode MatCreate_HYPRE(Mat B)
 static PetscErrorCode hypre_array_destroy(void *ptr)
 {
    PetscFunctionBegin;
+#if defined(HYPRE_USING_CUDA)
+   hypre_TFree(ptr,HYPRE_MEMORY_SHARED);
+#else
    hypre_TFree(ptr,HYPRE_MEMORY_HOST);
+#endif
    PetscFunctionReturn(0);
 }

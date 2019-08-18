@@ -12,6 +12,9 @@ class Configure(config.package.GNUPackage):
     #self.gitcommit       = 'v'+self.version
     self.gitcommit       = '93baaa8c9' # v2.18.2+valgrind-fix
     self.download        = ['git://https://github.com/hypre-space/hypre','https://github.com/hypre-space/hypre/archive/'+self.gitcommit+'.tar.gz']
+    # This is a branch which contains bugfixes to have HYPRE 2.16 compiled with CUDA support
+    #self.gitcommit       = '7d4fe38'
+    #self.download        = ['git://https://bitbucket.org/petsc/pkg-hypre.git']
     self.functions       = ['HYPRE_IJMatrixCreate']
     self.includes        = ['HYPRE.h']
     self.liblist         = [['libHYPRE.a']]
@@ -25,6 +28,12 @@ class Configure(config.package.GNUPackage):
     self.hastestsdatafiles = 1
     self.installwithbatch  = 0
 
+  def setupHelp(self, help):
+    config.package.GNUPackage.setupHelp(self,help)
+    import nargs
+    help.addArgument('HYPRE','-download-hypre-gpu',nargs.ArgBool(None, 0, 'Use GPU build of HYPRE'))
+    return
+
   def setupDependencies(self, framework):
     config.package.GNUPackage.setupDependencies(self, framework)
     self.openmp     = framework.require('config.packages.openmp',self)
@@ -33,7 +42,10 @@ class Configure(config.package.GNUPackage):
     self.mpi        = framework.require('config.packages.MPI',self)
     self.mathlib    = framework.require('config.packages.mathlib',self)
     self.scalar     = framework.require('PETSc.options.scalarTypes',self)
+    self.cuda       = framework.require('config.packages.cuda',self)
     self.deps       = [self.mpi,self.blasLapack,self.cxxlibs,self.mathlib]
+    if self.argDB['download-hypre-gpu']:
+      self.deps.append(self.cuda)
 
   def formGNUConfigureArgs(self):
     self.packageDir = os.path.join(self.packageDir,'src')
@@ -60,15 +72,29 @@ class Configure(config.package.GNUPackage):
     libs = ' '.join(libs)
     args.append('--with-MPI-libs="'+libs+'"')
 
-    # tell hypre configure not to look for blas/lapack [and not use hypre-internal blas]
-    args.append('--with-blas-lib="'+self.libraries.toString(self.blasLapack.dlib)+'"')
-    args.append('--with-lapack-lib=" "')
-    args.append('--with-blas=no')
-    args.append('--with-lapack=no')
     if self.openmp.found:
       args.append('--with-openmp')
       self.usesopenmp = 'yes'
       # use OMP_NUM_THREADS to control the number of threads used
+      # TODO: they may also use OMP for GPUs
+
+    # turn on HYPRE GPU build only if --download-hypre-gpu=1 has been specified
+    gpubuild = self.argDB['download-hypre-gpu'] and self.cuda.found
+    if gpubuild:
+      if self.cuda.version_tuple < (8,0,0):
+        raise RuntimeError('Hypre requires Cuda version 8.0.0 or higher, version '+self.cuda.foundversion+' is being used')
+      self.usesgpu = 'Cuda'
+      args.append('--with-cuda')
+      args.append('--enable-unified-memory')
+      args.append('CUDA_HOME="'+self.cuda.directory+'"')
+      # TODO: NEED TO MAKE HYPRE_CUDA_SM customizable (defaults to 60)
+
+    # tell hypre configure not to look for blas/lapack [and not use hypre-internal blas]
+    blaslibs = self.libraries.toString(self.blasLapack.dlib)
+    args.append('--with-blas-lib="'+blaslibs+'"')
+    args.append('--with-lapack-lib=" "')
+    args.append('--with-blas=no')
+    args.append('--with-lapack=no')
 
     # explicitly tell hypre BLAS/LAPACK mangling since it may not match Fortran mangling
     if self.blasLapack.mangling == 'underscore':
@@ -100,6 +126,10 @@ class Configure(config.package.GNUPackage):
     args = self.rmArgsStartsWith(args,['LDFLAGS'])
     args.append('LDFLAGS="'+self.setCompilers.LDFLAGS.replace('-dynamic','')+'"')
 
+    # Hypre changes the shared library linker to nvcc which cannot handle -Wl,-rpath
+    if gpubuild:
+      args = [arg.replace('-Wl,-rpath,','-L') for arg in args]
+
     return args
 
   def consistencyChecks(self):
@@ -126,3 +156,4 @@ class Configure(config.package.GNUPackage):
       raise RuntimeError('Hypre specified is incompatible!\n'+msg+'Suggest using --download-hypre for a compatible hypre')
     setattr(self.compilers, flagsArg,oldFlags)
     return
+    self.compilers.CPPFLAGS = oldFlags
