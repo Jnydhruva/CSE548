@@ -790,6 +790,8 @@ PetscErrorCode  PetscInitialize(int *argc,char ***args,const char file[],const c
 
   PetscFunctionBegin;
   if (PetscInitializeCalled) PetscFunctionReturn(0);
+  /* PetscOptions use PetscSegBuffer, which in turns uses PetscNew. Use standard malloc instead of CudaMallocManaged */
+  ierr = PetscPushMallocType(PETSC_MALLOC_STANDARD);CHKERRQ(ierr);
   /*
       The checking over compatible runtime libraries is complicated by the MPI ABI initiative
       https://wiki.mpich.org/mpich/index.php/ABI_Compatibility_Initiative which started with
@@ -983,7 +985,6 @@ PetscErrorCode  PetscInitialize(int *argc,char ***args,const char file[],const c
   ierr = MPI_Type_commit(&MPIU_2INT);CHKERRQ(ierr);
 #endif
 
-
   /*
      Attributes to be set on PETSc communicators
   */
@@ -999,6 +1000,7 @@ PetscErrorCode  PetscInitialize(int *argc,char ***args,const char file[],const c
 
   /* call a second time so it can look in the options database */
   ierr = PetscErrorPrintfInitialize();CHKERRQ(ierr);
+
 
   /*
      Print main application help message
@@ -1025,6 +1027,9 @@ PetscErrorCode  PetscInitialize(int *argc,char ***args,const char file[],const c
   ierr = PetscInfo1(NULL,"PETSc successfully started: number of processors = %d\n",size);CHKERRQ(ierr);
   ierr = PetscGetHostName(hostname,256);CHKERRQ(ierr);
   ierr = PetscInfo1(NULL,"Running on machine: %s\n",hostname);CHKERRQ(ierr);
+#if defined(PETSC_HAVE_CUDA)
+  ierr = PetscCUDAInitialize(PETSC_COMM_WORLD);CHKERRQ(ierr);
+#endif
 #if defined(PETSC_HAVE_OPENMP)
   {
     PetscBool omp_view_flag;
@@ -1126,6 +1131,7 @@ PetscErrorCode  PetscInitialize(int *argc,char ***args,const char file[],const c
   ierr = PetscOptionsGetBool(NULL,NULL,"-sf_use_default_cuda_stream",&sf_use_default_cuda_stream,NULL);CHKERRQ(ierr);
 #endif
 
+  ierr = PetscPopMallocType();CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -1412,6 +1418,7 @@ PetscErrorCode  PetscFinalize(void)
   /* to prevent PETSc -options_left from warning */
   ierr = PetscOptionsHasName(NULL,NULL,"-nox",&flg1);CHKERRQ(ierr);
   ierr = PetscOptionsHasName(NULL,NULL,"-nox_warning",&flg1);CHKERRQ(ierr);
+  ierr = PetscOptionsHasName(NULL,NULL,"-cuda_initialize",&flg1);CHKERRQ(ierr);
 
   flg3 = PETSC_FALSE; /* default value is required */
   ierr = PetscOptionsGetBool(NULL,NULL,"-options_left",&flg3,&flg1);CHKERRQ(ierr);

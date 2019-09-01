@@ -22,6 +22,7 @@ class Configure(config.package.Package):
   def setupHelp(self, help):
     import nargs
     config.package.Package.setupHelp(self, help)
+    help.addArgument('CUDA', '-with-cuda-unifiedmemory', nargs.ArgBool(None, 0, 'Use CudaMallocManaged() for PetscMalloc calls (experimental)'))
     return
 
   def setupDependencies(self, framework):
@@ -78,4 +79,6 @@ class Configure(config.package.Package):
     self.checkNVCCDoubleAlign()
     self.configureTypes()
     self.addDefine('HAVE_CUDA','1')
+    if self.argDB['with-cuda-unifiedmemory']:
+      self.addDefine('USE_CUDA_UNIFIED_MEMORY','1')
     return

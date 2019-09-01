@@ -109,7 +109,7 @@ static PetscErrorCode ElementCreate(TS ts,Stack *stack,StackElement *e)
 
   PetscFunctionBegin;
   if (stack->use_dram) {
-    ierr = PetscMallocSetDRAM();CHKERRQ(ierr);
+    ierr = PetscPushMallocType(PETSC_MALLOC_STANDARD);CHKERRQ(ierr);
   }
   ierr = PetscNew(e);CHKERRQ(ierr);
   ierr = TSGetSolution(ts,&X);CHKERRQ(ierr);
@@ -119,7 +119,7 @@ static PetscErrorCode ElementCreate(TS ts,Stack *stack,StackElement *e)
     ierr = VecDuplicateVecs(Y[0],stack->numY,&(*e)->Y);CHKERRQ(ierr);
   }
   if (stack->use_dram) {
-    ierr = PetscMallocResetDRAM();CHKERRQ(ierr);
+    ierr = PetscPopMallocType();CHKERRQ(ierr);
   }
   PetscFunctionReturn(0);
 }
@@ -157,7 +157,7 @@ static PetscErrorCode ElementDestroy(Stack *stack,StackElement e)
 
   PetscFunctionBegin;
   if (stack->use_dram) {
-    ierr = PetscMallocSetDRAM();CHKERRQ(ierr);
+    ierr = PetscPushMallocType(PETSC_MALLOC_STANDARD);CHKERRQ(ierr);
   }
   ierr = VecDestroy(&e->X);CHKERRQ(ierr);
   if (stack->numY > 0 && !stack->solution_only) {
@@ -165,7 +165,7 @@ static PetscErrorCode ElementDestroy(Stack *stack,StackElement e)
   }
   ierr = PetscFree(e);CHKERRQ(ierr);
   if (stack->use_dram) {
-    ierr = PetscMallocResetDRAM();CHKERRQ(ierr);
+    ierr = PetscPopMallocType();CHKERRQ(ierr);
   }
   PetscFunctionReturn(0);
 }

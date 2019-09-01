@@ -422,6 +422,7 @@ PETSC_EXTERN PetscBool PetscInitializeCalled;
 PETSC_EXTERN PetscBool PetscFinalizeCalled;
 PETSC_EXTERN PetscBool PetscViennaCLSynchronize;
 PETSC_EXTERN PetscBool PetscCUDASynchronize;
+PETSC_EXTERN PetscBool PetscCUDAInitialized;
 
 PETSC_EXTERN PetscErrorCode PetscSetHelpVersionFunctions(PetscErrorCode (*)(MPI_Comm),PetscErrorCode (*)(MPI_Comm));
 PETSC_EXTERN PetscErrorCode PetscCommDuplicate(MPI_Comm,MPI_Comm*,int*);
@@ -430,6 +431,50 @@ PETSC_EXTERN PetscErrorCode PetscCommDestroy(MPI_Comm*);
 #if defined(PETSC_HAVE_CUDA)
 PETSC_EXTERN PetscErrorCode PetscCUDAInitialize(MPI_Comm);
 #endif
+
+PETSC_EXTERN const char *const PetscMallocTypes[];
+
+/*E
+    PetscMallocType - Type of memory allocation to be used in subsequent calls to PetscMalloc(), PetscCalloc() and friends.
+
+    Level: intermediate
+
+    Values:
++   PETSC_MALLOC_STANDARD - standard CPU malloc
+.   PETSC_MALLOC_CUDA_UNIFIED - use CudaMallocManaged (default when PETSc has been configured with --with-cuda-unifiedmemory)
+.   PETSC_MALLOC_MEMKIND_DEFAULT - use memkind with default memory type
+-   PETSC_MALLOC_MEMKIND_HBW_PREFERRED - use memkind with preferred high-bandwith (default when PETSc has been configured with memkind support)
+
+.seealso: PetscPushMallocType(), PetscPopMallocType()
+E*/
+typedef enum {
+  PETSC_MALLOC_STANDARD = 0,
+  PETSC_MALLOC_CUDA_UNIFIED,
+  PETSC_MALLOC_MEMKIND_DEFAULT,
+  PETSC_MALLOC_MEMKIND_HBW_PREFERRED
+} PetscMallocType;
+
+/*@C
+     PetscMallocPushType - Sets the type of memory allocation in subsequent calls of PetscMalloc(), PetscCalloc() and friends.
+
+
+   Input Parameters:
+.  mtype - type of allocation
+
+   Level: intermediate
+
+.seealso: PetscMallocPopType(), PetscMallocType
+@*/
+PETSC_EXTERN PetscErrorCode PetscPushMallocType(PetscMallocType);
+
+/*@C
+     PetscMallocPopType - Resets the type of memory allocation to the state it was before the last call to PetscMallocPushType().
+
+   Level: intermediate
+
+.seealso: PetscMallocPushType(), PetscMallocType
+@*/
+PETSC_EXTERN PetscErrorCode PetscPopMallocType();
 
 /*MC
    PetscMalloc - Allocates memory, One should use PetscNew(), PetscMalloc1() or PetscCalloc1() usually instead of this
@@ -1143,8 +1188,8 @@ PETSC_EXTERN PetscErrorCode PetscMallocClear(void);
 /*
   Unlike PetscMallocSet and PetscMallocClear which overwrite the existing settings, these two functions save the previous choice of allocator, and should be used in pair.
 */
-PETSC_EXTERN PetscErrorCode PetscMallocSetDRAM(void);
-PETSC_EXTERN PetscErrorCode PetscMallocResetDRAM(void);
+PETSC_EXTERN PETSC_DEPRECATED_FUNCTION("Use the PetscMallocTypePush()/PetscMallocTypePop() interface (since version 3.12)") PetscErrorCode PetscMallocSetDRAM(void);
+PETSC_EXTERN PETSC_DEPRECATED_FUNCTION("Use the PetscMallocTypePush()/PetscMallocTypePop() interface (since version 3.12)") PetscErrorCode PetscMallocResetDRAM(void);
 
 #define MPIU_PETSCLOGDOUBLE  MPI_DOUBLE
 #define MPIU_2PETSCLOGDOUBLE MPI_2DOUBLE_PRECISION

@@ -667,7 +667,7 @@ PetscErrorCode PetscOptionsInsert(PetscOptions options,int *argc,char ***args,co
   ierr = PetscOptionsGetBool(NULL,NULL,"-skip_petscrc",&flag,NULL);CHKERRQ(ierr);
   if (!flag) {
     ierr = PetscGetHomeDirectory(filename,PETSC_MAX_PATH_LEN-16);CHKERRQ(ierr);
-    /* PetscOptionsInsertFile() does a fopen() on rank0 only - so only rank0 HomeDir value is relavent */
+    /* PetscOptionsInsertFile() does a fopen() on rank0 only - so only rank0 HomeDir value is relevant */
     if (filename[0]) { ierr = PetscStrcat(filename,"/.petscrc");CHKERRQ(ierr); }
     ierr = PetscOptionsInsertFile(PETSC_COMM_WORLD,options,filename,PETSC_FALSE);CHKERRQ(ierr);
     ierr = PetscOptionsInsertFile(PETSC_COMM_WORLD,options,".petscrc",PETSC_FALSE);CHKERRQ(ierr);

@@ -3,7 +3,7 @@ ALL: lib
 
 CFLAGS    =
 FFLAGS    =
-SOURCEC	  = mal.c   mem.c   mtr.c  mhbw.c
+SOURCEC	  = mal.c mem.c mtr.c
 SOURCEF	  =
 SOURCEH	  =
 MANSEC	  = Sys

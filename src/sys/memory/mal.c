@@ -7,12 +7,42 @@
 #include <malloc.h>
 #endif
 #if defined(PETSC_HAVE_MEMKIND)
-#include <errno.h>
 #include <memkind.h>
-typedef enum {PETSC_MK_DEFAULT=0,PETSC_MK_HBW_PREFERRED=1} PetscMemkindType;
-PetscMemkindType currentmktype = PETSC_MK_HBW_PREFERRED;
-PetscMemkindType previousmktype = PETSC_MK_HBW_PREFERRED;
 #endif
+#if defined(PETSC_HAVE_CUDA)
+#include <cuda_runtime.h>
+#endif
+
+const char *const PetscMallocTypes[] = {"MALLOC_STANDARD","MALLOC_CUDA_UNIFIED","MALLOC_MEMKIND_DEFAULT","MALLOC_MEMKIND_HBW_PREFERRED","PetscMallocType","PETSC_",0};
+
+#define PETSCMALLOCTYPEPUSHESMAX 64
+
+/* this is to match the old default to always prefer memkind if available */
+#if defined(PETSC_HAVE_MEMKIND)
+static PetscMallocType mtypes[PETSCMALLOCTYPEPUSHESMAX] = {PETSC_MALLOC_MEMKIND_HBW_PREFERRED};
+#elif defined(PETSC_USE_CUDA_UNIFIED_MEMORY)
+static PetscMallocType mtypes[PETSCMALLOCTYPEPUSHESMAX] = {PETSC_MALLOC_CUDA_UNIFIED};
+#else
+static PetscMallocType mtypes[PETSCMALLOCTYPEPUSHESMAX] = {PETSC_MALLOC_STANDARD};
+#endif
+static int tipmtype = 0;
+
+PetscErrorCode PetscPushMallocType(PetscMallocType mtype)
+{
+  PetscFunctionBeginHot;
+  if (tipmtype > PETSCMALLOCTYPEPUSHESMAX-1) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_ARG_OUTOFRANGE,"Too many PetscPushMallocType(), perhaps you forgot to call PetscPopMallocType()?");
+  mtypes[++tipmtype] = mtype;
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode PetscPopMallocType()
+{
+  PetscFunctionBeginHot;
+  if (!tipmtype) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_ARG_OUTOFRANGE,"Too many PetscPopMallocType()");
+  tipmtype--;
+  PetscFunctionReturn(0);
+}
+
 /*
         We want to make sure that all mallocs of double or complex numbers are complex aligned.
     1) on systems with memalign() we call that routine to get an aligned memory location
@@ -25,170 +55,161 @@ PetscMemkindType previousmktype = PETSC_MK_HBW_PREFERRED;
 
 PETSC_EXTERN PetscErrorCode PetscMallocAlign(size_t mem,PetscBool clear,int line,const char func[],const char file[],void **result)
 {
-  PetscErrorCode ierr;
-
-  if (!mem) {*result = NULL; return 0;}
-#if defined(PETSC_HAVE_MEMKIND)
-  {
-    if (!currentmktype) ierr = memkind_posix_memalign(MEMKIND_DEFAULT,result,PETSC_MEMALIGN,mem);
-    else ierr = memkind_posix_memalign(MEMKIND_HBW_PREFERRED,result,PETSC_MEMALIGN,mem);
-    if (ierr == EINVAL) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_MEM,"Memkind: invalid 3rd or 4th argument of memkind_posix_memalign()");
-    if (ierr == ENOMEM) PetscInfo1(0,"Memkind: fail to request HBW memory %.0f, falling back to normal memory\n",(PetscLogDouble)mem);
-    if (clear) {ierr = PetscMemzero(*result,mem);CHKERRQ(ierr);}
-  }
-#else
-#  if defined(PETSC_HAVE_DOUBLE_ALIGN_MALLOC) && (PETSC_MEMALIGN == 8)
-  if (clear) {
-    *result = calloc(1+mem/sizeof(int),sizeof(int));
-  } else {
-    *result = malloc(mem);
-  }
-  if (PetscLogMemory) {ierr = PetscMemzero(*result,mem);CHKERRQ(ierr);}
-
-#  elif defined(PETSC_HAVE_MEMALIGN)
-  *result = memalign(PETSC_MEMALIGN,mem);
-  if (clear || PetscLogMemory) {
-    ierr = PetscMemzero(*result,mem);CHKERRQ(ierr);
-  }
-#  else
-  {
-    int *ptr;
-    /*
-      malloc space for two extra chunks and shift ptr 1 + enough to get it PetscScalar aligned
-    */
-    if (clear) {
-      ptr = (int*)calloc(1+(mem + 2*PETSC_MEMALIGN)/sizeof(int),sizeof(int));
-    } else {
-      ptr = (int*)malloc(mem + 2*PETSC_MEMALIGN);
-    }
-    if (ptr) {
-      int shift    = (int)(((PETSC_UINTPTR_T) ptr) % PETSC_MEMALIGN);
-      shift        = (2*PETSC_MEMALIGN - shift)/sizeof(int);
-      ptr[shift-1] = shift + SHIFT_CLASSID;
-      ptr         += shift;
-      *result      = (void*)ptr;
-      if (PetscLogMemory) {ierr = PetscMemzero(*result,mem);CHKERRQ(ierr);}
-    } else {
-      *result      = NULL;
-    }
-  }
-#  endif
+  void                  *ptr;
+  int                   shift;
+  const size_t          sm = PETSC_MEMALIGN;
+  const size_t          sp = sizeof(void*);
+  const size_t          ss = sizeof(size_t);
+  const size_t          se = sizeof(PetscMallocType);
+  const size_t          len = mem + sm + sp + ss + se;
+  const PetscMallocType currentmtype = mtypes[tipmtype];
+#if defined(PETSC_HAVE_CUDA)
+  cudaError_t           cerr;
 #endif
 
-  if (!*result) return PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_MEM,PETSC_ERROR_INITIAL,"Memory requested %.0f",(PetscLogDouble)mem);
+  if (!mem) {*result = NULL; return 0;}
+  switch (currentmtype) {
+#if defined(PETSC_HAVE_CUDA)
+  case PETSC_MALLOC_CUDA_UNIFIED:
+    cerr = cudaMallocManaged(&ptr,len,cudaMemAttachHost);
+    if (cerr != cudaSuccess) PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_INITIAL,"Likely memory corruption in heap. Cuda error:",cudaGetErrorString(cerr));
+    break;
+#endif
+  case PETSC_MALLOC_STANDARD:
+    if (clear) { /* use calloc to respect first-touch policy */
+      ptr = calloc(1,len);
+      clear = PETSC_FALSE;
+    } else ptr = malloc(len);
+    break;
+#if defined(PETSC_HAVE_MEMKIND)
+  case PETSC_MALLOC_MEMKIND_DEFAULT:
+    ptr = memkind_malloc(MEMKIND_DEFAULT,len);
+    break;
+  case PETSC_MALLOC_MEMKIND_HBW_PREFERRED:
+    ptr = memkind_malloc(MEMKIND_HBW_PREFERRED,len);
+    /* This is odd: according to the specs, memkind should fall back to MEMKIND_DEFAULT if no HBW is available
+       On my Fedora 30 workstation without KNLs, memkind 1.7.0 returns NULL */
+    if (!ptr) ptr = memkind_malloc(MEMKIND_DEFAULT,len);
+    break;
+#endif
+  default:
+    SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_SUP,"Unhandled memory type %s",PetscMallocTypes[currentmtype]);
+  }
+  if (!ptr) return PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_MEM,PETSC_ERROR_INITIAL,"Failure to request memory %.0f of type %s",(PetscLogDouble)mem,PetscMallocTypes[currentmtype]);
+  shift = PETSC_MEMALIGN - (int)((PETSC_UINTPTR_T)((char*)ptr + ss + sp + se) % PETSC_MEMALIGN);
+
+  /* store "allocated" memory, "allocated" memory size, allocation type and original pointer, so that we can realloc and free */
+  *result = (void*)((char*)ptr + ss + sp + se + shift);
+  *((PetscMallocType*)((char*)*result - se)) = currentmtype;
+  *((size_t*)((char*)*result - ss - se))     = mem;
+  *((void**)((char*)*result - sp - ss - se)) = ptr;
+  if (clear) memset((char*)*result,0,mem);
+#if defined(PETSC_USE_DEBUG)
+  if (((size_t) (*result)) % PETSC_MEMALIGN) PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_INITIAL,"Unaligned memory generated! Expected %d, shift %d",PETSC_MEMALIGN,((size_t) (*result)) % PETSC_MEMALIGN);
+#endif
   return 0;
 }
 
 PETSC_EXTERN PetscErrorCode PetscFreeAlign(void *ptr,int line,const char func[],const char file[])
 {
-  if (!ptr) return 0;
-#if defined(PETSC_HAVE_MEMKIND)
-  memkind_free(0,ptr); /* specify the kind to 0 so that memkind will look up for the right type */
-#else
-#  if (!(defined(PETSC_HAVE_DOUBLE_ALIGN_MALLOC) && (PETSC_MEMALIGN == 8)) && !defined(PETSC_HAVE_MEMALIGN))
-  {
-    /*
-      Previous int tells us how many ints the pointer has been shifted from
-      the original address provided by the system malloc().
-    */
-    int shift = *(((int*)ptr)-1) - SHIFT_CLASSID;
-    if (shift > PETSC_MEMALIGN-1) return PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_INITIAL,"Likely memory corruption in heap");
-    if (shift < 0) return PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_INITIAL,"Likely memory corruption in heap");
-    ptr = (void*)(((int*)ptr) - shift);
-  }
-#  endif
-
-#  if defined(PETSC_HAVE_FREE_RETURN_INT)
-  int err = free(ptr);
-  if (err) return PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_INITIAL,"System free returned error %d\n",err);
-#  else
-  free(ptr);
-#  endif
+  PetscMallocType mtype;
+  const size_t    se = sizeof(PetscMallocType);
+  const size_t    sp = sizeof(void*);
+  const size_t    ss = sizeof(size_t);
+#if defined(PETSC_HAVE_FREE_RETURN_INT)
+  int             err;
 #endif
+#if defined(PETSC_HAVE_CUDA)
+  cudaError_t     cerr;
+#endif
+
+  if (!ptr) return 0;
+  mtype = *((PetscMallocType*)((char*)ptr - se));
+  ptr   = *((void**)((char*)ptr - ss - se - sp));
+  switch (mtype) {
+  case PETSC_MALLOC_STANDARD:
+#if defined(PETSC_HAVE_FREE_RETURN_INT)
+    err = free(ptr);
+    if (err) return PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_INITIAL,"System free returned error %d",err);
+#else
+    free(ptr);
+#endif
+    break;
+#if defined(PETSC_HAVE_CUDA)
+  case PETSC_MALLOC_CUDA_UNIFIED:
+    cerr = cudaFree(ptr);
+    if (cerr != cudaSuccess) PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_INITIAL,"Likely memory corruption in heap. Cuda error:",cudaGetErrorString(cerr));
+    break;
+#endif
+#if defined(PETSC_HAVE_MEMKIND)
+  case PETSC_MALLOC_MEMKIND_DEFAULT:
+  case PETSC_MALLOC_MEMKIND_HBW_PREFERRED:
+    memkind_free(0,ptr); /* specify the kind to 0 so that memkind will look up for the right type */
+    break;
+#endif
+  default:
+    SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_SUP,"Unhandled memory type %s",PetscMallocTypes[mtype]);
+  }
   return 0;
 }
 
 PETSC_EXTERN PetscErrorCode PetscReallocAlign(size_t mem, int line, const char func[], const char file[], void **result)
 {
   PetscErrorCode ierr;
-
   if (!mem) {
     ierr = PetscFreeAlign(*result, line, func, file);
     if (ierr) return ierr;
     *result = NULL;
-    return 0;
-  }
-#if defined(PETSC_HAVE_MEMKIND)
-  if (!currentmktype) *result = memkind_realloc(MEMKIND_DEFAULT,*result,mem);
-  else *result = memkind_realloc(MEMKIND_HBW_PREFERRED,*result,mem);
-#else
-#  if (!(defined(PETSC_HAVE_DOUBLE_ALIGN_MALLOC) && (PETSC_MEMALIGN == 8)) && !defined(PETSC_HAVE_MEMALIGN))
-  {
-    /*
-      Previous int tells us how many ints the pointer has been shifted from
-      the original address provided by the system malloc().
-    */
-    int shift = *(((int*)*result)-1) - SHIFT_CLASSID;
-    if (shift > PETSC_MEMALIGN-1) return PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_INITIAL,"Likely memory corruption in heap");
-    if (shift < 0) return PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_INITIAL,"Likely memory corruption in heap");
-    *result = (void*)(((int*)*result) - shift);
-  }
-#  endif
-
-#  if (defined(PETSC_HAVE_DOUBLE_ALIGN_MALLOC) && (PETSC_MEMALIGN == 8)) || defined(PETSC_HAVE_MEMALIGN)
-  *result = realloc(*result, mem);
-#  else
-  {
-    /*
-      malloc space for two extra chunks and shift ptr 1 + enough to get it PetscScalar aligned
-    */
-    int *ptr = (int *) realloc(*result, mem + 2*PETSC_MEMALIGN);
-    if (ptr) {
-      int shift    = (int)(((PETSC_UINTPTR_T) ptr) % PETSC_MEMALIGN);
-      shift        = (2*PETSC_MEMALIGN - shift)/sizeof(int);
-      ptr[shift-1] = shift + SHIFT_CLASSID;
-      ptr         += shift;
-      *result      = (void*)ptr;
-    } else {
-      *result      = NULL;
-    }
-  }
-#  endif
-#endif
-  if (!*result) return PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_MEM,PETSC_ERROR_INITIAL,"Memory requested %.0f",(PetscLogDouble)mem);
-#if defined(PETSC_HAVE_MEMALIGN)
-  /* There are no standard guarantees that realloc() maintains the alignment of memalign(), so I think we have to
-   * realloc and, if the alignment is wrong, malloc/copy/free. */
-  if (((size_t) (*result)) % PETSC_MEMALIGN) {
-    void *newResult;
-#  if defined(PETSC_HAVE_MEMKIND)
-    {
-      int ierr;
-      if (!currentmktype) ierr = memkind_posix_memalign(MEMKIND_DEFAULT,&newResult,PETSC_MEMALIGN,mem);
-      else ierr = memkind_posix_memalign(MEMKIND_HBW_PREFERRED,&newResult,PETSC_MEMALIGN,mem);
-      if (ierr == EINVAL) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_MEM,"Memkind: invalid 3rd or 4th argument of memkind_posix_memalign()");
-      if (ierr == ENOMEM) PetscInfo1(0,"Memkind: fail to request HBW memory %.0f, falling back to normal memory\n",(PetscLogDouble)mem);
-    }
-#  else
-    newResult = memalign(PETSC_MEMALIGN,mem);
-#  endif
-    if (!newResult) return PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_MEM,PETSC_ERROR_INITIAL,"Memory requested %.0f",(PetscLogDouble)mem);
-    ierr = PetscMemcpy(newResult,*result,mem);
+  } else if (!*result) {
+    ierr = PetscMallocAlign(mem,PETSC_FALSE,line,func,file,result);
     if (ierr) return ierr;
-#  if defined(PETSC_HAVE_FREE_RETURN_INT)
-    {
-      int err = free(*result);
-      if (err) return PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_INITIAL,"System free returned error %d\n",err);
+  } else {
+    void                  *newResult   = NULL;
+    const size_t          sm           = PETSC_MEMALIGN;
+    const size_t          sp           = sizeof(void*);
+    const size_t          ss           = sizeof(size_t);
+    const size_t          se           = sizeof(PetscMallocType);
+    const size_t          len          = mem + sm + sp + ss + se;
+    const PetscMallocType currentmtype = mtypes[tipmtype];
+    const PetscMallocType omtype       = *((PetscMallocType*)((char*)*result - se));
+    const size_t          omem         = *((size_t*)((char*)*result - ss - se));
+    void                  *optr        = *((void**)((char*)*result - ss - se - sp));
+    int                   oshift       = PETSC_MEMALIGN - (int)((PETSC_UINTPTR_T)((char*)optr + ss + sp + se) % PETSC_MEMALIGN);
+
+    switch (currentmtype) {
+    case PETSC_MALLOC_STANDARD:
+      if (omtype == PETSC_MALLOC_STANDARD) newResult = realloc(optr,len);
+      break;
+#if defined(PETSC_HAVE_MEMKIND)
+    case PETSC_MALLOC_MEMKIND_DEFAULT:
+    case PETSC_MALLOC_MEMKIND_HBW_PREFERRED:
+      if (omtype == PETSC_MALLOC_MEMKIND_DEFAULT || omtype == PETSC_MALLOC_MEMKIND_HBW_PREFERRED) {
+        newResult = memkind_realloc(currentmtype == PETSC_MALLOC_MEMKIND_DEFAULT ? MEMKIND_DEFAULT : MEMKIND_HBW_PREFERRED,optr,len);
+      }
+      break;
+#endif
+    default:
+      break;
     }
-#  else
-#    if defined(PETSC_HAVE_MEMKIND)
-    memkind_free(0,*result);
-#    else
-    free(*result);
-#    endif
-#  endif
+    if (newResult) { /* realloc with specifics reallocation routines */
+      int shift = PETSC_MEMALIGN - (int)((PETSC_UINTPTR_T)((char*)newResult + ss + sp + se) % PETSC_MEMALIGN);
+      optr = newResult;
+      newResult = (void*)((char*)newResult + ss + sp + se + shift);
+      /* if the previous shift is not equal to the current one, adjust the contribution of realloc */
+      if (oshift != shift) memmove(newResult,(char*)newResult + oshift - shift,mem);
+      *((PetscMallocType*)((char*)newResult - se)) = currentmtype;
+      *((size_t*)((char*)newResult - ss - se))     = mem;
+      *((void**)((char*)newResult - sp - ss - se)) = optr;
+    } else { /* fallback to malloc + memcpy + free */
+      ierr = PetscMallocAlign(mem,PETSC_FALSE,line,func,file,&newResult);if (ierr) PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_REPEAT,"Likely memory corruption in heap");
+      ierr = PetscMemcpy(newResult,*result,PetscMin(omem,mem));if (ierr) PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_REPEAT,"Likely memory corruption in heap");
+      ierr = PetscFreeAlign(*result,line,func,file); if (ierr) PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_REPEAT,"Likely memory corruption in heap");
+    }
+    if (!newResult) return PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_MEM,PETSC_ERROR_INITIAL,"Memory requested %.0f",(PetscLogDouble)mem);
     *result = newResult;
   }
+#if defined(PETSC_USE_DEBUG)
+  if (((size_t) (*result)) % PETSC_MEMALIGN) PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_INITIAL,"Unaligned memory generated! Expected %d, shift %d",PETSC_MEMALIGN,((size_t) (*result)) % PETSC_MEMALIGN);
 #endif
   return 0;
 }
@@ -269,10 +290,6 @@ PetscErrorCode PetscMemoryTrace(const char label[])
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode (*PetscTrMallocOld)(size_t,PetscBool,int,const char[],const char[],void**) = PetscMallocAlign;
-static PetscErrorCode (*PetscTrReallocOld)(size_t,int,const char[],const char[],void**)          = PetscReallocAlign;
-static PetscErrorCode (*PetscTrFreeOld)(void*,int,const char[],const char[])                     = PetscFreeAlign;
-
 /*@C
    PetscMallocSetDRAM - Set PetscMalloc to use DRAM.
      If memkind is available, change the memkind type. Otherwise, switch the
@@ -287,25 +304,16 @@ static PetscErrorCode (*PetscTrFreeOld)(void*,int,const char[],const char[])    
      This provides a way to do the allocation on DRAM temporarily. One
      can switch back to the previous choice by calling PetscMallocReset().
 
+   Deprecated, use PetscPushMallocType()
+
 .seealso: PetscMallocReset()
 @*/
 PetscErrorCode PetscMallocSetDRAM(void)
 {
+  PetscErrorCode ierr;
+
   PetscFunctionBegin;
-  if (PetscTrMalloc == PetscMallocAlign) {
-#if defined(PETSC_HAVE_MEMKIND)
-    previousmktype = currentmktype;
-    currentmktype  = PETSC_MK_DEFAULT;
-#endif
-  } else {
-    /* Save the previous choice */
-    PetscTrMallocOld  = PetscTrMalloc;
-    PetscTrReallocOld = PetscTrRealloc;
-    PetscTrFreeOld    = PetscTrFree;
-    PetscTrMalloc     = PetscMallocAlign;
-    PetscTrFree       = PetscFreeAlign;
-    PetscTrRealloc    = PetscReallocAlign;
-  }
+  ierr = PetscPushMallocType(PETSC_MALLOC_STANDARD);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -316,21 +324,16 @@ PetscErrorCode PetscMallocSetDRAM(void)
 
    Level: developer
 
+   Deprecated, use PetscPopMallocType()
+
 .seealso: PetscMallocSetDRAM()
 @*/
 PetscErrorCode PetscMallocResetDRAM(void)
 {
+  PetscErrorCode ierr;
+
   PetscFunctionBegin;
-  if (PetscTrMalloc == PetscMallocAlign) {
-#if defined(PETSC_HAVE_MEMKIND)
-    currentmktype = previousmktype;
-#endif
-  } else {
-    /* Reset to the previous choice */
-    PetscTrMalloc  = PetscTrMallocOld;
-    PetscTrRealloc = PetscTrReallocOld;
-    PetscTrFree    = PetscTrFreeOld;
-  }
+  ierr = PetscPopMallocType();CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
