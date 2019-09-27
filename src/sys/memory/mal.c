@@ -196,7 +196,11 @@ PETSC_EXTERN PetscErrorCode PetscReallocAlign(size_t mem, int line, const char f
       optr = newResult;
       newResult = (void*)((char*)newResult + ss + sp + se + shift);
       /* if the previous shift is not equal to the current one, adjust the contribution of realloc */
+#if defined(PETSC_HAVE_MEMMOVE) && !defined(PETSC_USE_DEBUG)
       if (oshift != shift) memmove(newResult,(char*)newResult + oshift - shift,mem);
+#else
+      if (oshift != shift) (void)PetscMemmove(newResult,(char*)newResult + oshift - shift,mem);
+#endif
       *((PetscMallocType*)((char*)newResult - se)) = currentmtype;
       *((size_t*)((char*)newResult - ss - se))     = mem;
       *((void**)((char*)newResult - sp - ss - se)) = optr;
