@@ -2,6 +2,7 @@
     Code that allows a user to dictate what malloc() PETSc uses.
 */
 #include <petscsys.h>             /*I   "petscsys.h"   I*/
+#include <petscvalgrind.h>
 #include <stdarg.h>
 #if defined(PETSC_HAVE_MALLOC_H)
 #include <malloc.h>
@@ -107,6 +108,11 @@ PETSC_EXTERN PetscErrorCode PetscMallocAlign(size_t mem,PetscBool clear,int line
 #if defined(PETSC_USE_DEBUG)
   if (((size_t) (*result)) % PETSC_MEMALIGN) PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_INITIAL,"Unaligned memory generated! Expected %d, shift %d",PETSC_MEMALIGN,((size_t) (*result)) % PETSC_MEMALIGN);
 #endif
+#if defined(PETSC_USE_DEBUG) && defined(PETSC_HAVE_VALGRIND)
+  if (PETSC_RUNNING_ON_VALGRIND) { /* make memory header not accessible */
+    VALGRIND_MAKE_MEM_NOACCESS((char*)ptr + shift,ss + sp + se);
+  }
+#endif
   return 0;
 }
 
@@ -124,6 +130,11 @@ PETSC_EXTERN PetscErrorCode PetscFreeAlign(void *ptr,int line,const char func[],
 #endif
 
   if (!ptr) return 0;
+#if defined(PETSC_USE_DEBUG) && defined(PETSC_HAVE_VALGRIND)
+  if (PETSC_RUNNING_ON_VALGRIND) { /* make memory header accessible */
+    VALGRIND_MAKE_MEM_DEFINED((char*)ptr - ss - se - sp,ss + se + sp);
+  }
+#endif
   mtype = *((PetscMallocType*)((char*)ptr - se));
   ptr   = *((void**)((char*)ptr - ss - se - sp));
   switch (mtype) {
@@ -171,10 +182,20 @@ PETSC_EXTERN PetscErrorCode PetscReallocAlign(size_t mem, int line, const char f
     const size_t          se           = sizeof(PetscMallocType);
     const size_t          len          = mem + sm + sp + ss + se;
     const PetscMallocType currentmtype = mtypes[tipmtype];
-    const PetscMallocType omtype       = *((PetscMallocType*)((char*)*result - se));
-    const size_t          omem         = *((size_t*)((char*)*result - ss - se));
-    void                  *optr        = *((void**)((char*)*result - ss - se - sp));
-    int                   oshift       = PETSC_MEMALIGN - (int)((PETSC_UINTPTR_T)((char*)optr + ss + sp + se) % PETSC_MEMALIGN);
+    PetscMallocType       omtype;
+    size_t                omem;
+    void                  *optr;
+    int                   oshift;
+
+#if defined(PETSC_USE_DEBUG) && defined(PETSC_HAVE_VALGRIND)
+    if (PETSC_RUNNING_ON_VALGRIND) { /* make memory header accessible */
+      VALGRIND_MAKE_MEM_DEFINED((char*)*result - ss - se - sp,ss + se + sp);
+    }
+#endif
+    omtype = *((PetscMallocType*)((char*)*result - se));
+    omem   = *((size_t*)((char*)*result - ss - se));
+    optr   = *((void**)((char*)*result - ss - se - sp));
+    oshift = PETSC_MEMALIGN - (int)((PETSC_UINTPTR_T)((char*)optr + ss + sp + se) % PETSC_MEMALIGN);
 
     switch (currentmtype) {
     case PETSC_MALLOC_STANDARD:
@@ -204,6 +225,11 @@ PETSC_EXTERN PetscErrorCode PetscReallocAlign(size_t mem, int line, const char f
       *((PetscMallocType*)((char*)newResult - se)) = currentmtype;
       *((size_t*)((char*)newResult - ss - se))     = mem;
       *((void**)((char*)newResult - sp - ss - se)) = optr;
+#if defined(PETSC_USE_DEBUG) && defined(PETSC_HAVE_VALGRIND)
+      if (PETSC_RUNNING_ON_VALGRIND) { /* make memory header not accessible */
+        VALGRIND_MAKE_MEM_NOACCESS((char*)optr + shift,ss + sp + se);
+      }
+#endif
     } else { /* fallback to malloc + memcpy + free */
       ierr = PetscMallocAlign(mem,PETSC_FALSE,line,func,file,&newResult);if (ierr) PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_REPEAT,"Likely memory corruption in heap");
       ierr = PetscMemcpy(newResult,*result,PetscMin(omem,mem));if (ierr) PetscError(PETSC_COMM_SELF,line,func,file,PETSC_ERR_PLIB,PETSC_ERROR_REPEAT,"Likely memory corruption in heap");

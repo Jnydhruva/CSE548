@@ -6,6 +6,7 @@
 
 #if defined(PETSC_HAVE_VALGRIND)
 #  include <valgrind/valgrind.h>
+#  include <valgrind/memcheck.h>
 #  define PETSC_RUNNING_ON_VALGRIND RUNNING_ON_VALGRIND
 #else
 #  define PETSC_RUNNING_ON_VALGRIND PETSC_FALSE
