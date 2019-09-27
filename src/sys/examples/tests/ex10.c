@@ -26,8 +26,8 @@ int main(int argc,char **argv)
 
   /*
      |        |                |       |
-     b        a               b+15    b+20
-                              a+10    a+15
+     b        b1              b +15    b +20
+                              b1+10    b1+15
   */
   b1   = b + 5;
   ierr = PetscArraymove(b1,b,15);CHKERRQ(ierr);
@@ -39,6 +39,7 @@ int main(int argc,char **argv)
      a       b                   a+20   a+25
                                         b+20
   */
+  /* test realloc with NULL pointer  */
   ierr = PetscRealloc(25*sizeof(*a),&a);CHKERRQ(ierr);
   b    = a + 5;
   for (i=0; i<20; i++) b[i] = i;
