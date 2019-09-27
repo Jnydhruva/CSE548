@@ -31,7 +31,7 @@ class Configure(config.package.GNUPackage):
   def setupHelp(self, help):
     config.package.GNUPackage.setupHelp(self,help)
     import nargs
-    help.addArgument('HYPRE','-download-hypre-gpu',nargs.ArgBool(None, 0, 'Use GPU build of HYPRE'))
+    help.addArgument('HYPRE','-download-hypre-with-cuda',nargs.ArgBool(None, 0, 'Use GPU build of HYPRE'))
     return
 
   def setupDependencies(self, framework):
@@ -44,7 +44,7 @@ class Configure(config.package.GNUPackage):
     self.scalar     = framework.require('PETSc.options.scalarTypes',self)
     self.cuda       = framework.require('config.packages.cuda',self)
     self.deps       = [self.mpi,self.blasLapack,self.cxxlibs,self.mathlib]
-    if self.argDB['download-hypre-gpu']:
+    if self.argDB['download-hypre-with-cuda']:
       self.deps.append(self.cuda)
 
   def formGNUConfigureArgs(self):
@@ -78,9 +78,9 @@ class Configure(config.package.GNUPackage):
       # use OMP_NUM_THREADS to control the number of threads used
       # TODO: they may also use OMP for GPUs
 
-    # turn on HYPRE GPU build only if --download-hypre-gpu=1 has been specified
-    gpubuild = self.argDB['download-hypre-gpu'] and self.cuda.found
-    if gpubuild:
+    # turn on HYPRE GPU build only if --download-hypre-with-cuda=1 has been specified
+    cudabuild = self.argDB['download-hypre-with-cuda'] and self.cuda.found
+    if cudabuild:
       if self.cuda.version_tuple < (8,0,0):
         raise RuntimeError('Hypre requires Cuda version 8.0.0 or higher, version '+self.cuda.foundversion+' is being used')
       self.usesgpu = 'Cuda'
@@ -127,7 +127,7 @@ class Configure(config.package.GNUPackage):
     args.append('LDFLAGS="'+self.setCompilers.LDFLAGS.replace('-dynamic','')+'"')
 
     # Hypre changes the shared library linker to nvcc which cannot handle -Wl,-rpath
-    if gpubuild:
+    if cudabuild:
       args = [arg.replace('-Wl,-rpath,','-L') for arg in args]
 
     return args
