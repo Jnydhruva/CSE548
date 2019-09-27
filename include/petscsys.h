@@ -455,7 +455,7 @@ typedef enum {
 } PetscMallocType;
 
 /*@C
-     PetscMallocPushType - Sets the type of memory allocation in subsequent calls of PetscMalloc(), PetscCalloc() and friends.
+     PetscPushMallocType - Sets the type of memory allocation in subsequent calls of PetscMalloc(), PetscCalloc() and friends.
 
 
    Input Parameters:
@@ -463,16 +463,16 @@ typedef enum {
 
    Level: intermediate
 
-.seealso: PetscMallocPopType(), PetscMallocType
+.seealso: PetscPopMallocType(), PetscMallocType
 @*/
 PETSC_EXTERN PetscErrorCode PetscPushMallocType(PetscMallocType);
 
 /*@C
-     PetscMallocPopType - Resets the type of memory allocation to the state it was before the last call to PetscMallocPushType().
+     PetscPopMallocType - Resets the type of memory allocation to the state it was before the last call to PetscPushMallocType().
 
    Level: intermediate
 
-.seealso: PetscMallocPushType(), PetscMallocType
+.seealso: PetscPushMallocType(), PetscMallocType
 @*/
 PETSC_EXTERN PetscErrorCode PetscPopMallocType();
 
