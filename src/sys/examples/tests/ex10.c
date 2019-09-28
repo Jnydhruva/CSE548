@@ -9,9 +9,11 @@ int main(int argc,char **argv)
   PetscErrorCode ierr;
 
   ierr = PetscInitialize(&argc,&argv,(char*)0,help);if (ierr) return ierr;
-#if defined(PETSC_HAVE_CUDA)
-  ierr = PetscPushMallocType(PETSC_MALLOC_CUDA_UNIFIED);CHKERRQ(ierr);
-#endif
+  if (PetscHasMallocType(PETSC_MALLOC_CUDA_UNIFIED)) {
+    ierr = PetscPushMallocType(PETSC_MALLOC_CUDA_UNIFIED);CHKERRQ(ierr);
+  } else if (PetscHasMallocType(PETSC_MALLOC_MEMKIND_HBW_PREFERRED)) {
+    ierr = PetscPushMallocType(PETSC_MALLOC_MEMKIND_HBW_PREFERRED);CHKERRQ(ierr);
+  }
   ierr = PetscMalloc1(10,&a);CHKERRQ(ierr);
   ierr = PetscMalloc1(20,&b);CHKERRQ(ierr);
 
@@ -51,9 +53,6 @@ int main(int argc,char **argv)
   ierr = PetscIntView(10,a,NULL);CHKERRQ(ierr);
   ierr = PetscFree(a);CHKERRQ(ierr);
 
-#if defined(PETSC_HAVE_CUDA)
-  ierr = PetscPopMallocType();CHKERRQ(ierr);
-#endif
   ierr = PetscFinalize();
   return ierr;
 }
