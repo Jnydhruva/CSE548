@@ -476,6 +476,15 @@ PETSC_EXTERN PetscErrorCode PetscPushMallocType(PetscMallocType);
 @*/
 PETSC_EXTERN PetscErrorCode PetscPopMallocType();
 
+/*@C
+     PetscHasMallocType - Query function for supported MallocType
+
+   Level: intermediate
+
+.seealso: PetscMallocType
+@*/
+PETSC_EXTERN PetscBool PetscHasMallocType(PetscMallocType);
+
 /*MC
    PetscMalloc - Allocates memory, One should use PetscNew(), PetscMalloc1() or PetscCalloc1() usually instead of this
 

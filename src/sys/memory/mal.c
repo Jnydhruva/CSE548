@@ -32,6 +32,7 @@ PetscErrorCode PetscPushMallocType(PetscMallocType mtype)
 {
   PetscFunctionBeginHot;
   if (tipmtype > PETSCMALLOCTYPEPUSHESMAX-1) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_ARG_OUTOFRANGE,"Too many PetscPushMallocType(), perhaps you forgot to call PetscPopMallocType()?");
+  PetscInfo2(NULL,"Push MallocType %s, old %s\n",PetscMallocTypes[mtype],PetscMallocTypes[mtypes[tipmtype]]);
   mtypes[++tipmtype] = mtype;
   PetscFunctionReturn(0);
 }
@@ -40,8 +41,30 @@ PetscErrorCode PetscPopMallocType()
 {
   PetscFunctionBeginHot;
   if (!tipmtype) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_ARG_OUTOFRANGE,"Too many PetscPopMallocType()");
+  PetscInfo2(NULL,"Pop MallocType %s, new %s\n",PetscMallocTypes[mtypes[tipmtype]],PetscMallocTypes[mtypes[tipmtype-1]]);
   tipmtype--;
   PetscFunctionReturn(0);
+}
+
+PetscBool PetscHasMallocType(PetscMallocType mtype)
+{
+  PetscBool has = PETSC_FALSE;
+  switch (mtype) {
+#if defined(PETSC_HAVE_CUDA)
+  case PETSC_MALLOC_CUDA_UNIFIED:
+#endif
+#if defined(PETSC_HAVE_MEMKIND)
+  case PETSC_MALLOC_MEMKIND_DEFAULT:
+  case PETSC_MALLOC_MEMKIND_HBW_PREFERRED:
+#endif
+  case PETSC_MALLOC_STANDARD:
+    has = PETSC_TRUE;
+    break;
+  default:
+    has = PETSC_FALSE;
+    break;
+  }
+  return has;
 }
 
 /*
@@ -291,7 +314,7 @@ PetscErrorCode PetscMallocSet(PetscErrorCode (*imalloc)(size_t,PetscBool,int,con
     free() settings for different parts; this is because one NEVER wants to
     free() an address that was malloced by a different memory management system
 
-    Called in PetscFinalize() so that if PetscInitialize() is called again it starts with a fresh slate of allocation information
+    Called in PetscFinalize() so that if PetscInitialize() is called again it starts with a fresh state of allocation information
 
 @*/
 PetscErrorCode PetscMallocClear(void)
