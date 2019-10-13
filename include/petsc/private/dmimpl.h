@@ -98,6 +98,14 @@ struct _DMRefineHookLink {
   DMRefineHookLink next;
 };
 
+typedef struct _DMFieldHookLink *DMFieldHookLink;
+struct _DMFieldHookLink {
+  PetscErrorCode (*fieldhook)(DM,DM,void*);    /* Run once, when subdm is created */
+  PetscErrorCode (*splithook)(DM,VecScatter,DM,void*); /* Run each time a new problem is split onto subdms */
+  void *ctx;
+  DMFieldHookLink next;
+};
+
 typedef struct _DMSubDomainHookLink *DMSubDomainHookLink;
 struct _DMSubDomainHookLink {
   PetscErrorCode (*ddhook)(DM,DM,void*);
@@ -198,6 +206,7 @@ struct _p_DM {
   DM                      fineMesh;
   DMCoarsenHookLink       coarsenhook; /* For transfering auxiliary problem data to coarser grids */
   DMRefineHookLink        refinehook;
+  DMFieldHookLink         fieldhook;
   DMSubDomainHookLink     subdomainhook;
   DMGlobalToLocalHookLink gtolhook;
   DMLocalToGlobalHookLink ltoghook;
