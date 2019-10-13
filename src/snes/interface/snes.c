@@ -654,6 +654,38 @@ static PetscErrorCode DMCoarsenHook_SNESVecSol(DM dm,DM dmc,void *ctx)
   PetscFunctionReturn(0);
 }
 
+static PetscErrorCode DMFieldSplitHook_SNESVecSol(DM dm, VecScatter scat, DM subdm, void *ctx)
+{
+  SNES           snes = (SNES)ctx;
+  PetscErrorCode ierr;
+  Vec            Xfull,Xfull_named = NULL,Xsub;
+
+  PetscFunctionBegin;
+  if (dm == snes->dm) Xfull = snes->vec_sol;
+  else {
+    ierr  = DMGetNamedGlobalVector(dm,"SNESVecSol",&Xfull_named);CHKERRQ(ierr);
+    Xfull = Xfull_named;
+  }
+  ierr = DMGetNamedGlobalVector(subdm,"SNESVecSol",&Xsub);CHKERRQ(ierr);
+  ierr = VecScatterBegin(scat,Xfull,Xsub,INSERT_VALUES,SCATTER_FORWARD);CHKERRQ(ierr);
+  ierr = VecScatterEnd(scat,Xfull,Xsub,INSERT_VALUES,SCATTER_FORWARD);CHKERRQ(ierr);
+  ierr = DMRestoreNamedGlobalVector(subdm,"SNESVecSol",&Xsub);CHKERRQ(ierr);
+  if (Xfull_named) {ierr = DMRestoreNamedGlobalVector(dm,"SNESVecSol",&Xfull_named);CHKERRQ(ierr);}
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode DMFieldDecompositionHook_SNESVecSol(DM dm, DM subdm, void *ctx)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  ierr = DMFieldDecompositionHookAdd(dm,DMFieldDecompositionHook_SNESVecSol,DMFieldSplitHook_SNESVecSol,ctx);CHKERRQ(ierr);
+  /* Ensure the subdms know how to coarsen state */
+  /* FIXME: How to clean these up afterwards? */
+  ierr = DMCoarsenHookAdd(subdm,DMCoarsenHook_SNESVecSol,DMRestrictHook_SNESVecSol,ctx);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
 /* This may be called to rediscretize the operator on levels of linear multigrid. The DM shuffle is so the user can
  * safely call SNESGetDM() in their residual evaluation routine. */
 static PetscErrorCode KSPComputeOperators_SNES(KSP ksp,Mat A,Mat B,void *ctx)
@@ -669,7 +701,7 @@ static PetscErrorCode KSPComputeOperators_SNES(KSP ksp,Mat A,Mat B,void *ctx)
   dmsave = snes->dm;
   ierr   = KSPGetDM(ksp,&snes->dm);CHKERRQ(ierr);
   if (dmsave == snes->dm) X = snes->vec_sol; /* We are on the finest level */
-  else {                                     /* We are on a coarser level, this vec was initialized using a DM restrict hook */
+  else {                                     /* We are on a coarser level (or inside a fieldsplit), this vec was initialized using a DM restrict hook */
     ierr = DMGetNamedGlobalVector(snes->dm,"SNESVecSol",&Xnamed);CHKERRQ(ierr);
     X    = Xnamed;
     ierr = SNESGetJacobian(snes,NULL,NULL,&jac,&ctxsave);CHKERRQ(ierr);
@@ -768,6 +800,7 @@ PetscErrorCode SNESSetUpMatrices(SNES snes)
     ierr = SNESGetKSP(snes,&ksp);CHKERRQ(ierr);
     ierr = KSPSetComputeOperators(ksp,KSPComputeOperators_SNES,snes);CHKERRQ(ierr);
     ierr = DMCoarsenHookAdd(snes->dm,DMCoarsenHook_SNESVecSol,DMRestrictHook_SNESVecSol,snes);CHKERRQ(ierr);
+    ierr = DMFieldDecompositionHookAdd(snes->dm,DMFieldDecompositionHook_SNESVecSol,DMFieldSplitHook_SNESVecSol,snes);CHKERRQ(ierr);
   }
   PetscFunctionReturn(0);
 }
@@ -3195,7 +3228,10 @@ PetscErrorCode  SNESDestroy(SNES *snes)
   ierr = PetscObjectSAWsViewOff((PetscObject)*snes);CHKERRQ(ierr);
   if ((*snes)->ops->destroy) {ierr = (*((*snes))->ops->destroy)((*snes));CHKERRQ(ierr);}
 
-  if ((*snes)->dm) {ierr = DMCoarsenHookRemove((*snes)->dm,DMCoarsenHook_SNESVecSol,DMRestrictHook_SNESVecSol,*snes);CHKERRQ(ierr);}
+  if ((*snes)->dm) {
+    ierr = DMCoarsenHookRemove((*snes)->dm,DMCoarsenHook_SNESVecSol,DMRestrictHook_SNESVecSol,*snes);CHKERRQ(ierr);
+    ierr = DMFieldDecompositionHookRemove((*snes)->dm,DMFieldDecompositionHook_SNESVecSol,DMFieldSplitHook_SNESVecSol,*snes);CHKERRQ(ierr);
+  }
   ierr = DMDestroy(&(*snes)->dm);CHKERRQ(ierr);
   ierr = KSPDestroy(&(*snes)->ksp);CHKERRQ(ierr);
   ierr = SNESLineSearchDestroy(&(*snes)->linesearch);CHKERRQ(ierr);
@@ -5284,6 +5320,7 @@ PetscErrorCode  SNESSetDM(SNES snes,DM dm)
       if (sdm->originaldm == snes->dm) sdm->originaldm = dm; /* Grant write privileges to the replacement DM */
     }
     ierr = DMCoarsenHookRemove(snes->dm,DMCoarsenHook_SNESVecSol,DMRestrictHook_SNESVecSol,snes);CHKERRQ(ierr);
+    ierr = DMFieldDecompositionHookRemove(snes->dm,DMFieldDecompositionHook_SNESVecSol,DMFieldSplitHook_SNESVecSol,snes);CHKERRQ(ierr);
     ierr = DMDestroy(&snes->dm);CHKERRQ(ierr);
   }
   snes->dm     = dm;

@@ -1082,6 +1082,16 @@ static PetscErrorCode PCSetUp_FieldSplit(PC pc)
     }
   }
 
+  if (pc->dm && jac->dm_splits) {
+    DM subdm;
+    ilink = jac->head;
+    while (ilink) {
+      if (!ilink->sctx) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_ARG_WRONGSTATE,"Did not find scatter context for fielddecomposition restrict");
+      ierr = KSPGetDM(ilink->ksp,&subdm);CHKERRQ(ierr);
+      ierr = DMFieldDecompositionRestrict(pc->dm,ilink->sctx,subdm);CHKERRQ(ierr);
+      ilink = ilink->next;
+    }
+  }
   jac->suboptionsset = PETSC_TRUE;
   PetscFunctionReturn(0);
 }
