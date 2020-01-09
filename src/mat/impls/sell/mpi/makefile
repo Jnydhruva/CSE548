@@ -4,7 +4,7 @@ SOURCEC	 = mpisell.c mmsell.c
 SOURCEF	 =
 SOURCEH	 = mpisell.h
 LIBBASE	 = libpetscmat
-DIRS	 =
+DIRS	 = mpicuda
 MANSEC	 = Mat
 LOCDIR	 = src/mat/impls/sell/mpi/
 
