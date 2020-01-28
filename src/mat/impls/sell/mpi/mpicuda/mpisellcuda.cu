@@ -38,7 +38,6 @@ PetscErrorCode MatMult_MPISELLCUDA(Mat A, Vec xx, Vec yy)
   if (nt != A->cmap->n) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_SIZ, "Incompatible partition of A (%" PetscInt_FMT ") and xx (%" PetscInt_FMT ")", A->cmap->n, nt);
   PetscCall(VecScatterBegin(a->Mvctx, xx, a->lvec, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall((*a->A->ops->mult)(a->A, xx, yy));
-  PetscCall(VecScatterBegin(a->Mvctx, xx, a->lvec, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall(VecScatterEnd(a->Mvctx, xx, a->lvec, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall((*a->B->ops->multadd)(a->B, a->lvec, yy, yy));
   PetscFunctionReturn(0);
@@ -54,7 +53,6 @@ PetscErrorCode MatMultAdd_MPISELLCUDA(Mat A, Vec xx, Vec yy, Vec zz)
   if (nt != A->cmap->n) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_SIZ, "Incompatible partition of A (%" PetscInt_FMT ") and xx (%" PetscInt_FMT ")", A->cmap->n, nt);
   PetscCall(VecScatterBegin(a->Mvctx, xx, a->lvec, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall((*a->A->ops->multadd)(a->A, xx, yy, zz));
-  PetscCall(VecScatterBegin(a->Mvctx, xx, a->lvec, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall(VecScatterEnd(a->Mvctx, xx, a->lvec, INSERT_VALUES, SCATTER_FORWARD));
   PetscCall((*a->B->ops->multadd)(a->B, a->lvec, zz, zz));
   PetscFunctionReturn(0);
