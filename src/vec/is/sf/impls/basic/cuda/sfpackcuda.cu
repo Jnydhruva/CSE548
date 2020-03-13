@@ -330,7 +330,7 @@ __device__ static float atomicMax(float* address,float val)
 }
 #endif
 
-#if defined(PETSC_USE_64BIT_INDICES)
+#if defined(PETSC_USE_64BIT_INDICES) && defined(__CUDA_ARCH__) && (__CUDA_ARCH__ < 320)
 __device__ static PetscInt atomicMin(PetscInt* address,PetscInt val)
 {
   unsigned long long int *address_as_ull = (unsigned long long int*)(address);
@@ -376,8 +376,7 @@ template<typename Type> struct AtomicMax {__device__ Type operator() (Type& x,Ty
   atomicOr() and atomicXor are similar.
 */
 
-#if defined(PETSC_USE_64BIT_INDICES)
-#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ < 350)
+#if defined(PETSC_USE_64BIT_INDICES) && defined(__CUDA_ARCH__) && (__CUDA_ARCH__ < 350)
 __device__ static PetscInt atomicAnd(PetscInt* address,PetscInt val)
 {
   unsigned long long int *address_as_ull = (unsigned long long int*)(address);
@@ -409,11 +408,6 @@ __device__ static PetscInt atomicXor(PetscInt* address,PetscInt val)
   } while (assumed != old);
   return (PetscInt)old;
 }
-#else
-__device__ static PetscInt atomicAnd(PetscInt* address,PetscInt val) {return (PetscInt)atomicAnd((unsigned long long int*)address,(unsigned long long int)val);}
-__device__ static PetscInt atomicOr (PetscInt* address,PetscInt val) {return (PetscInt)atomicOr ((unsigned long long int*)address,(unsigned long long int)val);}
-__device__ static PetscInt atomicXor(PetscInt* address,PetscInt val) {return (PetscInt)atomicXor((unsigned long long int*)address,(unsigned long long int)val);}
-#endif
 #endif
 
 template<typename Type> struct AtomicBAND {__device__ Type operator() (Type& x,Type y) const {return atomicAnd(&x,y);}};
