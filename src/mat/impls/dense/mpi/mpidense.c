@@ -2300,30 +2300,26 @@ PetscErrorCode MatEqual_MPIDense(Mat A,Mat B,PetscBool  *flag)
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode MatDestroy_MatTransMatMult_MPIDense_MPIDense(Mat A)
+PetscErrorCode MatDestroy_MatTransMatMult_MPIDense_MPIDense(void *data)
 {
   PetscErrorCode        ierr;
-  Mat_MPIDense          *a = (Mat_MPIDense*)A->data;
-  Mat_TransMatMultDense *atb = a->atbdense;
+  Mat_TransMatMultDense *atb = (Mat_TransMatMultDense *)data;
 
   PetscFunctionBegin;
   ierr = PetscFree2(atb->sendbuf,atb->recvcounts);CHKERRQ(ierr);
   ierr = MatDestroy(&atb->atb);CHKERRQ(ierr);
-  ierr = (*atb->destroy)(A);CHKERRQ(ierr);
   ierr = PetscFree(atb);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode MatDestroy_MatMatTransMult_MPIDense_MPIDense(Mat A)
+PetscErrorCode MatDestroy_MatMatTransMult_MPIDense_MPIDense(void *data)
 {
   PetscErrorCode        ierr;
-  Mat_MPIDense          *a = (Mat_MPIDense*)A->data;
-  Mat_MatTransMultDense *abt = a->abtdense;
+  Mat_MatTransMultDense *abt = (Mat_MatTransMultDense *)data;
 
   PetscFunctionBegin;
   ierr = PetscFree2(abt->buf[0],abt->buf[1]);CHKERRQ(ierr);
   ierr = PetscFree2(abt->recvcounts,abt->recvdispls);CHKERRQ(ierr);
-  ierr = (abt->destroy)(A);CHKERRQ(ierr);
   ierr = PetscFree(abt);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
@@ -2331,16 +2327,22 @@ PetscErrorCode MatDestroy_MatMatTransMult_MPIDense_MPIDense(Mat A)
 PetscErrorCode MatTransposeMatMultNumeric_MPIDense_MPIDense(Mat A,Mat B,Mat C)
 {
   Mat_MPIDense          *a=(Mat_MPIDense*)A->data, *b=(Mat_MPIDense*)B->data, *c=(Mat_MPIDense*)C->data;
-  Mat_TransMatMultDense *atb = c->atbdense;
+  Mat_TransMatMultDense *atb;
   PetscErrorCode        ierr;
   MPI_Comm              comm;
-  PetscMPIInt           size,*recvcounts=atb->recvcounts;
-  PetscScalar           *carray,*sendbuf=atb->sendbuf;
+  PetscMPIInt           size,*recvcounts;
+  PetscScalar           *carray,*sendbuf;
   const PetscScalar     *atbarray;
   PetscInt              i,cN=C->cmap->N,cM=C->rmap->N,proc,k,j;
   const PetscInt        *ranges;
 
   PetscFunctionBegin;
+  MatCheckProduct(C,3);
+  if (!C->product->data) SETERRQ(PetscObjectComm((PetscObject)C),PETSC_ERR_PLIB,"Product data empty");
+  atb = (Mat_TransMatMultDense *)C->product->data;
+  recvcounts = atb->recvcounts;
+  sendbuf = atb->sendbuf;
+
   ierr = PetscObjectGetComm((PetscObject)A,&comm);CHKERRQ(ierr);
   ierr = MPI_Comm_size(comm,&size);CHKERRQ(ierr);
 
@@ -2372,18 +2374,23 @@ PetscErrorCode MatTransposeMatMultSymbolic_MPIDense_MPIDense(Mat A,Mat B,PetscRe
   MPI_Comm              comm;
   PetscMPIInt           size;
   PetscInt              cm=A->cmap->n,cM,cN=B->cmap->N;
-  Mat_MPIDense          *c;
   Mat_TransMatMultDense *atb;
+  PetscBool             cisdense;
 
   PetscFunctionBegin;
+  MatCheckProduct(C,3);
+  if (C->product->data) SETERRQ(PetscObjectComm((PetscObject)C),PETSC_ERR_PLIB,"Product data not empty");
   ierr = PetscObjectGetComm((PetscObject)A,&comm);CHKERRQ(ierr);
   if (A->rmap->rstart != B->rmap->rstart || A->rmap->rend != B->rmap->rend) {
     SETERRQ4(comm,PETSC_ERR_ARG_SIZ,"Matrix local dimensions are incompatible, A (%D, %D) != B (%D,%D)",A->rmap->rstart,A->rmap->rend,B->rmap->rstart,B->rmap->rend);
   }
 
   /* create matrix product C */
-  ierr = MatSetSizes(C,cm,B->cmap->n,PETSC_DECIDE,PETSC_DECIDE);CHKERRQ(ierr);
-  ierr = MatSetType(C,MATMPIDENSE);CHKERRQ(ierr);
+  ierr = MatSetSizes(C,cm,B->cmap->n,A->cmap->N,B->cmap->N);CHKERRQ(ierr);
+  ierr = PetscObjectTypeCompareAny((PetscObject)C,&cisdense,MATMPIDENSE,MATMPIDENSECUDA,"");CHKERRQ(ierr);
+  if (!cisdense) {
+    ierr = MatSetType(C,((PetscObject)A)->type_name);CHKERRQ(ierr);
+  }
   ierr = MatSetUp(C);CHKERRQ(ierr);
   ierr = MatAssemblyBegin(C,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
   ierr = MatAssemblyEnd(C,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
@@ -2392,12 +2399,10 @@ PetscErrorCode MatTransposeMatMultSymbolic_MPIDense_MPIDense(Mat A,Mat B,PetscRe
   ierr = MPI_Comm_size(comm,&size);CHKERRQ(ierr);
   ierr = PetscNew(&atb);CHKERRQ(ierr);
   cM   = C->rmap->N;
-  ierr = PetscMalloc2(cM*cN,&atb->sendbuf,size,&atb->recvcounts);CHKERRQ(ierr);
+  ierr = PetscMalloc2((size_t)cM*(size_t)cN,&atb->sendbuf,size,&atb->recvcounts);CHKERRQ(ierr);
 
-  c               = (Mat_MPIDense*)C->data;
-  c->atbdense     = atb;
-  atb->destroy    = C->ops->destroy;
-  C->ops->destroy = MatDestroy_MatTransMatMult_MPIDense_MPIDense;
+  C->product->data    = atb;
+  C->product->destroy = MatDestroy_MatTransMatMult_MPIDense_MPIDense;
   PetscFunctionReturn(0);
 }
 
@@ -2407,7 +2412,6 @@ static PetscErrorCode MatMatTransposeMultSymbolic_MPIDense_MPIDense(Mat A, Mat B
   MPI_Comm              comm;
   PetscMPIInt           i, size;
   PetscInt              maxRows, bufsiz;
-  Mat_MPIDense          *c;
   PetscMPIInt           tag;
   PetscInt              alg;
   Mat_MatTransMultDense *abt;
@@ -2415,6 +2419,8 @@ static PetscErrorCode MatMatTransposeMultSymbolic_MPIDense_MPIDense(Mat A, Mat B
   PetscBool             flg;
 
   PetscFunctionBegin;
+  MatCheckProduct(C,4);
+  if (C->product->data) SETERRQ(PetscObjectComm((PetscObject)C),PETSC_ERR_PLIB,"Product data not empty");
   /* check local size of A and B */
   if (A->cmap->n != B->cmap->n) SETERRQ2(PETSC_COMM_SELF,PETSC_ERR_ARG_SIZ,"Matrix local column dimensions are incompatible, A (%D) != B (%D)",A->cmap->n,B->cmap->n);
 
@@ -2425,7 +2431,7 @@ static PetscErrorCode MatMatTransposeMultSymbolic_MPIDense_MPIDense(Mat A, Mat B
   ierr = MatSetSizes(C,A->rmap->n,B->rmap->n,A->rmap->N,B->rmap->N);CHKERRQ(ierr);
   ierr = MatSetType(C,MATMPIDENSE);CHKERRQ(ierr);
   ierr = MatSetUp(C);CHKERRQ(ierr);
-  ierr = PetscObjectGetNewTag((PetscObject)C, &tag);CHKERRQ(ierr);
+  ierr = PetscObjectGetNewTag((PetscObject)C,&tag);CHKERRQ(ierr);
   ierr = MatAssemblyBegin(C,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
   ierr = MatAssemblyEnd(C,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
 
@@ -2449,10 +2455,8 @@ static PetscErrorCode MatMatTransposeMultSymbolic_MPIDense_MPIDense(Mat A, Mat B
     break;
   }
 
-  c                               = (Mat_MPIDense*)C->data;
-  c->abtdense                     = abt;
-  abt->destroy                    = C->ops->destroy;
-  C->ops->destroy                 = MatDestroy_MatMatTransMult_MPIDense_MPIDense;
+  C->product->data    = abt;
+  C->product->destroy = MatDestroy_MatMatTransMult_MPIDense_MPIDense;
   C->ops->mattransposemultnumeric = MatMatTransposeMultNumeric_MPIDense_MPIDense;
   PetscFunctionReturn(0);
 }
@@ -2460,7 +2464,7 @@ static PetscErrorCode MatMatTransposeMultSymbolic_MPIDense_MPIDense(Mat A, Mat B
 static PetscErrorCode MatMatTransposeMultNumeric_MPIDense_MPIDense_Cyclic(Mat A, Mat B, Mat C)
 {
   Mat_MPIDense          *a=(Mat_MPIDense*)A->data, *b=(Mat_MPIDense*)B->data, *c=(Mat_MPIDense*)C->data;
-  Mat_MatTransMultDense *abt = c->abtdense;
+  Mat_MatTransMultDense *abt;
   PetscErrorCode        ierr;
   MPI_Comm              comm;
   PetscMPIInt           rank,size, sendsiz, recvsiz, sendto, recvfrom, recvisfrom;
@@ -2473,7 +2477,10 @@ static PetscErrorCode MatMatTransposeMultNumeric_MPIDense_MPIDense_Cyclic(Mat A,
   const PetscInt        *ranges;
 
   PetscFunctionBegin;
-  ierr = PetscObjectGetComm((PetscObject)A,&comm);CHKERRQ(ierr);
+  MatCheckProduct(C,3);
+  if (!C->product->data) SETERRQ(PetscObjectComm((PetscObject)C),PETSC_ERR_PLIB,"Product data empty");
+  abt  = (Mat_MatTransMultDense*)C->product->data;
+  ierr = PetscObjectGetComm((PetscObject)C,&comm);CHKERRQ(ierr);
   ierr = MPI_Comm_rank(comm,&rank);CHKERRQ(ierr);
   ierr = MPI_Comm_size(comm,&size);CHKERRQ(ierr);
   ierr = MatDenseGetArrayRead(a->A,&av);CHKERRQ(ierr);
@@ -2541,7 +2548,7 @@ static PetscErrorCode MatMatTransposeMultNumeric_MPIDense_MPIDense_Cyclic(Mat A,
 static PetscErrorCode MatMatTransposeMultNumeric_MPIDense_MPIDense_Allgatherv(Mat A, Mat B, Mat C)
 {
   Mat_MPIDense          *a=(Mat_MPIDense*)A->data, *b=(Mat_MPIDense*)B->data, *c=(Mat_MPIDense*)C->data;
-  Mat_MatTransMultDense *abt = c->abtdense;
+  Mat_MatTransMultDense *abt;
   PetscErrorCode        ierr;
   MPI_Comm              comm;
   PetscMPIInt           size;
@@ -2552,6 +2559,9 @@ static PetscErrorCode MatMatTransposeMultNumeric_MPIDense_MPIDense_Allgatherv(Ma
   PetscBLASInt          cm, cn, ck, alda, clda;
 
   PetscFunctionBegin;
+  MatCheckProduct(C,3);
+  if (!C->product->data) SETERRQ(PetscObjectComm((PetscObject)C),PETSC_ERR_PLIB,"Product data empty");
+  abt  = (Mat_MatTransMultDense*)C->product->data;
   ierr = PetscObjectGetComm((PetscObject)A,&comm);CHKERRQ(ierr);
   ierr = MPI_Comm_size(comm,&size);CHKERRQ(ierr);
   ierr = MatDenseGetArrayRead(a->A,&av);CHKERRQ(ierr);
@@ -2585,11 +2595,13 @@ static PetscErrorCode MatMatTransposeMultNumeric_MPIDense_MPIDense_Allgatherv(Ma
 
 static PetscErrorCode MatMatTransposeMultNumeric_MPIDense_MPIDense(Mat A, Mat B, Mat C)
 {
-  Mat_MPIDense          *c=(Mat_MPIDense*)C->data;
-  Mat_MatTransMultDense *abt = c->abtdense;
+  Mat_MatTransMultDense *abt;
   PetscErrorCode        ierr;
 
   PetscFunctionBegin;
+  MatCheckProduct(C,3);
+  if (!C->product->data) SETERRQ(PetscObjectComm((PetscObject)C),PETSC_ERR_PLIB,"Product data empty");
+  abt = (Mat_MatTransMultDense*)C->product->data;
   switch (abt->alg) {
   case 1:
     ierr = MatMatTransposeMultNumeric_MPIDense_MPIDense_Cyclic(A, B, C);CHKERRQ(ierr);
@@ -2601,18 +2613,15 @@ static PetscErrorCode MatMatTransposeMultNumeric_MPIDense_MPIDense(Mat A, Mat B,
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode MatDestroy_MatMatMult_MPIDense_MPIDense(Mat A)
+PetscErrorCode MatDestroy_MatMatMult_MPIDense_MPIDense(void *data)
 {
   PetscErrorCode   ierr;
-  Mat_MPIDense     *a = (Mat_MPIDense*)A->data;
-  Mat_MatMultDense *ab = a->abdense;
+  Mat_MatMultDense *ab = (Mat_MatMultDense*)data;
 
   PetscFunctionBegin;
   ierr = MatDestroy(&ab->Ce);CHKERRQ(ierr);
   ierr = MatDestroy(&ab->Ae);CHKERRQ(ierr);
   ierr = MatDestroy(&ab->Be);CHKERRQ(ierr);
-
-  ierr = (ab->destroy)(A);CHKERRQ(ierr);
   ierr = PetscFree(ab);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
@@ -2621,10 +2630,12 @@ PetscErrorCode MatDestroy_MatMatMult_MPIDense_MPIDense(Mat A)
 PetscErrorCode MatMatMultNumeric_MPIDense_MPIDense(Mat A,Mat B,Mat C)
 {
   PetscErrorCode   ierr;
-  Mat_MPIDense     *c=(Mat_MPIDense*)C->data;
-  Mat_MatMultDense *ab=c->abdense;
+  Mat_MatMultDense *ab;
 
   PetscFunctionBegin;
+  MatCheckProduct(C,3);
+  if (!C->product->data) SETERRQ(PetscObjectComm((PetscObject)C),PETSC_ERR_PLIB,"Missing product data");
+  ab   = (Mat_MatMultDense*)C->product->data;
   ierr = MatConvert_MPIDense_Elemental(A,MATELEMENTAL,MAT_REUSE_MATRIX, &ab->Ae);CHKERRQ(ierr);
   ierr = MatConvert_MPIDense_Elemental(B,MATELEMENTAL,MAT_REUSE_MATRIX, &ab->Be);CHKERRQ(ierr);
   ierr = MatMatMultNumeric_Elemental(ab->Ae,ab->Be,ab->Ce);CHKERRQ(ierr);
@@ -2636,10 +2647,11 @@ PetscErrorCode MatMatMultSymbolic_MPIDense_MPIDense(Mat A,Mat B,PetscReal fill,M
 {
   PetscErrorCode   ierr;
   Mat              Ae,Be,Ce;
-  Mat_MPIDense     *c;
   Mat_MatMultDense *ab;
 
   PetscFunctionBegin;
+  MatCheckProduct(C,4);
+  if (C->product->data) SETERRQ(PetscObjectComm((PetscObject)C),PETSC_ERR_PLIB,"Product data not empty");
   /* check local size of A and B */
   if (A->cmap->rstart != B->rmap->rstart || A->cmap->rend != B->rmap->rend) {
     SETERRQ4(PetscObjectComm((PetscObject)A),PETSC_ERR_ARG_SIZ,"Matrix local dimensions are incompatible, A (%D, %D) != B (%D,%D)",A->rmap->rstart,A->rmap->rend,B->rmap->rstart,B->rmap->rend);
@@ -2669,14 +2681,13 @@ PetscErrorCode MatMatMultSymbolic_MPIDense_MPIDense(Mat A,Mat B,PetscReal fill,M
 
   /* create data structure for reuse Cdense */
   ierr = PetscNew(&ab);CHKERRQ(ierr);
-  c                  = (Mat_MPIDense*)C->data;
-  c->abdense         = ab;
+  ab->Ae = Ae;
+  ab->Be = Be;
+  ab->Ce = Ce;
 
-  ab->Ae             = Ae;
-  ab->Be             = Be;
-  ab->Ce             = Ce;
-  ab->destroy        = C->ops->destroy;
-  C->ops->destroy        = MatDestroy_MatMatMult_MPIDense_MPIDense;
+  C->product->data    = ab;
+  C->product->destroy = MatDestroy_MatMatMult_MPIDense_MPIDense;
+
   C->ops->matmultnumeric = MatMatMultNumeric_MPIDense_MPIDense;
   C->ops->productnumeric = MatProductNumeric_AB;
   PetscFunctionReturn(0);

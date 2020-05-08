@@ -216,11 +216,12 @@ PetscErrorCode MatProductSymbolic_Basic(Mat mat)
 PetscErrorCode MatProductReplaceMats(Mat A,Mat B,Mat C,Mat D)
 {
   PetscErrorCode ierr;
-  Mat_Product    *product=D->product;
+  Mat_Product    *product;
 
   PetscFunctionBegin;
   PetscValidHeaderSpecific(D,MAT_CLASSID,4);
-  if (!product) SETERRQ(PetscObjectComm((PetscObject)D),PETSC_ERR_ORDER,"Mat D does not have struct 'product'. Call MatProductReplaceProduct()");
+  MatCheckProduct(D,4);
+  product = D->product;
   if (A) {
     PetscValidHeaderSpecific(A,MAT_CLASSID,1);
     if (!product->Areplaced) {
@@ -812,9 +813,12 @@ static PetscErrorCode MatProductSetFromOptions_ABC(Mat mat)
    Input Parameter:
 .  mat - the matrix
 
+   Options Database Keys:
+.    -mat_product_clear - Clear intermediate data structures after MatProductNumeric() has been called
+
    Level: beginner
 
-.seealso: MatSetFromOptions()
+.seealso: MatSetFromOptions(), MatProductCreate(), MatProductCreateWithMats()
 @*/
 PetscErrorCode MatProductSetFromOptions(Mat mat)
 {
@@ -822,9 +826,42 @@ PetscErrorCode MatProductSetFromOptions(Mat mat)
 
   PetscFunctionBegin;
   PetscValidHeaderSpecific(mat,MAT_CLASSID,1);
+  MatCheckProduct(mat,1);
+  ierr = PetscObjectOptionsBegin((PetscObject)mat);CHKERRQ(ierr);
+  ierr = PetscOptionsBool("-mat_product_clear","Clear intermediate data structures after MatProductNumeric() has been called","MatProductClear",mat->product->clear,&mat->product->clear,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsDeprecated("-mat_freeintermediatedatastructures","-mat_product_clear","3.13","Or call MatProductClear() after MatProductNumeric()");CHKERRQ(ierr);
+  ierr = PetscOptionsEnd();CHKERRQ(ierr);
   if (mat->ops->productsetfromoptions) {
     ierr = (*mat->ops->productsetfromoptions)(mat);CHKERRQ(ierr);
   } else SETERRQ(PetscObjectComm((PetscObject)mat),PETSC_ERR_ORDER,"Call MatProductSetType() first");
+  PetscFunctionReturn(0);
+}
+
+/*@C
+   MatProductView - View a MatProduct
+
+   Logically Collective on Mat
+
+   Input Parameter:
+.  mat - the matrix obtained with MatProductCreate() or MatProductCreateWithMats()
+
+   Level: beginner
+
+.seealso: MatView(), MatProductCreate(), MatProductCreateWithMats()
+@*/
+PetscErrorCode MatProductView(Mat mat, PetscViewer viewer)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  PetscValidHeaderSpecific(mat,MAT_CLASSID,1);
+  if (!mat->product) PetscFunctionReturn(0);
+  if (!viewer) {ierr = PetscViewerASCIIGetStdout(PetscObjectComm((PetscObject)mat),&viewer);CHKERRQ(ierr);}
+  PetscValidHeaderSpecific(viewer,PETSC_VIEWER_CLASSID,2);
+  PetscCheckSameComm(mat,1,viewer,2);
+  if (mat->product->view) {
+    ierr = (*mat->product->view)(mat,viewer);CHKERRQ(ierr);
+  }
   PetscFunctionReturn(0);
 }
 
@@ -934,9 +971,13 @@ PetscErrorCode MatProductNumeric(Mat mat)
 
   PetscFunctionBegin;
   PetscValidHeaderSpecific(mat,MAT_CLASSID,1);
+  MatCheckProduct(mat,1);
   if (mat->ops->productnumeric) {
     ierr = (*mat->ops->productnumeric)(mat);CHKERRQ(ierr);
   } else SETERRQ(PetscObjectComm((PetscObject)mat),PETSC_ERR_ORDER,"Call MatProductSymbolic() first");
+  if (mat->product->clear) {
+    ierr = MatProductClear(mat);CHKERRQ(ierr);
+  }
   PetscFunctionReturn(0);
 }
 
@@ -1011,15 +1052,14 @@ PetscErrorCode MatProductSymbolic_ABC(Mat mat)
 PetscErrorCode MatProductSymbolic(Mat mat)
 {
   PetscErrorCode ierr;
-  Mat_Product    *product = mat->product;
-  MatProductType productype = product->type;
   PetscLogEvent  eventtype=-1;
 
   PetscFunctionBegin;
   PetscValidHeaderSpecific(mat,MAT_CLASSID,1);
+  MatCheckProduct(mat,1);
 
   /* log event */
-  switch (productype) {
+  switch (mat->product->type) {
   case MATPRODUCT_AB:
     eventtype = MAT_MatMultSymbolic;
     break;
@@ -1038,7 +1078,7 @@ PetscErrorCode MatProductSymbolic(Mat mat)
   case MATPRODUCT_ABC:
     eventtype = MAT_MatMatMultSymbolic;
     break;
-  default: SETERRQ(PetscObjectComm((PetscObject)mat),PETSC_ERR_SUP,"MATPRODUCT type is not supported");
+  default: SETERRQ1(PetscObjectComm((PetscObject)mat),PETSC_ERR_SUP,"ProductType %s is not supported",MatProductTypes[mat->product->type]);
   }
 
   if (mat->ops->productsymbolic) {
@@ -1064,13 +1104,11 @@ PetscErrorCode MatProductSymbolic(Mat mat)
 @*/
 PetscErrorCode MatProductSetFill(Mat mat,PetscReal fill)
 {
-  Mat_Product *product = mat->product;
-
   PetscFunctionBegin;
   PetscValidHeaderSpecific(mat,MAT_CLASSID,1);
-  if (!product) SETERRQ(PetscObjectComm((PetscObject)mat),PETSC_ERR_ORDER,"Data struct Mat_Product is not created, call MatProductCreate() first");
-  if (fill == PETSC_DEFAULT || fill == PETSC_DECIDE) product->fill = 2.0;
-  else product->fill = fill;
+  MatCheckProduct(mat,1);
+  if (fill == PETSC_DEFAULT || fill == PETSC_DECIDE) mat->product->fill = 2.0;
+  else mat->product->fill = fill;
   PetscFunctionReturn(0);
 }
 
@@ -1090,13 +1128,12 @@ PetscErrorCode MatProductSetFill(Mat mat,PetscReal fill)
 PetscErrorCode MatProductSetAlgorithm(Mat mat,MatProductAlgorithm alg)
 {
   PetscErrorCode ierr;
-  Mat_Product    *product = mat->product;
 
   PetscFunctionBegin;
   PetscValidHeaderSpecific(mat,MAT_CLASSID,1);
-  if (!product) SETERRQ(PetscObjectComm((PetscObject)mat),PETSC_ERR_ORDER,"Data struct Mat_Product is not created, call MatProductCreate() first");
-  ierr = PetscFree(product->alg);CHKERRQ(ierr);
-  ierr = PetscStrallocpy(alg,&product->alg);CHKERRQ(ierr);
+  MatCheckProduct(mat,1);
+  ierr = PetscFree(mat->product->alg);CHKERRQ(ierr);
+  ierr = PetscStrallocpy(alg,&mat->product->alg);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -1115,13 +1152,11 @@ PetscErrorCode MatProductSetAlgorithm(Mat mat,MatProductAlgorithm alg)
 @*/
 PetscErrorCode MatProductSetType(Mat mat,MatProductType productype)
 {
-  Mat_Product *product = mat->product;
-
   PetscFunctionBegin;
   PetscValidHeaderSpecific(mat,MAT_CLASSID,1);
+  MatCheckProduct(mat,1);
   PetscValidLogicalCollectiveEnum(mat,productype,2);
-  if (!product) SETERRQ(PetscObjectComm((PetscObject)mat),PETSC_ERR_ORDER,"Data struct Mat_Product is not created, call MatProductCreate() first");
-  product->type = productype;
+  mat->product->type = productype;
 
   switch (productype) {
   case MATPRODUCT_AB:
@@ -1142,7 +1177,7 @@ PetscErrorCode MatProductSetType(Mat mat,MatProductType productype)
   case MATPRODUCT_ABC:
     mat->ops->productsetfromoptions = MatProductSetFromOptions_ABC;
     break;
-  default: SETERRQ1(PetscObjectComm((PetscObject)mat),PETSC_ERR_SUP,"ProductType %s is not supported",MatProductTypes[product->type]);
+  default: SETERRQ1(PetscObjectComm((PetscObject)mat),PETSC_ERR_SUP,"ProductType %s is not supported",MatProductTypes[mat->product->type]);
   }
   PetscFunctionReturn(0);
 }
@@ -1165,14 +1200,16 @@ PetscErrorCode MatProductClear(Mat mat)
   PetscFunctionBegin;
   PetscValidHeaderSpecific(mat,MAT_CLASSID,1);
   if (product) {
-    /* release reference */
     ierr = MatDestroy(&product->A);CHKERRQ(ierr);
     ierr = MatDestroy(&product->B);CHKERRQ(ierr);
     ierr = MatDestroy(&product->C);CHKERRQ(ierr);
     ierr = PetscFree(product->alg);CHKERRQ(ierr);
     ierr = MatDestroy(&product->Dwork);CHKERRQ(ierr);
-    ierr = PetscFree(mat->product);CHKERRQ(ierr);
+    if (product->destroy) {
+      ierr = (*product->destroy)(product->data);CHKERRQ(ierr);
+    }
   }
+  ierr = PetscFree(mat->product);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -1192,6 +1229,7 @@ PetscErrorCode MatProductCreate_Private(Mat A,Mat B,Mat C,Mat D)
   product->Areplaced = PETSC_FALSE;
   product->Breplaced = PETSC_FALSE;
   product->api_user  = PETSC_FALSE;
+  product->clear     = PETSC_FALSE;
   D->product         = product;
 
   ierr = MatProductSetAlgorithm(D,MATPRODUCTALGORITHM_DEFAULT);CHKERRQ(ierr);

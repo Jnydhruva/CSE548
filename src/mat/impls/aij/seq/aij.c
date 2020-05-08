@@ -1166,9 +1166,7 @@ PetscErrorCode MatDestroy_SeqAIJ(Mat A)
   ierr = PetscFree(a->solve_work);CHKERRQ(ierr);
   ierr = ISDestroy(&a->icol);CHKERRQ(ierr);
   ierr = PetscFree(a->saved_values);CHKERRQ(ierr);
-  ierr = ISColoringDestroy(&a->coloring);CHKERRQ(ierr);
   ierr = PetscFree2(a->compressedrow.i,a->compressedrow.rindex);CHKERRQ(ierr);
-  ierr = PetscFree(a->matmult_abdense);CHKERRQ(ierr);
 
   ierr = MatDestroy_SeqAIJ_Inode(A);CHKERRQ(ierr);
   ierr = PetscFree(A->data);CHKERRQ(ierr);

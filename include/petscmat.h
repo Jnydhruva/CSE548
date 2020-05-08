@@ -194,6 +194,7 @@ PETSC_EXTERN PetscErrorCode MatProductSymbolic(Mat);
 PETSC_EXTERN PetscErrorCode MatProductNumeric(Mat);
 PETSC_EXTERN PetscErrorCode MatProductReplaceMats(Mat,Mat,Mat,Mat);
 PETSC_EXTERN PetscErrorCode MatProductClear(Mat);
+PETSC_EXTERN PetscErrorCode MatProductView(Mat,PetscViewer);
 
 /* Logging support */
 #define    MAT_FILE_CLASSID 1211216    /* used to indicate matrices in binary files */
@@ -1636,8 +1637,7 @@ PETSC_EXTERN PetscErrorCode MatSetOperation(Mat,MatOperation,void(*)(void));
 PETSC_EXTERN PetscErrorCode MatGetOperation(Mat,MatOperation,void(**)(void));
 PETSC_EXTERN PetscErrorCode MatHasOperation(Mat,MatOperation,PetscBool *);
 PETSC_EXTERN PetscErrorCode MatHasCongruentLayouts(Mat,PetscBool *);
-PETSC_EXTERN PetscErrorCode MatFreeIntermediateDataStructures(Mat);
-
+PETSC_DEPRECATED_FUNCTION("Use MatProductClear() (since version 3.14)") PETSC_STATIC_INLINE PetscErrorCode MatFreeIntermediateDataStructures(Mat A) {return MatProductClear(A);}
 PETSC_EXTERN PetscErrorCode MatShellSetOperation(Mat,MatOperation,void(*)(void));
 PETSC_EXTERN PetscErrorCode MatShellGetOperation(Mat,MatOperation,void(**)(void));
 PETSC_EXTERN PetscErrorCode MatShellSetContext(Mat,void*);

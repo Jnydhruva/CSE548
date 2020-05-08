@@ -292,7 +292,7 @@ int main(int argc,char **args)
     output_file: output/ex70_1.out
     nsize: 2
     suffix: 1_par
-    args: -testtranspose 0 -local {{0 1}}
+    args: -testtranspose -local {{0 1}}
 
   test:
     output_file: output/ex70_1.out
@@ -300,13 +300,6 @@ int main(int argc,char **args)
     nsize: 2
     suffix: 1_par_cuda
     args: -testtranspose 0 -local {{0 1}} -xgpu {{0 1}} -bgpu {{0 1}} -A_mat_type {{mpiaijcusparse mpiaij}} -testnest 0
-
-  test:
-    TODO: MPIAIJ x MPIDENSE broken for MatTransposeMatMult
-    output_file: output/ex70_1.out
-    nsize: 2
-    suffix: 1_par_broken
-    args: -testtranspose -local {{0 1}}
 
   test:
     output_file: output/ex70_1.out
@@ -325,7 +318,7 @@ int main(int argc,char **args)
     output_file: output/ex70_1.out
     suffix: 2_par
     nsize: 2
-    args: -M {{7 11}} -N {{12 9}} -K {{1 3}} -local {{0 1}} -testcircular 0
+    args: -M {{7 11}} -N {{12 9}} -K {{1 3}} -local {{0 1}} -testcircular
 
   test:
     requires: cuda
@@ -333,13 +326,6 @@ int main(int argc,char **args)
     suffix: 2_par_cuda
     nsize: 2
     args: -M 11 -N 9 -K 1 -local {{0 1}} -testcircular 0 -A_mat_type mpiaijcusparse -xgpu -bgpu -testnest 0
-
-  test:
-    TODO: MatTransposeMatMultSymbolic_SeqAIJ_SeqDense plays with the destroy routine
-    output_file: output/ex70_1.out
-    suffix: 2_broken
-    nsize: 2
-    args: -M {{7 11}} -N {{12 9}} -K {{1 3}} -local {{0 1}} -testcircular 1
 
   test:
     output_file: output/ex70_1.out
@@ -370,13 +356,6 @@ int main(int argc,char **args)
     output_file: output/ex70_1.out
     suffix: 6
     nsize: 1
-    args: -M {{1 3}} -N {{2 5}} -K {{1 2}} -local {{0 1}} -testcircular -testtranspose 0
-
-  test:
-    TODO: MatTransposeMatMultSymbolic_SeqAIJ_SeqDense plays with the destroy routine
-    output_file: output/ex70_1.out
-    suffix: 6_broken
-    nsize: 1
     args: -M {{1 3}} -N {{2 5}} -K {{1 2}} -local {{0 1}} -testcircular -testtranspose
 
   test:
@@ -391,4 +370,5 @@ int main(int argc,char **args)
     suffix: 7_broken
     nsize: 1
     args: -M 13 -N 13 -K {{1 3}} -local {{0 1}} -A_mat_type dense -testnest -testcircular
+
 TEST*/

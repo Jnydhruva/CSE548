@@ -5,25 +5,22 @@
 /*  Data stuctures for basic parallel dense matrix  */
 
 typedef struct { /* used by MatMatMultxxx_MPIDense_MPIDense() */
-  Mat            Ae,Be,Ce;           /* matrix in Elemental format */
-  PetscErrorCode (*destroy)(Mat);
+  Mat Ae,Be,Ce;           /* matrix in Elemental format */
 } Mat_MatMultDense;
 
 typedef struct { /* used by MatTransposeMatMultXXX_MPIDense_MPIDense() */
-  PetscScalar    *sendbuf;
-  Mat            atb;
-  PetscMPIInt    *recvcounts;
-  PetscErrorCode (*destroy)(Mat);
-  PetscMPIInt    tag;
+  PetscScalar *sendbuf;
+  Mat         atb;
+  PetscMPIInt *recvcounts;
+  PetscMPIInt tag;
 } Mat_TransMatMultDense;
 
 typedef struct { /* used by MatMatTransposeMultxxx_MPIDense_MPIDense() */
-  PetscScalar    *buf[2];
-  PetscMPIInt    tag;
-  PetscMPIInt    *recvcounts;
-  PetscMPIInt    *recvdispls;
-  PetscErrorCode (*destroy)(Mat);
-  PetscInt       alg; /* algorithm used */
+  PetscScalar *buf[2];
+  PetscMPIInt tag;
+  PetscMPIInt *recvcounts;
+  PetscMPIInt *recvdispls;
+  PetscInt    alg; /* algorithm used */
 } Mat_MatTransMultDense;
 
 typedef struct {
@@ -48,11 +45,6 @@ typedef struct {
   Vec               cvec;      /* vector representation of a given column */
   const PetscScalar *ptrinuse; /* holds array to be restored (just a placeholder) */
   PetscInt          vecinuse;  /* if cvec is in use (col = vecinuse-1) */
-
-  Mat_MatTransMatMult   *atb;           /* used by MatTransposeMatMultxxx_MPIAIJ_MPIDense */
-  Mat_TransMatMultDense *atbdense;      /* used by MatTransposeMatMultxxx_MPIDense_MPIDense */
-  Mat_MatMultDense      *abdense;       /* used by MatMatMultxxx_MPIDense_MPIDense */
-  Mat_MatTransMultDense *abtdense;      /* used by MatMatTransposeMultxxx_MPIDense_MPIDense */
 } Mat_MPIDense;
 
 PETSC_INTERN PetscErrorCode MatLoad_MPIDense(Mat,PetscViewer);
