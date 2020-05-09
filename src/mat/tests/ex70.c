@@ -180,11 +180,18 @@ int main(int argc,char **args)
     ierr = MatView(T,NULL);CHKERRQ(ierr);
     ierr = MatDestroy(&T);CHKERRQ(ierr);
   }
-  ierr = MatTransposeMatMult(T2,X,MAT_REUSE_MATRIX,PETSC_DEFAULT,&B);CHKERRQ(ierr);
-  ierr = CheckLocal(B,X,aB,aX);CHKERRQ(ierr);
-  ierr = MatTransposeMatMultEqual(T2,X,B,10,&flg);CHKERRQ(ierr);
-  if (!flg) {
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"Error with reusage (MatTranspose, MATSHELL)\n");CHKERRQ(ierr);
+
+  if (testtranspose) {
+    ierr = MatTransposeMatMult(T2,X,MAT_REUSE_MATRIX,PETSC_DEFAULT,&B);CHKERRQ(ierr);
+    ierr = CheckLocal(B,X,aB,aX);CHKERRQ(ierr);
+    ierr = MatTransposeMatMultEqual(T2,X,B,10,&flg);CHKERRQ(ierr);
+    if (!flg) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"Error with reusage (MatTranspose, MATSHELL)\n");CHKERRQ(ierr);
+      ierr = MatTransposeMatMult(A,X,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&T);CHKERRQ(ierr);
+      ierr = MatAXPY(T,-1.0,B,SAME_NONZERO_PATTERN);CHKERRQ(ierr);
+      ierr = MatView(T,NULL);CHKERRQ(ierr);
+      ierr = MatDestroy(&T);CHKERRQ(ierr);
+    }
   }
   ierr = MatDestroy(&T2);CHKERRQ(ierr);
 
