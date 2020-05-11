@@ -21,7 +21,9 @@ PetscErrorCode MatDestroy_MPIDense_MatTransMatMult(void *data)
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode MatTransposeMatMultSymbolic_MPIAIJ_MPIDense(Mat A,Mat B,PetscReal fill,Mat C)
+static PetscErrorCode MatTransposeMatMultNumeric_MPIAIJ_MPIDense(Mat,Mat,Mat);
+
+PETSC_INTERN PetscErrorCode MatTransposeMatMultSymbolic_MPIAIJ_MPIDense(Mat A,Mat B,PetscReal fill,Mat C)
 {
   PetscErrorCode      ierr;
   Mat_MatTransMatMult *atb;
@@ -50,7 +52,7 @@ PetscErrorCode MatTransposeMatMultSymbolic_MPIAIJ_MPIDense(Mat A,Mat B,PetscReal
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode MatTransposeMatMultNumeric_MPIAIJ_MPIDense(Mat A,Mat B,Mat C)
+static PetscErrorCode MatTransposeMatMultNumeric_MPIAIJ_MPIDense(Mat A,Mat B,Mat C)
 {
   PetscErrorCode      ierr;
   const PetscScalar   *Barray,*ctarray;

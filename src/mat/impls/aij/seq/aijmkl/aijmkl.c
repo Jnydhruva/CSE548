@@ -51,15 +51,6 @@ PETSC_INTERN PetscErrorCode MatConvert_SeqAIJMKL_SeqAIJ(Mat A,MatType type,MatRe
   B->ops->ptapnumeric      = MatPtAPNumeric_SeqAIJ_SeqAIJ;
 
   ierr = PetscObjectComposeFunction((PetscObject)B,"MatConvert_seqaijmkl_seqaij_C",NULL);CHKERRQ(ierr);
-  ierr = PetscObjectComposeFunction((PetscObject)B,"MatMatMultSymbolic_seqdense_seqaijmkl_C",NULL);CHKERRQ(ierr);
-  ierr = PetscObjectComposeFunction((PetscObject)B,"MatMatMultNumeric_seqdense_seqaijmkl_C",NULL);CHKERRQ(ierr);
-
-#if defined(PETSC_HAVE_MKL_SPARSE_OPTIMIZE)
-  if (!aijmkl->no_SpMV2) {
-#if defined(PETSC_HAVE_MKL_SPARSE_SP2M_FEATURE)
-    ierr = PetscObjectComposeFunction((PetscObject)B,"MatMatMultNumeric_seqaijmkl_seqaijmkl_C",NULL);CHKERRQ(ierr);
-#endif
-  }
 
   /* Free everything in the Mat_SeqAIJMKL data structure. Currently, this 
    * simply involves destroying the MKL sparse matrix handle and then freeing 
@@ -889,16 +880,6 @@ PETSC_INTERN PetscErrorCode MatConvert_SeqAIJ_SeqAIJMKL(Mat A,MatType type,MatRe
 #endif
 
   ierr = PetscObjectComposeFunction((PetscObject)B,"MatConvert_seqaijmkl_seqaij_C",MatConvert_SeqAIJMKL_SeqAIJ);CHKERRQ(ierr);
-  ierr = PetscObjectComposeFunction((PetscObject)B,"MatMatMultSymbolic_seqdense_seqaijmkl_C",MatMatMultSymbolic_SeqDense_SeqAIJ);CHKERRQ(ierr);
-  ierr = PetscObjectComposeFunction((PetscObject)B,"MatMatMultNumeric_seqdense_seqaijmkl_C",MatMatMultNumeric_SeqDense_SeqAIJ);CHKERRQ(ierr);
-
-  if(!aijmkl->no_SpMV2) {
-#if defined(PETSC_HAVE_MKL_SPARSE_OPTIMIZE)
-#if defined(PETSC_HAVE_MKL_SPARSE_SP2M_FEATURE)
-    ierr = PetscObjectComposeFunction((PetscObject)B,"MatMatMultNumeric_seqaijmkl_seqaijmkl_C",MatMatMultNumeric_SeqAIJMKL_SeqAIJMKL_SpMV2);CHKERRQ(ierr);
-#endif
-#endif
-  }
 
   ierr    = PetscObjectChangeTypeName((PetscObject)B,MATSEQAIJMKL);CHKERRQ(ierr);
   *newmat = B;

@@ -4438,8 +4438,6 @@ PETSC_EXTERN PetscErrorCode MatCreate_SeqAIJ(Mat B)
   ierr = PetscObjectComposeFunction((PetscObject)B,"MatResetPreallocation_C",MatResetPreallocation_SeqAIJ);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)B,"MatSeqAIJSetPreallocationCSR_C",MatSeqAIJSetPreallocationCSR_SeqAIJ);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)B,"MatReorderForNonzeroDiagonal_C",MatReorderForNonzeroDiagonal_SeqAIJ);CHKERRQ(ierr);
-  ierr = PetscObjectComposeFunction((PetscObject)B,"MatMatMultSymbolic_seqdense_seqaij_C",MatMatMultSymbolic_SeqDense_SeqAIJ);CHKERRQ(ierr);
-  ierr = PetscObjectComposeFunction((PetscObject)B,"MatMatMultNumeric_seqdense_seqaij_C",MatMatMultNumeric_SeqDense_SeqAIJ);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)B,"MatProductSetFromOptions_is_seqaij_C",MatProductSetFromOptions_IS_XAIJ);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)B,"MatProductSetFromOptions_seqdense_seqaij_C",MatProductSetFromOptions_SeqDense_SeqAIJ);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)B,"MatProductSetFromOptions_seqaij_seqaij_C",MatProductSetFromOptions_SeqAIJ);CHKERRQ(ierr);

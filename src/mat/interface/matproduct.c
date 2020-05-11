@@ -714,7 +714,7 @@ static PetscErrorCode MatProductSetFromOptions_RARt(Mat mat)
 
   PetscFunctionBegin;
   /* Check matrix global sizes */
-  if (A->rmap->N != B->cmap->N) SETERRQ2(PetscObjectComm((PetscObject)A),PETSC_ERR_ARG_SIZ,"Matrix A must be square, %D != %D",A->rmap->N,A->cmap->N);
+  if (A->rmap->N != B->cmap->N) SETERRQ2(PetscObjectComm((PetscObject)A),PETSC_ERR_ARG_SIZ,"Matrix A must be square, %D != %D",A->rmap->N,B->cmap->N);
   if (B->cmap->N != A->cmap->N) SETERRQ2(PetscObjectComm((PetscObject)A),PETSC_ERR_ARG_SIZ,"Matrix dimensions are incompatible, %D != %D",B->cmap->N,A->cmap->N);
 
   fA = A->ops->productsetfromoptions;
@@ -1208,6 +1208,8 @@ PetscErrorCode MatProductClear(Mat mat)
     if (product->destroy) {
       ierr = (*product->destroy)(product->data);CHKERRQ(ierr);
     }
+    mat->ops->productsymbolic = NULL;
+    mat->ops->productnumeric = NULL;
   }
   ierr = PetscFree(mat->product);CHKERRQ(ierr);
   PetscFunctionReturn(0);

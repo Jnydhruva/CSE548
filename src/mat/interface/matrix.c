@@ -9249,6 +9249,7 @@ static PetscErrorCode MatProduct_Private(Mat A,Mat B,MatReuse scall,PetscReal fi
   if (scall == MAT_INPLACE_MATRIX) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_SUP,"Inplace product not supported");
 
   if (scall == MAT_INITIAL_MATRIX) {
+    ierr = PetscInfo1(A,"Calling MatProduct API with MAT_INITIAL_MATRIX and product type %s\n",MatProductTypes[ptype]);CHKERRQ(ierr);
     ierr = MatProductCreate(A,B,NULL,C);CHKERRQ(ierr);
     ierr = MatProductSetType(*C,ptype);CHKERRQ(ierr);
     ierr = MatProductSetAlgorithm(*C,MATPRODUCTALGORITHM_DEFAULT);CHKERRQ(ierr);
@@ -9259,6 +9260,8 @@ static PetscErrorCode MatProduct_Private(Mat A,Mat B,MatReuse scall,PetscReal fi
     ierr = MatProductSymbolic(*C);CHKERRQ(ierr);
   } else { /* scall == MAT_REUSE_MATRIX */
     Mat_Product *product = (*C)->product;
+
+    ierr = PetscInfo2(A,"Calling MatProduct API with MAT_REUSE_MATRIX %s product present and product type %s\n",product ? "with" : "without",MatProductTypes[ptype]);CHKERRQ(ierr);
     if (!product) {
       /* user provide the dense matrix *C without calling MatProductCreate() */
       PetscBool isdense;

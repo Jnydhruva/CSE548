@@ -300,6 +300,9 @@ PetscErrorCode MatMatMultSymbolic_MPIAIJ_MPIAIJ_nonscalable(Mat A,Mat P,PetscRea
 }
 
 /* ------------------------------------------------------- */
+static PetscErrorCode MatMatMultSymbolic_MPIAIJ_MPIDense(Mat,Mat,PetscReal,Mat);
+static PetscErrorCode MatMatMultNumeric_MPIAIJ_MPIDense(Mat,Mat,Mat);
+
 static PetscErrorCode MatProductSetFromOptions_MPIAIJ_MPIDense_AB(Mat C)
 {
   Mat_Product *product = C->product;
@@ -388,31 +391,6 @@ PetscErrorCode MatMPIAIJ_MPIDenseDestroy(void *ctx)
 }
 
 /*
-    This is a "dummy function" that handles the case where matrix C was created as a dense matrix
-  directly by the user and passed to MatMatMult() with the MAT_REUSE_MATRIX option
-
-  It is the same as MatMatMultSymbolic_MPIAIJ_MPIDense() except does not create C
-*/
-PETSC_INTERN PetscErrorCode MatMatMultNumeric_MPIDense(Mat A,Mat B,Mat C)
-{
-  PetscBool      flg;
-  PetscErrorCode ierr;
-
-  PetscFunctionBegin;
-  ierr = PetscObjectTypeCompare((PetscObject)A,MATNEST,&flg);CHKERRQ(ierr);
-  if (flg) {
-    ierr = PetscLogEventBegin(MAT_MatMultSymbolic,A,B,0,0);CHKERRQ(ierr);
-    ierr = MatMatMultSymbolic_Nest_Dense(A,B,PETSC_DEFAULT,&C);CHKERRQ(ierr);
-    ierr = PetscLogEventEnd(MAT_MatMultSymbolic,A,B,0,0);CHKERRQ(ierr);
-    C->ops->matmultnumeric = MatMatMultNumeric_Nest_Dense;
-  } else {
-    ierr = MatMatMultSymbolic_MPIAIJ_MPIDense(A,B,PETSC_DEFAULT,C);CHKERRQ(ierr);
-  }
-  ierr = (*C->ops->matmultnumeric)(A,B,C);CHKERRQ(ierr);
-  PetscFunctionReturn(0);
-}
-
-/*
   Create Bb, Cb, Bb1 and Cb1 matrices to be used by MatMatMultSymbolic_MPIAIJ_MPIDense().
   These matrices are used as wrappers for sub-columns of B and C, thus their own matrix operations are not used.
   Modified from MatCreateDense().
@@ -431,7 +409,7 @@ PETSC_STATIC_INLINE PetscErrorCode MatCreateSubMPIDense_private(MPI_Comm comm,Pe
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode MatMatMultSymbolic_MPIAIJ_MPIDense(Mat A,Mat B,PetscReal fill,Mat C)
+static PetscErrorCode MatMatMultSymbolic_MPIAIJ_MPIDense(Mat A,Mat B,PetscReal fill,Mat C)
 {
   PetscErrorCode  ierr;
   Mat_MPIAIJ      *aij=(Mat_MPIAIJ*)A->data;
@@ -537,7 +515,7 @@ PetscErrorCode MatMatMultSymbolic_MPIAIJ_MPIDense(Mat A,Mat B,PetscReal fill,Mat
   ierr = PetscFree(disp);CHKERRQ(ierr);
   ierr = VecScatterRestoreRemote_Private(ctx,PETSC_TRUE/*send*/,&nsends,&sstarts,&sindices,NULL,NULL);CHKERRQ(ierr);
   ierr = VecScatterRestoreRemoteOrdered_Private(ctx,PETSC_FALSE/*recv*/,&nrecvs,&rstarts,NULL,NULL,NULL);CHKERRQ(ierr);
-/* TODO */
+  /* TODO: use product data */
   ierr = PetscContainerCreate(comm,&container);CHKERRQ(ierr);
   ierr = PetscContainerSetPointer(container,contents);CHKERRQ(ierr);
   ierr = PetscContainerSetUserDestroy(container,MatMPIAIJ_MPIDenseDestroy);CHKERRQ(ierr);
@@ -655,7 +633,11 @@ PETSC_STATIC_INLINE PetscErrorCode MatMatMultNumeric_MPIAIJ_MPIDense_private(Mat
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode MatMatMultNumeric_MPIAIJ_MPIDense(Mat A,Mat B,Mat C)
+/*
+ TODO: support MPIAIJCUSPARSE
+   get rid of explicit isends/irecvs, Use PetscSFGetVectorSF (see mathara.cu)
+*/
+static PetscErrorCode MatMatMultNumeric_MPIAIJ_MPIDense(Mat A,Mat B,Mat C)
 {
   PetscErrorCode  ierr;
   Mat_MPIAIJ      *aij    = (Mat_MPIAIJ*)A->data;

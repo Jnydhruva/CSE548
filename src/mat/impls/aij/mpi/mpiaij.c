@@ -5766,7 +5766,7 @@ PETSC_INTERN PetscErrorCode MatProductSetFromOptions_IS_XAIJ(Mat);
         (              )       (              )         (                  )
 
 */
-PetscErrorCode MatMatMultNumeric_MPIDense_MPIAIJ(Mat A,Mat B,Mat C)
+static PetscErrorCode MatMatMultNumeric_MPIDense_MPIAIJ(Mat A,Mat B,Mat C)
 {
   PetscErrorCode ierr;
   Mat            At,Bt,Ct;
@@ -5782,7 +5782,7 @@ PetscErrorCode MatMatMultNumeric_MPIDense_MPIAIJ(Mat A,Mat B,Mat C)
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode MatMatMultSymbolic_MPIDense_MPIAIJ(Mat A,Mat B,PetscReal fill,Mat C)
+static PetscErrorCode MatMatMultSymbolic_MPIDense_MPIAIJ(Mat A,Mat B,PetscReal fill,Mat C)
 {
   PetscErrorCode ierr;
   PetscInt       m=A->rmap->n,n=B->cmap->n;
@@ -5792,9 +5792,7 @@ PetscErrorCode MatMatMultSymbolic_MPIDense_MPIAIJ(Mat A,Mat B,PetscReal fill,Mat
   ierr = MatSetSizes(C,m,n,PETSC_DETERMINE,PETSC_DETERMINE);CHKERRQ(ierr);
   ierr = MatSetBlockSizesFromMats(C,A,B);CHKERRQ(ierr);
   ierr = MatSetType(C,((PetscObject)A)->type_name);CHKERRQ(ierr);
-  ierr = MatMPIDenseSetPreallocation(C,NULL);CHKERRQ(ierr);
-  ierr = MatAssemblyBegin(C,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
-  ierr = MatAssemblyEnd(C,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+  ierr = MatSetUp(C);CHKERRQ(ierr);
 
   C->ops->matmultnumeric = MatMatMultNumeric_MPIDense_MPIAIJ;
   PetscFunctionReturn(0);
@@ -5906,8 +5904,6 @@ PETSC_EXTERN PetscErrorCode MatCreate_MPIAIJ(Mat B)
 #endif
   ierr = PetscObjectComposeFunction((PetscObject)B,"MatConvert_mpiaij_is_C",MatConvert_XAIJ_IS);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)B,"MatConvert_mpiaij_mpisell_C",MatConvert_MPIAIJ_MPISELL);CHKERRQ(ierr);
-  ierr = PetscObjectComposeFunction((PetscObject)B,"MatMatMultSymbolic_mpidense_mpiaij_C",MatMatMultSymbolic_MPIDense_MPIAIJ);CHKERRQ(ierr);
-  ierr = PetscObjectComposeFunction((PetscObject)B,"MatMatMultNumeric_mpidense_mpiaij_C",MatMatMultNumeric_MPIDense_MPIAIJ);CHKERRQ(ierr);
 #if defined(PETSC_HAVE_HYPRE)
   ierr = PetscObjectComposeFunction((PetscObject)B,"MatConvert_mpiaij_hypre_C",MatConvert_AIJ_HYPRE);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)B,"MatProductSetFromOptions_transpose_mpiaij_mpiaij_C",MatProductSetFromOptions_Transpose_AIJ_AIJ);CHKERRQ(ierr);

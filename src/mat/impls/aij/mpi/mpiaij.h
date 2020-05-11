@@ -144,7 +144,6 @@ PETSC_INTERN PetscErrorCode MatTransposeMatMultNumeric_MPIAIJ_MPIAIJ(Mat,Mat,Mat
 PETSC_INTERN PetscErrorCode MatTransposeMatMultNumeric_MPIAIJ_MPIAIJ_nonscalable(Mat,Mat,Mat);
 PETSC_INTERN PetscErrorCode MatTransposeMatMultNumeric_MPIAIJ_MPIAIJ_matmatmult(Mat,Mat,Mat);
 PETSC_INTERN PetscErrorCode MatTransposeMatMultSymbolic_MPIAIJ_MPIDense(Mat,Mat,PetscReal,Mat);
-PETSC_INTERN PetscErrorCode MatTransposeMatMultNumeric_MPIAIJ_MPIDense(Mat,Mat,Mat);
 PETSC_INTERN PetscErrorCode MatGetSeqNonzeroStructure_MPIAIJ(Mat,Mat*);
 
 PETSC_INTERN PetscErrorCode MatSetFromOptions_MPIAIJ(PetscOptionItems*,Mat);
