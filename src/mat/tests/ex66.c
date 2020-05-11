@@ -86,12 +86,7 @@ int main(int argc,char **argv)
     ierr = PetscMalloc1(N*(n+lda),&Adata);CHKERRQ(ierr);
   }
   ierr = MatCreateDense(PETSC_COMM_WORLD,n,n,N,N,Adata,&A);CHKERRQ(ierr);
-  if (lda) {
-    Mat X;
-
-    ierr = MatDenseGetLocalMatrix(A,&X);CHKERRQ(ierr);
-    ierr = MatSeqDenseSetLDA(X,n+lda);CHKERRQ(ierr);
-  }
+  ierr = MatDenseSetLDA(A,n+lda);CHKERRQ(ierr);
   ierr = PetscMalloc1(n*dim,&coords);CHKERRQ(ierr);
   for (j = 0; j < n; j++) {
     for (i = 0; i < dim; i++) {
@@ -255,12 +250,7 @@ int main(int argc,char **argv)
     ierr = PetscMalloc1(nrhs*(n+ldc),&Cdata);CHKERRQ(ierr);
   }
   ierr = MatCreateDense(PETSC_COMM_WORLD,n,PETSC_DECIDE,N,nrhs,Cdata,&C);CHKERRQ(ierr);
-  if (ldc) {
-    Mat X;
-
-    ierr = MatDenseGetLocalMatrix(C,&X);CHKERRQ(ierr);
-    ierr = MatSeqDenseSetLDA(X,n+ldc);CHKERRQ(ierr);
-  }
+  ierr = MatDenseSetLDA(C,n+ldc);CHKERRQ(ierr);
   ierr = MatSetRandom(C,r);CHKERRQ(ierr);
   if (cgpu) {
     ierr = MatConvert(C,MATDENSECUDA,MAT_INPLACE_MATRIX,&C);CHKERRQ(ierr);
