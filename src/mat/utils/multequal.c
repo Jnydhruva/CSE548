@@ -349,6 +349,78 @@ PetscErrorCode MatMatTransposeMultEqual(Mat A,Mat B,Mat C,PetscInt n,PetscBool *
   PetscFunctionReturn(0);
 }
 
+static PetscErrorCode MatProjMultEqual_Private(Mat A,Mat B,Mat C,PetscInt n,PetscBool rart,PetscBool *flg)
+{
+  PetscErrorCode ierr;
+  Vec            x,v1,v2,v3,v4,Cx,Bx;
+  PetscReal      norm_abs,norm_rel,tol=PETSC_SQRT_MACHINE_EPSILON;
+  PetscInt       i,am,an,bm,bn,cm,cn;
+  PetscRandom    rdm;
+  PetscScalar    none = -1.0;
+
+  PetscFunctionBegin;
+  ierr = MatGetLocalSize(A,&am,&an);CHKERRQ(ierr);
+  ierr = MatGetLocalSize(B,&bm,&bn);CHKERRQ(ierr);
+  if (rart) { PetscInt t = bm; bm = bn; bn = t; }
+  ierr = MatGetLocalSize(C,&cm,&cn);CHKERRQ(ierr);
+  if (an != bm || bn != cm || bn != cn) SETERRQ6(PETSC_COMM_SELF,PETSC_ERR_ARG_SIZ,"Mat A, B, C local dim %D %D %D %D %D %D",am,an,bm,bn,cm,cn);
+
+  /* Create left vector of A: v2 */
+  ierr = MatCreateVecs(A,&Bx,&v2);CHKERRQ(ierr);
+
+  /* Create right vectors of B: x, v3, v4 */
+  if (rart) {
+    ierr = MatCreateVecs(B,&v1,&x);CHKERRQ(ierr);
+  } else {
+    ierr = MatCreateVecs(B,&x,&v1);CHKERRQ(ierr);
+  }
+  ierr = VecDuplicate(x,&v3);CHKERRQ(ierr);
+
+  ierr = MatCreateVecs(C,&Cx,&v4);CHKERRQ(ierr);
+  ierr = PetscRandomCreate(PETSC_COMM_WORLD,&rdm);CHKERRQ(ierr);
+  ierr = PetscRandomSetFromOptions(rdm);CHKERRQ(ierr);
+
+  *flg = PETSC_TRUE;
+  for (i=0; i<n; i++) {
+    ierr = VecSetRandom(x,rdm);CHKERRQ(ierr);
+    ierr = VecCopy(x,Cx);CHKERRQ(ierr);
+    ierr = MatMult(C,x,v4);CHKERRQ(ierr);           /* v4 = C*x   */
+    if (rart) {
+      ierr = MatMultTranspose(B,x,v1);CHKERRQ(ierr);
+    } else {
+      ierr = MatMult(B,x,v1);CHKERRQ(ierr);
+    }
+    ierr = VecCopy(v1,Bx);CHKERRQ(ierr);
+    ierr = MatMult(A,Bx,v2);CHKERRQ(ierr);          /* v2 = A*B*x */
+    ierr = VecCopy(v2,v1);CHKERRQ(ierr);
+    if (rart) {
+      ierr = MatMult(B,v1,v3);CHKERRQ(ierr); /* v3 = R*A*R^t*x */
+    } else {
+      ierr = MatMultTranspose(B,v1,v3);CHKERRQ(ierr); /* v3 = Bt*A*B*x */
+    }
+    ierr = VecNorm(v4,NORM_2,&norm_abs);CHKERRQ(ierr);
+    ierr = VecAXPY(v4,none,v3);CHKERRQ(ierr);
+    ierr = VecNorm(v4,NORM_2,&norm_rel);CHKERRQ(ierr);
+
+    if (norm_abs > tol) norm_rel /= norm_abs;
+    if (norm_rel > tol) {
+      *flg = PETSC_FALSE;
+      ierr = PetscInfo3(A,"Error: %D-th Mat%sMult() %g\n",i,rart ? "RARt" : "PtAP",(double)norm_rel);CHKERRQ(ierr);
+      break;
+    }
+  }
+
+  ierr = PetscRandomDestroy(&rdm);CHKERRQ(ierr);
+  ierr = VecDestroy(&x);CHKERRQ(ierr);
+  ierr = VecDestroy(&Bx);CHKERRQ(ierr);
+  ierr = VecDestroy(&Cx);CHKERRQ(ierr);
+  ierr = VecDestroy(&v1);CHKERRQ(ierr);
+  ierr = VecDestroy(&v2);CHKERRQ(ierr);
+  ierr = VecDestroy(&v3);CHKERRQ(ierr);
+  ierr = VecDestroy(&v4);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
 /*@
    MatPtAPMultEqual - Compares matrix-vector products of C = Bt*A*B
 
@@ -369,55 +441,35 @@ PetscErrorCode MatMatTransposeMultEqual(Mat A,Mat B,Mat C,PetscInt n,PetscBool *
 PetscErrorCode MatPtAPMultEqual(Mat A,Mat B,Mat C,PetscInt n,PetscBool *flg)
 {
   PetscErrorCode ierr;
-  Vec            x,v1,v2,v3,v4;
-  PetscReal      norm_abs,norm_rel,tol=PETSC_SQRT_MACHINE_EPSILON;
-  PetscInt       i,am,an,bm,bn,cm,cn;
-  PetscRandom    rdm;
-  PetscScalar    none = -1.0;
 
   PetscFunctionBegin;
-  ierr = MatGetLocalSize(A,&am,&an);CHKERRQ(ierr);
-  ierr = MatGetLocalSize(B,&bm,&bn);CHKERRQ(ierr);
-  ierr = MatGetLocalSize(C,&cm,&cn);CHKERRQ(ierr);
-  if (an != bm || bn != cm || bn != cn) SETERRQ6(PETSC_COMM_SELF,PETSC_ERR_ARG_SIZ,"Mat A, B, C local dim %D %D %D %D %D %D",am,an,bm,bn,cm,cn);
+  ierr = MatProjMultEqual_Private(A,B,C,n,PETSC_FALSE,flg);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
 
-  /* Create left vector of A: v2 */
-  ierr = MatCreateVecs(A,NULL,&v2);CHKERRQ(ierr);
+/*@
+   MatRARtMultEqual - Compares matrix-vector products of C = B*A*B^t
 
-  /* Create right vectors of B: x, v3, v4 */
-  ierr = MatCreateVecs(B,&x,&v1);CHKERRQ(ierr);
-  ierr = VecDuplicate(x,&v3);CHKERRQ(ierr);
-  ierr = VecDuplicate(x,&v4);CHKERRQ(ierr);
+   Collective on Mat
 
-  ierr = PetscRandomCreate(PETSC_COMM_WORLD,&rdm);CHKERRQ(ierr);
-  ierr = PetscRandomSetFromOptions(rdm);CHKERRQ(ierr);
+   Input Parameters:
++  A - the first matrix
+.  B - the second matrix
+.  C - the third matrix
+-  n - number of random vectors to be tested
 
-  *flg = PETSC_TRUE;
-  for (i=0; i<n; i++) {
-    ierr = VecSetRandom(x,rdm);CHKERRQ(ierr);
-    ierr = MatMult(B,x,v1);CHKERRQ(ierr);
-    ierr = MatMult(A,v1,v2);CHKERRQ(ierr);          /* v2 = A*B*x */
+   Output Parameter:
+.  flg - PETSC_TRUE if the products are equal; PETSC_FALSE otherwise.
 
-    ierr = MatMultTranspose(B,v2,v3);CHKERRQ(ierr); /* v3 = Bt*A*B*x */
-    ierr = MatMult(C,x,v4);CHKERRQ(ierr);           /* v4 = C*x   */
-    ierr = VecNorm(v4,NORM_2,&norm_abs);CHKERRQ(ierr);
-    ierr = VecAXPY(v4,none,v3);CHKERRQ(ierr);
-    ierr = VecNorm(v4,NORM_2,&norm_rel);CHKERRQ(ierr);
+   Level: intermediate
 
-    if (norm_abs > tol) norm_rel /= norm_abs;
-    if (norm_rel > tol) {
-      *flg = PETSC_FALSE;
-      ierr = PetscInfo2(A,"Error: %D-th MatPtAPMult() %g\n",i,(double)norm_rel);CHKERRQ(ierr);
-      break;
-    }
-  }
+@*/
+PetscErrorCode MatRARtMultEqual(Mat A,Mat B,Mat C,PetscInt n,PetscBool *flg)
+{
+  PetscErrorCode ierr;
 
-  ierr = PetscRandomDestroy(&rdm);CHKERRQ(ierr);
-  ierr = VecDestroy(&x);CHKERRQ(ierr);
-  ierr = VecDestroy(&v1);CHKERRQ(ierr);
-  ierr = VecDestroy(&v2);CHKERRQ(ierr);
-  ierr = VecDestroy(&v3);CHKERRQ(ierr);
-  ierr = VecDestroy(&v4);CHKERRQ(ierr);
+  PetscFunctionBegin;
+  ierr = MatProjMultEqual_Private(A,B,C,n,PETSC_TRUE,flg);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
