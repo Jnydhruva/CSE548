@@ -16,19 +16,33 @@ struct _MatShellOps {
   /* 60 */ PetscErrorCode (*destroy)(Mat);
 };
 
+struct _n_MatShellMatFunctionList {
+  PetscErrorCode  (*symbolic)(Mat,Mat,Mat);
+  PetscErrorCode  (*numeric)(Mat,Mat,Mat);
+  MatProductType  ptype;
+  char            *composedname;  /* string to identify routine with double dispatch*/
+  char            *resultname; /* result matrix type */
+
+  struct _n_MatShellMatFunctionList *next;
+};
+typedef struct _n_MatShellMatFunctionList *MatShellMatFunctionList;
+
 typedef struct {
   struct _MatShellOps ops[1];
 
+  /* support for MatScale,MatShift and MatMultAdd */
   PetscScalar vscale,vshift;
   Vec         dshift;
   Vec         left,right;
   Vec         left_work,right_work;
   Vec         left_add_work,right_add_work;
+
   /* support for MatAXPY */
   Mat              axpy;
   PetscScalar      axpy_vscale;
   PetscObjectState axpy_state;
   PetscBool        managescalingshifts; /* The user will manage the scaling and shifts for the MATSHELL, not the default */
+
   /* support for ZeroRows/Columns operations */
   IS          zrows;
   IS          zcols;
@@ -36,6 +50,11 @@ typedef struct {
   Vec         zvals_w;
   VecScatter  zvals_sct_r;
   VecScatter  zvals_sct_c;
+
+  /* MatMat operations */
+  MatShellMatFunctionList matmat;
+
+  /* user defined context */
   void        *ctx;
 } Mat_Shell;
 
@@ -458,8 +477,9 @@ static PetscErrorCode MatZeroRowsColumns_Shell(Mat mat,PetscInt n,const PetscInt
 
 PetscErrorCode MatDestroy_Shell(Mat mat)
 {
-  PetscErrorCode ierr;
-  Mat_Shell      *shell = (Mat_Shell*)mat->data;
+  PetscErrorCode          ierr;
+  Mat_Shell               *shell = (Mat_Shell*)mat->data;
+  MatShellMatFunctionList matmat;
 
   PetscFunctionBegin;
   if (shell->ops->destroy) {
@@ -480,21 +500,223 @@ PetscErrorCode MatDestroy_Shell(Mat mat)
   ierr = VecScatterDestroy(&shell->zvals_sct_r);CHKERRQ(ierr);
   ierr = ISDestroy(&shell->zrows);CHKERRQ(ierr);
   ierr = ISDestroy(&shell->zcols);CHKERRQ(ierr);
-  ierr = PetscFree(mat->data);CHKERRQ(ierr);
+
+  matmat = shell->matmat;
+  while (matmat) {
+    MatShellMatFunctionList next = matmat->next;
+
+    ierr = PetscObjectComposeFunction((PetscObject)mat,matmat->composedname,NULL);CHKERRQ(ierr);
+    ierr = PetscFree(matmat->composedname);CHKERRQ(ierr);
+    ierr = PetscFree(matmat->resultname);CHKERRQ(ierr);
+    ierr = PetscFree(matmat);CHKERRQ(ierr);
+    matmat = next;
+  }
   ierr = PetscObjectComposeFunction((PetscObject)mat,"MatShellGetContext_C",NULL);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)mat,"MatShellSetContext_C",NULL);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)mat,"MatShellSetVecType_C",NULL);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)mat,"MatShellSetManageScalingShifts_C",NULL);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)mat,"MatShellSetOperation_C",NULL);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)mat,"MatShellGetOperation_C",NULL);CHKERRQ(ierr);
+  ierr = PetscFree(mat->data);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+typedef struct {
+  PetscErrorCode (*numeric)(Mat,Mat,Mat);
+} MatMatDataShell;
+
+static PetscErrorCode DestroyMatMatDataShell(void *data)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  ierr = PetscFree(data);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode MatProductNumeric_Shell(Mat D)
+{
+  PetscErrorCode  ierr;
+  Mat_Product     *product;
+  Mat             A, B;
+  MatMatDataShell *mdata;
+
+  PetscFunctionBegin;
+  MatCheckProduct(D,1);
+  product = D->product;
+  if (!product->data) SETERRQ(PetscObjectComm((PetscObject)D),PETSC_ERR_PLIB,"Product data empty");
+  A = product->A;
+  B = product->B;
+  mdata = (MatMatDataShell*)product->data;
+  if (mdata->numeric) {
+    ierr = (*mdata->numeric)(A,B,D);CHKERRQ(ierr);
+  } else SETERRQ(PetscObjectComm((PetscObject)D),PETSC_ERR_PLIB,"Missing numeric operation");
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode MatProductSymbolic_Shell(Mat D)
+{
+  PetscErrorCode          ierr;
+  Mat_Product             *product;
+  Mat                     A,B;
+  MatShellMatFunctionList matmat;
+  Mat_Shell               *shell;
+  PetscBool               flg;
+  char                    composedname[256];
+  MatMatDataShell         *mdata;
+
+  PetscFunctionBegin;
+  MatCheckProduct(D,1);
+  product = D->product;
+  if (product->data) SETERRQ(PetscObjectComm((PetscObject)D),PETSC_ERR_PLIB,"Product data not empty");
+  A = product->A;
+  B = product->B;
+  ierr = PetscObjectTypeCompare((PetscObject)A,MATSHELL,&flg);CHKERRQ(ierr);
+  if (!flg) SETERRQ1(PetscObjectComm((PetscObject)A),PETSC_ERR_PLIB,"Not for type \"%s\"",((PetscObject)A)->type_name);
+  shell = (Mat_Shell*)A->data;
+  matmat = shell->matmat;
+  flg = PETSC_FALSE;
+  ierr = PetscSNPrintf(composedname,sizeof(composedname),"MatProductSetFromOptions_shell_%s_C",((PetscObject)B)->type_name);CHKERRQ(ierr);
+  while (matmat) {
+    ierr = PetscStrcmp(composedname,matmat->composedname,&flg);CHKERRQ(ierr);
+    flg  = (PetscBool)(flg && (matmat->ptype == product->type));
+    if (flg) break;
+    matmat = matmat->next;
+  }
+  if (!flg) SETERRQ2(PetscObjectComm((PetscObject)A),PETSC_ERR_PLIB,"Composedname \"%s\" for product type %s not found",composedname,MatProductTypes[product->type]);
+  switch (product->type) {
+  case MATPRODUCT_AB:
+    ierr = MatSetSizes(D,A->rmap->n,B->cmap->n,A->rmap->N,B->cmap->N);CHKERRQ(ierr);
+    break;
+  case MATPRODUCT_AtB:
+    ierr = MatSetSizes(D,A->cmap->n,B->cmap->n,A->cmap->N,B->cmap->N);CHKERRQ(ierr);
+    break;
+  case MATPRODUCT_ABt:
+    ierr = MatSetSizes(D,A->rmap->n,B->rmap->n,A->rmap->N,B->rmap->N);CHKERRQ(ierr);
+    break;
+  case MATPRODUCT_RARt:
+    ierr = MatSetSizes(D,B->rmap->n,B->rmap->n,B->rmap->N,B->rmap->N);CHKERRQ(ierr);
+    break;
+  case MATPRODUCT_PtAP:
+    ierr = MatSetSizes(D,B->cmap->n,B->cmap->n,B->cmap->N,B->cmap->N);CHKERRQ(ierr);
+    break;
+  default: SETERRQ3(PetscObjectComm((PetscObject)D),PETSC_ERR_SUP,"MatProductSymbolic type %s not supported for %s and %s matrices",MatProductTypes[product->type],((PetscObject)A)->type_name,((PetscObject)B)->type_name);
+  }
+  /* respect users who passed in a matrix for which resultname is the base type */
+  ierr = PetscObjectBaseTypeCompare((PetscObject)D,matmat->resultname,&flg);CHKERRQ(ierr);
+  if (!flg) {
+    ierr = MatSetType(D,matmat->resultname);CHKERRQ(ierr);
+  }
+  /* If matrix type was not set or different, we need to reset this pointers */
+  D->ops->productsymbolic = MatProductSymbolic_Shell;
+  D->ops->productnumeric  = MatProductNumeric_Shell;
+  /* attach product data */
+  ierr = PetscMalloc1(1,&mdata);CHKERRQ(ierr);
+  mdata->numeric = matmat->numeric;
+  D->product->data = mdata;
+  D->product->destroy = DestroyMatMatDataShell;
+  if (matmat->symbolic) {
+    ierr = (*matmat->symbolic)(A,B,D);CHKERRQ(ierr);
+  } else { /* call general setup if symbolic operation not found */
+    ierr = MatSetUp(D);CHKERRQ(ierr);
+  }
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode MatProductSetFromOptions_Shell(Mat D)
+{
+  PetscFunctionBegin;
+  D->ops->productsymbolic = MatProductSymbolic_Shell;
+  D->ops->productnumeric  = NULL;
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode MatShellSetMatProductOperation_Private(Mat A,MatProductType ptype,PetscErrorCode (*symbolic)(Mat,Mat,Mat),PetscErrorCode (*numeric)(Mat,Mat,Mat),char *composedname,const char *resultname)
+{
+  PetscBool               flg;
+  PetscErrorCode          ierr;
+  Mat_Shell               *shell;
+  MatShellMatFunctionList matmat;
+
+  PetscFunctionBegin;
+  if (!numeric) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_PLIB,"Missing numeric routine");
+  if (!composedname) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_PLIB,"Missing composed name");
+  if (!resultname) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_PLIB,"Missing result name");
+
+  /* add product callback */
+  shell = (Mat_Shell*)A->data;
+  matmat = shell->matmat;
+  if (!matmat) {
+    ierr = PetscNew(&shell->matmat);CHKERRQ(ierr);
+    matmat = shell->matmat;
+  } else {
+    MatShellMatFunctionList entry = matmat;
+    while (entry) {
+      ierr = PetscStrcmp(composedname,entry->composedname,&flg);CHKERRQ(ierr);
+      flg  = (PetscBool)(flg && (entry->ptype == ptype));
+      if (flg) break;
+      matmat = entry;
+      entry = entry->next;
+    }
+    if (!flg) {
+      ierr = PetscNew(&matmat->next);CHKERRQ(ierr);
+      matmat = matmat->next;
+    } else SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_PLIB,"This should not happen");
+  }
+
+  matmat->symbolic = symbolic;
+  matmat->numeric  = numeric;
+  matmat->ptype    = ptype;
+  ierr = PetscFree(matmat->composedname);CHKERRQ(ierr);
+  ierr = PetscFree(matmat->resultname);CHKERRQ(ierr);
+  ierr = PetscStrallocpy(composedname,&matmat->composedname);CHKERRQ(ierr);
+  ierr = PetscStrallocpy(resultname,&matmat->resultname);CHKERRQ(ierr);
+  ierr = PetscInfo3(A,"Composing %s for product type %s with result %s\n",matmat->composedname,MatProductTypes[matmat->ptype],matmat->resultname);CHKERRQ(ierr);
+  ierr = PetscObjectComposeFunction((PetscObject)A,matmat->composedname,MatProductSetFromOptions_Shell);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode MatShellSetMatProductOperation(Mat A,MatProductType ptype,PetscErrorCode (*symbolic)(Mat,Mat,Mat),PetscErrorCode (*numeric)(Mat,Mat,Mat),MatType Btype,MatType Ctype)
+{
+  PetscBool      flg;
+  PetscErrorCode ierr;
+  char           composedname[256];
+  MatRootName    Bnames = MatRootNameList, Cnames = MatRootNameList;
+  PetscMPIInt    size;
+
+  PetscFunctionBegin;
+  PetscValidHeaderSpecific(A,MAT_CLASSID,1);
+  PetscValidLogicalCollectiveEnum(A,ptype,2);
+  if (ptype == MATPRODUCT_ABC) SETERRQ1(PetscObjectComm((PetscObject)A),PETSC_ERR_SUP,"Not for product type %s",MatProductTypes[ptype]);
+  PetscValidPointer(numeric,4);
+  PetscValidPointer(Btype,5);
+  PetscValidPointer(Ctype,6);
+  ierr = PetscObjectTypeCompare((PetscObject)A,MATSHELL,&flg);CHKERRQ(ierr);
+  if (!flg) PetscFunctionReturn(0);
+  while (Bnames) { /* user passed in the root name */
+    ierr = PetscStrcmp(Btype,Bnames->rname,&flg);CHKERRQ(ierr);
+    if (flg) break;
+    Bnames = Bnames->next;
+  }
+  while (Cnames) { /* user passed in the root name */
+    ierr = PetscStrcmp(Ctype,Cnames->rname,&flg);CHKERRQ(ierr);
+    if (flg) break;
+    Cnames = Cnames->next;
+  }
+  ierr = MPI_Comm_size(PetscObjectComm((PetscObject)A),&size);CHKERRQ(ierr);
+  Btype = Bnames ? (size > 1 ? Bnames->mname : Bnames->sname) : Btype;
+  Ctype = Cnames ? (size > 1 ? Cnames->mname : Cnames->sname) : Ctype;
+  ierr = PetscSNPrintf(composedname,sizeof(composedname),"MatProductSetFromOptions_shell_%s_C",Btype);CHKERRQ(ierr);
+  ierr = MatShellSetMatProductOperation_Private(A,ptype,symbolic,numeric,composedname,Ctype);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
 PetscErrorCode MatCopy_Shell(Mat A,Mat B,MatStructure str)
 {
-  Mat_Shell       *shellA = (Mat_Shell*)A->data,*shellB = (Mat_Shell*)B->data;
-  PetscErrorCode  ierr;
-  PetscBool       matflg;
+  Mat_Shell               *shellA = (Mat_Shell*)A->data,*shellB = (Mat_Shell*)B->data;
+  PetscErrorCode          ierr;
+  PetscBool               matflg;
+  MatShellMatFunctionList matmatA;
 
   PetscFunctionBegin;
   ierr = PetscObjectTypeCompare((PetscObject)B,MATSHELL,&matflg);CHKERRQ(ierr);
@@ -553,6 +775,14 @@ PetscErrorCode MatCopy_Shell(Mat A,Mat B,MatStructure str)
     ierr = PetscObjectReference((PetscObject)shellA->zvals_sct_c);CHKERRQ(ierr);
     shellB->zvals_sct_r = shellA->zvals_sct_r;
     shellB->zvals_sct_c = shellA->zvals_sct_c;
+  }
+
+  matmatA = shellA->matmat;
+  if (matmatA) {
+    while (matmatA->next) {
+      ierr = MatShellSetMatProductOperation_Private(B,matmatA->ptype,matmatA->symbolic,matmatA->numeric,matmatA->composedname,matmatA->resultname);CHKERRQ(ierr);
+      matmatA = matmatA->next;
+    }
   }
   PetscFunctionReturn(0);
 }
@@ -632,10 +862,10 @@ PetscErrorCode MatMultTranspose_Shell(Mat A,Vec x,Vec y)
   PetscObjectState instate,outstate;
 
   PetscFunctionBegin;
+  if (!shell->ops->multtranspose) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_ARG_WRONGSTATE,"Have not provided a MatMultTranspose() for this MATSHELL");
   ierr = MatShellPreZeroLeft(A,x,&xx);CHKERRQ(ierr);
   ierr = MatShellPreScaleLeft(A,xx,&xx);CHKERRQ(ierr);
   ierr = PetscObjectStateGet((PetscObject)y, &instate);CHKERRQ(ierr);
-  if (!shell->ops->multtranspose) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_ARG_WRONGSTATE,"Have not provided a MatMultTranspose() for this MATSHELL");
   ierr = (*shell->ops->multtranspose)(A,xx,y);CHKERRQ(ierr);
   ierr = PetscObjectStateGet((PetscObject)y, &outstate);CHKERRQ(ierr);
   if (instate == outstate) {
