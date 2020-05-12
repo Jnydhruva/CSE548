@@ -1,13 +1,15 @@
 #include <petsc/private/pcimpl.h>
+#include <petsc/private/matimpl.h>
 
 typedef struct {
   Mat         M;
   PetscScalar s0;
 
-  /* sampler for NewtonSchultz */
+  /* sampler for Newton-Schultz */
   Mat      S;
   PetscInt hyperorder;
   Vec      wns[4];
+  Mat      wnsmat[4];
 
   /* convergence testing */
   Mat T;
@@ -18,9 +20,10 @@ typedef struct {
   PetscInt  nlocc;
   PetscReal *coords;
 
-  /* NewtonSchultz customization */
+  /* Newton-Schultz customization */
   PetscInt  maxits;
   PetscReal rtol,atol;
+  PetscBool monitor;
   PetscBool useapproximatenorms;
 } PC_HARA;
 
@@ -41,6 +44,10 @@ static PetscErrorCode PCReset_HARA(PC pc)
   ierr = VecDestroy(&pchara->wns[1]);CHKERRQ(ierr);
   ierr = VecDestroy(&pchara->wns[2]);CHKERRQ(ierr);
   ierr = VecDestroy(&pchara->wns[3]);CHKERRQ(ierr);
+  ierr = MatDestroy(&pchara->wnsmat[0]);CHKERRQ(ierr);
+  ierr = MatDestroy(&pchara->wnsmat[1]);CHKERRQ(ierr);
+  ierr = MatDestroy(&pchara->wnsmat[2]);CHKERRQ(ierr);
+  ierr = MatDestroy(&pchara->wnsmat[3]);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -84,9 +91,10 @@ static PetscErrorCode PCSetFromOptions_HARA(PetscOptionItems *PetscOptionsObject
 
   PetscFunctionBegin;
   ierr = PetscOptionsHead(PetscOptionsObject,"HARA options");CHKERRQ(ierr);
-  ierr = PetscOptionsInt("-pc_hara_maxits","Tolerance (TODO)",NULL,pchara->maxits,&pchara->maxits,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsReal("-pc_hara_atol","Tolerance (TODO)",NULL,pchara->atol,&pchara->atol,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsReal("-pc_hara_rtol","Tolerance (TODO)",NULL,pchara->rtol,&pchara->rtol,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsInt("-pc_hara_maxits","Maximum number of iterations for Newton-Schultz",NULL,pchara->maxits,&pchara->maxits,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool("-pc_hara_monitor","Monitor Newton-Schultz convergence",NULL,pchara->monitor,&pchara->monitor,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsReal("-pc_hara_atol","Absolute tolerance",NULL,pchara->atol,&pchara->atol,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsReal("-pc_hara_rtol","Relative tolerance",NULL,pchara->rtol,&pchara->rtol,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsInt("-pc_hara_hyperorder","Hyper power order of sampling",NULL,pchara->hyperorder,&pchara->hyperorder,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsTail();CHKERRQ(ierr);
   PetscFunctionReturn(0);
@@ -113,12 +121,58 @@ static PetscErrorCode PCApplyKernel_HARA(PC pc, Vec x, Vec y, PetscBool t)
     /* X_0 = s0 * A^T */
     if (t) {
       ierr = MatMult(A,x,y);CHKERRQ(ierr);
-      ierr = VecScale(y,pchara->s0);CHKERRQ(ierr);
     } else {
       ierr = MatMultTranspose(A,x,y);CHKERRQ(ierr);
-      ierr = VecScale(y,pchara->s0);CHKERRQ(ierr);
     }
+    ierr = VecScale(y,pchara->s0);CHKERRQ(ierr);
   }
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode PCApplyMatKernel_HARA(PC pc, Mat X, Mat Y, PetscBool t)
+{
+  PC_HARA        *pchara = (PC_HARA*)pc->data;
+  PetscErrorCode ierr;
+  PetscBool      flg = PETSC_FALSE;
+
+  PetscFunctionBegin;
+  ierr = MatAssembled(pchara->M,&flg);CHKERRQ(ierr);
+  if (flg) {
+    if (t) {
+      ierr = MatTransposeMatMult(pchara->M,X,MAT_REUSE_MATRIX,PETSC_DEFAULT,&Y);CHKERRQ(ierr);
+    } else {
+      ierr = MatMatMult(pchara->M,X,MAT_REUSE_MATRIX,PETSC_DEFAULT,&Y);CHKERRQ(ierr);
+    }
+  } else { /* Not assembled, initial approximation */
+    Mat A = pc->useAmat ? pc->mat : pc->pmat;
+
+    if (pchara->s0 < 0.0) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_PLIB,"Wrong scaling");
+    /* X_0 = s0 * A^T */
+    if (t) {
+      ierr = MatMatMult(A,X,MAT_REUSE_MATRIX,PETSC_DEFAULT,&Y);CHKERRQ(ierr);
+    } else {
+      ierr = MatTransposeMatMult(A,X,MAT_REUSE_MATRIX,PETSC_DEFAULT,&Y);CHKERRQ(ierr);
+    }
+    ierr = MatScale(Y,pchara->s0);CHKERRQ(ierr);
+  }
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode PCApplyMat_HARA(PC pc, Mat X, Mat Y)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  ierr = PCApplyMatKernel_HARA(pc,X,Y,PETSC_FALSE);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode PCApplyTransposeMat_HARA(PC pc, Mat X, Mat Y)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  ierr = PCApplyMatKernel_HARA(pc,X,Y,PETSC_TRUE);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -140,6 +194,7 @@ static PetscErrorCode PCApplyTranspose_HARA(PC pc, Vec x, Vec y)
   PetscFunctionReturn(0);
 }
 
+/* used to test norm of (M^-1 A - I) */
 static PetscErrorCode MatMultKernel_MAmI(Mat M, Vec x, Vec y, PetscBool t)
 {
   PC             pc;
@@ -157,12 +212,11 @@ static PetscErrorCode MatMultKernel_MAmI(Mat M, Vec x, Vec y, PetscBool t)
   if (t) {
     ierr = PCApplyTranspose_HARA(pc,x,pchara->w);CHKERRQ(ierr);
     ierr = MatMultTranspose(A,pchara->w,y);CHKERRQ(ierr);
-    ierr = VecAXPBY(y,-1.0,1.0,x);CHKERRQ(ierr);
   } else {
     ierr = MatMult(A,x,pchara->w);CHKERRQ(ierr);
     ierr = PCApply_HARA(pc,pchara->w,y);CHKERRQ(ierr);
-    ierr = VecAXPBY(y,-1.0,1.0,x);CHKERRQ(ierr);
   }
+  ierr = VecAXPY(y,-1.0,x);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -184,7 +238,7 @@ static PetscErrorCode MatMultTranspose_MAmI(Mat A, Vec x, Vec y)
   PetscFunctionReturn(0);
 }
 
-/*
+/* HyperPower kernel:
 Y = R = x
 for i = 1 . . . l − 1 do
   R = (I − AXk)R
@@ -205,24 +259,20 @@ static PetscErrorCode MatMultKernel_Hyper(Mat M, Vec x, Vec y, PetscBool t)
   pchara = (PC_HARA*)pc->data;
   ierr = MatCreateVecs(pchara->M,pchara->wns[0] ? NULL : &pchara->wns[0],pchara->wns[1] ? NULL : &pchara->wns[1]);CHKERRQ(ierr);
   ierr = MatCreateVecs(pchara->M,pchara->wns[2] ? NULL : &pchara->wns[2],pchara->wns[3] ? NULL : &pchara->wns[3]);CHKERRQ(ierr);
+  ierr = VecCopy(x,pchara->wns[0]);CHKERRQ(ierr);
+  ierr = VecCopy(x,pchara->wns[3]);CHKERRQ(ierr);
   if (t) {
-    ierr = VecCopy(x,pchara->wns[0]);CHKERRQ(ierr);
-    ierr = VecCopy(x,pchara->wns[3]);CHKERRQ(ierr);
     for (i=0;i<pchara->hyperorder-1;i++) {
       ierr = MatMultTranspose(A,pchara->wns[0],pchara->wns[1]);CHKERRQ(ierr);
       ierr = PCApplyTranspose_HARA(pc,pchara->wns[1],pchara->wns[2]);CHKERRQ(ierr);
-      ierr = VecAXPBY(pchara->wns[0],-1.,1.,pchara->wns[2]);CHKERRQ(ierr);
-      ierr = VecAXPY(pchara->wns[3],1.,pchara->wns[0]);CHKERRQ(ierr);
+      ierr = VecAXPBYPCZ(pchara->wns[3],-1.,1.,1.,pchara->wns[2],pchara->wns[0]);CHKERRQ(ierr);
     }
     ierr = PCApplyTranspose_HARA(pc,pchara->wns[3],y);CHKERRQ(ierr);
   } else {
-    ierr = VecCopy(x,pchara->wns[0]);CHKERRQ(ierr);
-    ierr = VecCopy(x,pchara->wns[3]);CHKERRQ(ierr);
     for (i=0;i<pchara->hyperorder-1;i++) {
       ierr = PCApply_HARA(pc,pchara->wns[0],pchara->wns[1]);CHKERRQ(ierr);
       ierr = MatMult(A,pchara->wns[1],pchara->wns[2]);CHKERRQ(ierr);
-      ierr = VecAXPBY(pchara->wns[0],-1.,1.,pchara->wns[2]);CHKERRQ(ierr);
-      ierr = VecAXPY(pchara->wns[3],1.,pchara->wns[0]);CHKERRQ(ierr);
+      ierr = VecAXPBYPCZ(pchara->wns[3],-1.,1.,1.,pchara->wns[2],pchara->wns[0]);CHKERRQ(ierr);
     }
     ierr = PCApply_HARA(pc,pchara->wns[3],y);CHKERRQ(ierr);
   }
@@ -247,7 +297,66 @@ static PetscErrorCode MatMultTranspose_Hyper(Mat M, Vec x, Vec y)
   PetscFunctionReturn(0);
 }
 
-/* (2 * I - M * A ) * M */
+/* Hyper power kernel, MatMat version */
+static PetscErrorCode MatMatMultKernel_Hyper(Mat M, Mat X, Mat Y, PetscBool t)
+{
+  PC             pc;
+  Mat            A;
+  PC_HARA        *pchara;
+  PetscInt       i;
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  ierr = MatShellGetContext(M,(void*)&pc);CHKERRQ(ierr);
+  A = pc->useAmat ? pc->mat : pc->pmat;
+  pchara = (PC_HARA*)pc->data;
+  ierr = MatDuplicate(X,MAT_SHARE_NONZERO_PATTERN,&pchara->wnsmat[0]);CHKERRQ(ierr);
+  ierr = MatDuplicate(Y,MAT_SHARE_NONZERO_PATTERN,&pchara->wnsmat[1]);CHKERRQ(ierr);
+  ierr = MatDuplicate(X,MAT_SHARE_NONZERO_PATTERN,&pchara->wnsmat[2]);CHKERRQ(ierr);
+  ierr = MatDuplicate(Y,MAT_SHARE_NONZERO_PATTERN,&pchara->wnsmat[3]);CHKERRQ(ierr);
+  ierr = MatCopy(X,pchara->wnsmat[0],SAME_NONZERO_PATTERN);CHKERRQ(ierr);
+  ierr = MatCopy(X,pchara->wnsmat[3],SAME_NONZERO_PATTERN);CHKERRQ(ierr);
+  if (t) {
+    for (i=0;i<pchara->hyperorder-1;i++) {
+      ierr = MatTransposeMatMult(A,pchara->wnsmat[0],MAT_REUSE_MATRIX,PETSC_DEFAULT,&pchara->wnsmat[1]);CHKERRQ(ierr);
+      ierr = PCApplyTransposeMat_HARA(pc,pchara->wnsmat[1],pchara->wnsmat[2]);CHKERRQ(ierr);
+      ierr = MatAXPY(pchara->wnsmat[0],-1.,pchara->wnsmat[2],SAME_NONZERO_PATTERN);CHKERRQ(ierr);
+      ierr = MatAXPY(pchara->wnsmat[3],1.,pchara->wnsmat[0],SAME_NONZERO_PATTERN);CHKERRQ(ierr);
+    }
+    ierr = PCApplyTransposeMat_HARA(pc,pchara->wnsmat[3],Y);CHKERRQ(ierr);
+  } else {
+    for (i=0;i<pchara->hyperorder-1;i++) {
+      ierr = PCApplyMat_HARA(pc,pchara->wnsmat[0],pchara->wnsmat[1]);CHKERRQ(ierr);
+      ierr = MatMatMult(A,pchara->wnsmat[1],MAT_REUSE_MATRIX,PETSC_DEFAULT,&pchara->wnsmat[2]);CHKERRQ(ierr);
+      ierr = MatAXPY(pchara->wnsmat[0],-1.,pchara->wnsmat[2],SAME_NONZERO_PATTERN);CHKERRQ(ierr);
+      ierr = MatAXPY(pchara->wnsmat[3],1.,pchara->wnsmat[0],SAME_NONZERO_PATTERN);CHKERRQ(ierr);
+    }
+    ierr = PCApplyMat_HARA(pc,pchara->wnsmat[3],Y);CHKERRQ(ierr);
+  }
+  ierr = MatDestroy(&pchara->wnsmat[0]);CHKERRQ(ierr);
+  ierr = MatDestroy(&pchara->wnsmat[1]);CHKERRQ(ierr);
+  ierr = MatDestroy(&pchara->wnsmat[2]);CHKERRQ(ierr);
+  ierr = MatDestroy(&pchara->wnsmat[3]);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode MatMatMultNumeric_Hyper(Mat M, Mat X, Mat Y)
+{
+  PetscErrorCode ierr;
+  Mat_Product    *stash = Y->product;
+  PetscErrorCode (*stashsym)(Mat) = Y->ops->productsymbolic;
+  PetscErrorCode (*stashnum)(Mat) = Y->ops->productnumeric;
+
+  PetscFunctionBegin;
+  Y->product = NULL;
+  ierr = MatMatMultKernel_Hyper(M,X,Y,PETSC_FALSE);CHKERRQ(ierr);
+  Y->product = stash;
+  Y->ops->productsymbolic = stashsym;
+  Y->ops->productnumeric = stashnum;
+  PetscFunctionReturn(0);
+}
+
+/* Basic Newton-Schultz sampler: (2 * I - M * A ) * M */
 static PetscErrorCode MatMultKernel_NS(Mat M, Vec x, Vec y, PetscBool t)
 {
   PC             pc;
@@ -292,6 +401,54 @@ static PetscErrorCode MatMultTranspose_NS(Mat M, Vec x, Vec y)
   PetscFunctionReturn(0);
 }
 
+/* (2 * I - M * A ) * M, MatMat version */
+static PetscErrorCode MatMatMultKernel_NS(Mat M, Mat X, Mat Y, PetscBool t)
+{
+  PC             pc;
+  Mat            A;
+  PC_HARA        *pchara;
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  ierr = MatShellGetContext(M,(void*)&pc);CHKERRQ(ierr);
+  A = pc->useAmat ? pc->mat : pc->pmat;
+  pchara = (PC_HARA*)pc->data;
+  ierr = MatDuplicate(X,MAT_SHARE_NONZERO_PATTERN,&pchara->wnsmat[0]);CHKERRQ(ierr);
+  ierr = MatDuplicate(Y,MAT_SHARE_NONZERO_PATTERN,&pchara->wnsmat[1]);CHKERRQ(ierr);
+  if (t) {
+    ierr = PCApplyTransposeMat_HARA(pc,X,Y);CHKERRQ(ierr);
+    ierr = MatTransposeMatMult(A,Y,MAT_REUSE_MATRIX,PETSC_DEFAULT,&pchara->wnsmat[1]);CHKERRQ(ierr);
+    ierr = PCApplyTransposeMat_HARA(pc,pchara->wnsmat[1],pchara->wnsmat[0]);CHKERRQ(ierr);
+    ierr = MatScale(Y,2.);CHKERRQ(ierr);
+    ierr = MatAXPY(Y,-1.,pchara->wnsmat[0],SAME_NONZERO_PATTERN);CHKERRQ(ierr);
+  } else {
+    ierr = PCApplyMat_HARA(pc,X,Y);CHKERRQ(ierr);
+    ierr = MatMatMult(A,Y,MAT_REUSE_MATRIX,PETSC_DEFAULT,&pchara->wnsmat[0]);CHKERRQ(ierr);
+    ierr = PCApplyMat_HARA(pc,pchara->wnsmat[0],pchara->wnsmat[1]);CHKERRQ(ierr);
+    ierr = MatScale(Y,2.);CHKERRQ(ierr);
+    ierr = MatAXPY(Y,-1.,pchara->wnsmat[1],SAME_NONZERO_PATTERN);CHKERRQ(ierr);
+  }
+  ierr = MatDestroy(&pchara->wnsmat[0]);CHKERRQ(ierr);
+  ierr = MatDestroy(&pchara->wnsmat[1]);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode MatMatMultNumeric_NS(Mat M, Mat X, Mat Y)
+{
+  PetscErrorCode ierr;
+  Mat_Product    *stash = Y->product;
+  PetscErrorCode (*stashsym)(Mat) = Y->ops->productsymbolic;
+  PetscErrorCode (*stashnum)(Mat) = Y->ops->productnumeric;
+
+  PetscFunctionBegin;
+  Y->product = NULL;
+  ierr = MatMatMultKernel_NS(M,X,Y,PETSC_FALSE);CHKERRQ(ierr);
+  Y->product = stash;
+  Y->ops->productsymbolic = stashsym;
+  Y->ops->productnumeric = stashnum;
+  PetscFunctionReturn(0);
+}
+
 PETSC_EXTERN PetscErrorCode MatNorm_HARA(Mat,NormType,PetscReal*);
 
 static PetscErrorCode PCHaraSetUpSampler_Private(PC pc)
@@ -312,9 +469,13 @@ static PetscErrorCode PCHaraSetUpSampler_Private(PC pc)
   if (pchara->hyperorder >= 2) {
     ierr = MatShellSetOperation(pchara->S,MATOP_MULT,(void (*)(void))MatMult_Hyper);CHKERRQ(ierr);
     ierr = MatShellSetOperation(pchara->S,MATOP_MULT_TRANSPOSE,(void (*)(void))MatMultTranspose_Hyper);CHKERRQ(ierr);
+    ierr = MatShellSetMatProductOperation(pchara->S,MATPRODUCT_AB,NULL,MatMatMultNumeric_Hyper,MATDENSE,MATDENSE);CHKERRQ(ierr);
+    ierr = MatShellSetMatProductOperation(pchara->S,MATPRODUCT_AB,NULL,MatMatMultNumeric_Hyper,MATDENSECUDA,MATDENSECUDA);CHKERRQ(ierr);
   } else {
     ierr = MatShellSetOperation(pchara->S,MATOP_MULT,(void (*)(void))MatMult_NS);CHKERRQ(ierr);
     ierr = MatShellSetOperation(pchara->S,MATOP_MULT_TRANSPOSE,(void (*)(void))MatMultTranspose_NS);CHKERRQ(ierr);
+    ierr = MatShellSetMatProductOperation(pchara->S,MATPRODUCT_AB,NULL,MatMatMultNumeric_NS,MATDENSE,MATDENSE);CHKERRQ(ierr);
+    ierr = MatShellSetMatProductOperation(pchara->S,MATPRODUCT_AB,NULL,MatMatMultNumeric_NS,MATDENSECUDA,MATDENSECUDA);CHKERRQ(ierr);
   }
   ierr = MatPropagateSymmetryOptions(A,pchara->S);CHKERRQ(ierr);
   PetscFunctionReturn(0);
@@ -377,7 +538,7 @@ static PetscErrorCode PCSetUp_HARA(PC pc)
 
     ierr = PCHaraSetUpSampler_Private(pc);CHKERRQ(ierr);
     err  = initerr;
-    ierr = PetscPrintf(PetscObjectComm((PetscObject)pc),"%D: %g %g\n",0,(double)err,(double)(err/initerr));CHKERRQ(ierr);
+    if (pchara->monitor) { ierr = PetscPrintf(PetscObjectComm((PetscObject)pc),"%D: %g %g\n",0,(double)err,(double)(err/initerr));CHKERRQ(ierr); }
     for (i = 0; i < pchara->maxits; i++) {
       Mat         M;
       const char* prefix;
@@ -389,25 +550,45 @@ static PetscErrorCode PCSetUp_HARA(PC pc)
         ierr = MatSetOptionsPrefix(M,prefix);CHKERRQ(ierr);
         ierr = MatAppendOptionsPrefix(M,"pc_hara_inv_");CHKERRQ(ierr);
       }
+#if 0
+  {
+     Mat Sd1,Sd2,Id;
+     PetscReal err;
+     ierr = MatComputeOperator(pchara->S,MATDENSE,&Sd1);CHKERRQ(ierr);
+     ierr = MatDuplicate(Sd1,MAT_COPY_VALUES,&Id);CHKERRQ(ierr);
+     ierr = MatZeroEntries(Id);CHKERRQ(ierr);
+     ierr = MatShift(Id,1.);CHKERRQ(ierr);
+     ierr = MatMatMult(pchara->S,Id,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&Sd2);CHKERRQ(ierr);
+     ierr = MatAXPY(Sd2,-1.,Sd1,SAME_NONZERO_PATTERN);CHKERRQ(ierr);
+     ierr = MatNorm(Sd2,NORM_FROBENIUS,&err);CHKERRQ(ierr);
+     ierr = PetscPrintf(PetscObjectComm((PetscObject)Sd2),"ERR %g\n",err);CHKERRQ(ierr);
+     ierr = MatViewFromOptions(Sd2,NULL,"-Sd_view");CHKERRQ(ierr);
+     ierr = MatDestroy(&Sd1);CHKERRQ(ierr);
+     ierr = MatDestroy(&Sd2);CHKERRQ(ierr);
+     ierr = MatDestroy(&Id);CHKERRQ(ierr);
+  }
+#endif
       ierr = MatHaraSetSamplingMat(M,pchara->S,1,PETSC_DECIDE);CHKERRQ(ierr);
       if (pc->setfromoptionscalled) {
         ierr = MatSetFromOptions(M);CHKERRQ(ierr);
       }
       ierr = MatAssemblyBegin(M,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
       ierr = MatAssemblyEnd(M,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
-      //{
-      //   Mat Md;
-      //   ierr = MatComputeOperator(M,MATDENSE,&Md);CHKERRQ(ierr);
-      //   ierr = MatViewFromOptions(Md,NULL,"-Md_view");CHKERRQ(ierr);
-      //   ierr = MatDestroy(&Md);CHKERRQ(ierr);
-      //   ierr = MatComputeOperator(pchara->S,MATDENSE,&Md);CHKERRQ(ierr);
-      //   ierr = MatViewFromOptions(Md,NULL,"-Md_view");CHKERRQ(ierr);
-      //   ierr = MatDestroy(&Md);CHKERRQ(ierr);
-      //}
+#if 0
+      {
+         Mat Md;
+         ierr = MatComputeOperator(M,MATDENSE,&Md);CHKERRQ(ierr);
+         ierr = MatViewFromOptions(Md,NULL,"-Md_view");CHKERRQ(ierr);
+         ierr = MatDestroy(&Md);CHKERRQ(ierr);
+         ierr = MatComputeOperator(pchara->S,MATDENSE,&Md);CHKERRQ(ierr);
+         ierr = MatViewFromOptions(Md,NULL,"-Md_view");CHKERRQ(ierr);
+         ierr = MatDestroy(&Md);CHKERRQ(ierr);
+      }
+#endif
       ierr = MatDestroy(&pchara->M);CHKERRQ(ierr);
       pchara->M = M;
       ierr = MatNorm(pchara->T,norm,&err);CHKERRQ(ierr);
-      ierr = PetscPrintf(PetscObjectComm((PetscObject)pc),"%D: %g %g\n",i+1,(double)err,(double)(err/initerr));CHKERRQ(ierr);
+      if (pchara->monitor) { ierr = PetscPrintf(PetscObjectComm((PetscObject)pc),"%D: %g %g\n",i+1,(double)err,(double)(err/initerr));CHKERRQ(ierr); }
       if (err < pchara->atol || err < pchara->rtol*initerr) break;
     }
   }
@@ -426,7 +607,7 @@ PETSC_EXTERN PetscErrorCode PCCreate_HARA(PC pc)
   pchara->atol       = 1.e-2;
   pchara->rtol       = 1.e-6;
   pchara->maxits     = 50;
-  pchara->hyperorder = 1;
+  pchara->hyperorder = 1; /* default to basic NewtonSchultz */
 
   pc->ops->destroy        = PCDestroy_HARA;
   pc->ops->setup          = PCSetUp_HARA;
