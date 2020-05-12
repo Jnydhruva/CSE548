@@ -43,7 +43,7 @@ int main(int argc,char **args)
 
   sdim = 2;
   ierr = PetscOptionsGetInt(NULL,NULL,"-sdim",&sdim,NULL);CHKERRQ(ierr);
-  n    = 64;
+  n    = 32;
   ierr = PetscOptionsGetInt(NULL,NULL,"-n",&n,NULL);CHKERRQ(ierr);
   eta  = 0.6;
   ierr = PetscOptionsGetReal(NULL,NULL,"-eta",&eta,NULL);CHKERRQ(ierr);
@@ -55,7 +55,6 @@ int main(int argc,char **args)
   for (i=0;i<sdim*n;i++) {
     ierr = PetscRandomGetValueReal(r,coords + i);CHKERRQ(ierr);
   }
-  //ierr = PetscRealView(n*sdim,coords,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
   fctx.lambda = 0.01;
   ierr = PetscOptionsGetReal(NULL,NULL,"-lambda",&fctx.lambda,NULL);CHKERRQ(ierr);
   ierr = PetscRandomGetValueReal(r,&fctx.sigma);CHKERRQ(ierr);
@@ -124,5 +123,21 @@ int main(int argc,char **args)
 }
 
 /*TEST
+
+  build:
+    requires: hara
+
+  test:
+    suffix: 1
+    args: -pc_hara_monitor
+
+  test:
+    suffix: 1_ns
+    output_file: output/ex21_1.out
+    args: -pc_hara_monitor -pc_hara_hyperorder 2
+
+  test:
+    suffix: 2
+    args: -pc_hara_monitor -pc_hara_hyperorder 4
 
 TEST*/
