@@ -123,17 +123,19 @@ typedef struct {
   HMatrix *hmatrix;
   DistributedHMatrix *dist_hmatrix;
 
-  /* vector layout in parallel may be different from
-     the one specified by the PETSc user */
+  /* May use permutations */
   PetscSF sf;
   PetscLayout hara_rmap;
   thrust::host_vector<PetscScalar> *xx,*yy;
+  PetscInt xxs,yys;
+  PetscBool multsetup;
 
   /* GPU */
 #if defined(HARA_USE_GPU)
   GPU_HMatrix *hmatrix_gpu;
   DistributedHMatrix_GPU *dist_hmatrix_gpu;
   thrust::device_vector<PetscScalar> *xx_gpu,*yy_gpu;
+  PetscInt xxs_gpu,yys_gpu;
 #endif
 
   /* construction from matvecs */
@@ -445,16 +447,14 @@ static PetscErrorCode MatMultNKernel_HARA(Mat A, PetscBool transA, Mat B, Mat C)
   }
   if (!boundtocpu) {
 #if defined(HARA_USE_GPU)
-    PetscBool                          ciscuda,biscuda;
-    thrust::device_vector<PetscScalar> *tuxx = NULL;
-    thrust::device_vector<PetscScalar> *tuyy = NULL;
+    PetscBool ciscuda,biscuda;
 
     if (hara->sf) {
       PetscInt n;
 
       ierr = PetscSFGetGraph(hara->sf,NULL,&n,NULL,NULL);CHKERRQ(ierr);
-      tuxx = new thrust::device_vector<PetscScalar>(n*B->cmap->N);
-      tuyy = new thrust::device_vector<PetscScalar>(n*B->cmap->N);
+      if (hara->xxs_gpu < B->cmap->n) { hara->xx_gpu->resize(n*B->cmap->N); hara->xxs_gpu = B->cmap->N; }
+      if (hara->yys_gpu < B->cmap->n) { hara->yy_gpu->resize(n*B->cmap->N); hara->yys_gpu = B->cmap->N; }
     }
     /* If not of type seqdensecuda, convert on the fly (i.e. allocate GPU memory) */
     ierr = PetscObjectTypeCompareAny((PetscObject)B,&biscuda,MATSEQDENSECUDA,MATMPIDENSECUDA,"");CHKERRQ(ierr);
@@ -463,13 +463,14 @@ static PetscErrorCode MatMultNKernel_HARA(Mat A, PetscBool transA, Mat B, Mat C)
     }
     ierr = PetscObjectTypeCompareAny((PetscObject)C,&ciscuda,MATSEQDENSECUDA,MATMPIDENSECUDA,"");CHKERRQ(ierr);
     if (!ciscuda) {
+      C->assembled = PETSC_TRUE;
       ierr = MatConvert(C,MATDENSECUDA,MAT_INPLACE_MATRIX,&C);CHKERRQ(ierr);
     }
     ierr = MatDenseCUDAGetArrayRead(B,(const PetscScalar**)&xx);CHKERRQ(ierr);
     ierr = MatDenseCUDAGetArrayWrite(C,&yy);CHKERRQ(ierr);
     if (hara->sf) {
-      uxx  = MatHaraGetThrustPointer(*tuxx);
-      uyy  = MatHaraGetThrustPointer(*tuyy);
+      uxx  = MatHaraGetThrustPointer(*hara->xx_gpu);
+      uyy  = MatHaraGetThrustPointer(*hara->yy_gpu);
       ierr = PetscSFBcastBegin(bsf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
       ierr = PetscSFBcastEnd(bsf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
     } else {
@@ -494,25 +495,20 @@ static PetscErrorCode MatMultNKernel_HARA(Mat A, PetscBool transA, Mat B, Mat C)
     if (!ciscuda) {
       ierr = MatConvert(C,MATSEQDENSE,MAT_INPLACE_MATRIX,&C);CHKERRQ(ierr);
     }
-    delete tuxx;
-    delete tuyy;
 #endif
   } else {
-    thrust::host_vector<PetscScalar> *tuxx = NULL;
-    thrust::host_vector<PetscScalar> *tuyy = NULL;
-
     if (hara->sf) {
       PetscInt n;
 
       ierr = PetscSFGetGraph(hara->sf,NULL,&n,NULL,NULL);CHKERRQ(ierr);
-      tuxx = new thrust::host_vector<PetscScalar>(n*B->cmap->N);
-      tuyy = new thrust::host_vector<PetscScalar>(n*B->cmap->N);
+      if (hara->xxs < B->cmap->n) { hara->xx->resize(n*B->cmap->N); hara->xxs = B->cmap->N; }
+      if (hara->yys < B->cmap->n) { hara->yy->resize(n*B->cmap->N); hara->yys = B->cmap->N; }
     }
     ierr = MatDenseGetArrayRead(B,(const PetscScalar**)&xx);CHKERRQ(ierr);
     ierr = MatDenseGetArrayWrite(C,&yy);CHKERRQ(ierr);
     if (hara->sf) {
-      uxx  = MatHaraGetThrustPointer(*tuxx);
-      uyy  = MatHaraGetThrustPointer(*tuyy);
+      uxx  = MatHaraGetThrustPointer(*hara->xx);
+      uyy  = MatHaraGetThrustPointer(*hara->yy);
       ierr = PetscSFBcastBegin(bsf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
       ierr = PetscSFBcastEnd(bsf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
     } else {
@@ -531,26 +527,26 @@ static PetscErrorCode MatMultNKernel_HARA(Mat A, PetscBool transA, Mat B, Mat C)
       ierr = PetscSFReduceEnd(csf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
     }
     ierr = MatDenseRestoreArrayWrite(C,&yy);CHKERRQ(ierr);
-    delete tuxx;
-    delete tuyy;
   }
   PetscFunctionReturn(0);
 }
 
 static PetscErrorCode MatProductNumeric_HARA(Mat C)
 {
-  Mat_Product *product = C->product;
+  Mat_Product    *product = C->product;
+  PetscErrorCode ierr;
 
   PetscFunctionBegin;
+  MatCheckProduct(C,1);
   switch (product->type) {
   case MATPRODUCT_AB:
-    MatMultNKernel_HARA(product->A,PETSC_FALSE,product->B,C);
+    ierr = MatMultNKernel_HARA(product->A,PETSC_FALSE,product->B,C);CHKERRQ(ierr);
     break;
   case MATPRODUCT_AtB:
-    MatMultNKernel_HARA(product->A,PETSC_TRUE,product->B,C);
+    ierr = MatMultNKernel_HARA(product->A,PETSC_TRUE,product->B,C);CHKERRQ(ierr);
     break;
   default:
-    SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_SUP,"MatProduct type %d is not supported",product->type);
+    SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_SUP,"MatProduct type %s is not supported",MatProductTypes[product->type]);
   }
   PetscFunctionReturn(0);
 }
@@ -559,30 +555,32 @@ static PetscErrorCode MatProductSymbolic_HARA(Mat C)
 {
   PetscErrorCode ierr;
   Mat_Product    *product = C->product;
-  PetscBool      newh = PETSC_FALSE;
-  Mat            A = product->A, B = product->B;
+  PetscBool      cisdense;
+  Mat            A,B;
 
   PetscFunctionBegin;
+  MatCheckProduct(C,1);
+  A = product->A;
+  B = product->B;
   switch (product->type) {
   case MATPRODUCT_AB:
     ierr = MatSetSizes(C,A->rmap->n,B->cmap->n,A->rmap->N,B->cmap->N);CHKERRQ(ierr);
     ierr = MatSetBlockSizesFromMats(C,product->A,product->B);CHKERRQ(ierr);
-    ierr = MatSetType(C,newh ? MATHARA : ((PetscObject)product->B)->type_name);CHKERRQ(ierr);
-    ierr = MatSeqDenseSetPreallocation(C,NULL);CHKERRQ(ierr);
-    ierr = MatMPIDenseSetPreallocation(C,NULL);CHKERRQ(ierr);
+    ierr = PetscObjectTypeCompareAny((PetscObject)C,&cisdense,MATSEQDENSE,MATMPIDENSE,MATSEQDENSECUDA,MATMPIDENSECUDA,"");CHKERRQ(ierr);
+    if (!cisdense) { ierr = MatSetType(C,((PetscObject)product->B)->type_name);CHKERRQ(ierr); }
+    ierr = MatSetUp(C);CHKERRQ(ierr);
     break;
   case MATPRODUCT_AtB:
     ierr = MatSetSizes(C,A->cmap->n,B->cmap->n,A->cmap->N,B->cmap->N);CHKERRQ(ierr);
     ierr = MatSetBlockSizesFromMats(C,product->A,product->B);CHKERRQ(ierr);
-    ierr = MatSetType(C,newh ? MATHARA : ((PetscObject)product->B)->type_name);CHKERRQ(ierr);
-    ierr = MatSeqDenseSetPreallocation(C,NULL);CHKERRQ(ierr);
-    ierr = MatMPIDenseSetPreallocation(C,NULL);CHKERRQ(ierr);
+    ierr = PetscObjectTypeCompareAny((PetscObject)C,&cisdense,MATSEQDENSE,MATMPIDENSE,MATSEQDENSECUDA,MATMPIDENSECUDA,"");CHKERRQ(ierr);
+    if (!cisdense) { ierr = MatSetType(C,((PetscObject)product->B)->type_name);CHKERRQ(ierr); }
+    ierr = MatSetUp(C);CHKERRQ(ierr);
     break;
   default:
-    SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_SUP,"MatProduct type %d is not supported",product->type);
+    SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_SUP,"MatProduct type %s is not supported",MatProductTypes[product->type]);
   }
-  ierr = MatAssemblyBegin(C,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
-  ierr = MatAssemblyEnd(C,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+  C->ops->productsymbolic = NULL;
   C->ops->productnumeric = MatProductNumeric_HARA;
   PetscFunctionReturn(0);
 }
@@ -591,6 +589,7 @@ static PetscErrorCode MatProductSetFromOptions_HARA(Mat C)
 {
   PetscFunctionBegin;
   C->ops->productsymbolic = MatProductSymbolic_HARA;
+  C->ops->productnumeric = NULL;
   PetscFunctionReturn(0);
 }
 
@@ -811,6 +810,7 @@ static PetscErrorCode MatSetUpMultiply_HARA(Mat A)
   PetscBool      rid;
 
   PetscFunctionBegin;
+  if (a->multsetup) PetscFunctionReturn(0);
   ierr = PetscObjectGetComm((PetscObject)A,&comm);CHKERRQ(ierr);
   ierr = MPI_Comm_size(comm,&size);CHKERRQ(ierr);
   if (size > 1) {
@@ -836,13 +836,18 @@ static PetscErrorCode MatSetUpMultiply_HARA(Mat A)
     ierr = PetscSFCreate(comm,&a->sf);CHKERRQ(ierr);
     ierr = PetscSFSetGraphLayout(a->sf,A->rmap,n,NULL,PETSC_OWN_POINTER,idx);CHKERRQ(ierr);
 #if defined(HARA_USE_GPU)
-    a->xx_gpu = new thrust::device_vector<PetscScalar>(n);
-    a->yy_gpu = new thrust::device_vector<PetscScalar>(n);
+    a->xx_gpu  = new thrust::device_vector<PetscScalar>(n);
+    a->yy_gpu  = new thrust::device_vector<PetscScalar>(n);
+    a->xxs_gpu = 1;
+    a->yys_gpu = 1;
 #endif
-    a->xx = new thrust::host_vector<PetscScalar>(n);
-    a->yy = new thrust::host_vector<PetscScalar>(n);
+    a->xx  = new thrust::host_vector<PetscScalar>(n);
+    a->yy  = new thrust::host_vector<PetscScalar>(n);
+    a->xxs = 1;
+    a->yys = 1;
   }
   ierr = ISDestroy(&is);CHKERRQ(ierr);
+  a->multsetup = PETSC_TRUE;
   PetscFunctionReturn(0);
 }
 
@@ -940,8 +945,6 @@ static PetscErrorCode MatAssemblyEnd_HARA(Mat A, MatAssemblyType asstype)
       PetscReal Anorm;
       bool      verbose = false;
 
-      if (a->bs == 1) a->sampler->SetUseMult(true);
-      else a->sampler->SetUseMult(false);
       ierr = MatApproximateNorm_Private(a->sampler->GetSamplingMat(),NORM_2,PETSC_DECIDE,&Anorm);CHKERRQ(ierr);
       if (boundtocpu) {
         a->sampler->SetGPUSampling(false);
