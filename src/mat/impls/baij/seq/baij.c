@@ -2814,8 +2814,8 @@ PetscErrorCode  MatSeqBAIJSetPreallocation_SeqBAIJ(Mat B,PetscInt bs,PetscInt nz
   if (!flg) {
     switch (bs) {
     case 1:
-      B->ops->mult    = MatMult_SeqBAIJ_1;
-      B->ops->multadd = MatMultAdd_SeqBAIJ_1;
+      B->ops->mult    = MatMult_SeqAIJ;
+      B->ops->multadd = MatMultAdd_SeqAIJ;
       break;
     case 2:
       B->ops->mult    = MatMult_SeqBAIJ_2;

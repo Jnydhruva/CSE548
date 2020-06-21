@@ -23,7 +23,7 @@
                                                                                                      \
                                                                                                      \
   MatScalar     *idiag;            /* inverse of block diagonal  */                                \
-  PetscBool     idiagvalid         /* if above has correct/current values */ 
+  PetscBool     idiagvalid         /* if above has correct/current values */
 
 typedef struct {
   SEQAIJHEADER(MatScalar);
@@ -207,7 +207,6 @@ PETSC_INTERN PetscErrorCode MatLUFactorNumeric_SeqBAIJ_9_NaturalOrdering(Mat,Mat
 PETSC_INTERN PetscErrorCode MatLUFactorNumeric_SeqBAIJ_15_NaturalOrdering(Mat,Mat,const MatFactorInfo*);
 PETSC_INTERN PetscErrorCode MatLUFactorNumeric_SeqBAIJ_N_inplace(Mat,Mat,const MatFactorInfo*);
 
-PETSC_INTERN PetscErrorCode MatMult_SeqBAIJ_1(Mat,Vec,Vec);
 PETSC_INTERN PetscErrorCode MatMult_SeqBAIJ_2(Mat,Vec,Vec);
 PETSC_INTERN PetscErrorCode MatMult_SeqBAIJ_3(Mat,Vec,Vec);
 PETSC_INTERN PetscErrorCode MatMult_SeqBAIJ_4(Mat,Vec,Vec);
@@ -224,7 +223,6 @@ PETSC_INTERN PetscErrorCode MatMult_SeqBAIJ_15_ver4(Mat,Vec,Vec);
 
 PETSC_INTERN PetscErrorCode MatMult_SeqBAIJ_N(Mat,Vec,Vec);
 
-PETSC_INTERN PetscErrorCode MatMultAdd_SeqBAIJ_1(Mat,Vec,Vec,Vec);
 PETSC_INTERN PetscErrorCode MatMultAdd_SeqBAIJ_2(Mat,Vec,Vec,Vec);
 PETSC_INTERN PetscErrorCode MatMultAdd_SeqBAIJ_3(Mat,Vec,Vec,Vec);
 PETSC_INTERN PetscErrorCode MatMultAdd_SeqBAIJ_4(Mat,Vec,Vec,Vec);
