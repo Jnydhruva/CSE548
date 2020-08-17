@@ -7,7 +7,7 @@
 /* Logging support */
 PetscClassId  VEC_CLASSID;
 PetscLogEvent VEC_View, VEC_Max, VEC_Min, VEC_Dot, VEC_MDot, VEC_TDot;
-PetscLogEvent VEC_Norm, VEC_Normalize, VEC_Scale, VEC_Copy, VEC_Set, VEC_AXPY, VEC_AYPX, VEC_WAXPY;
+PetscLogEvent VEC_Norm, VEC_Normalize, VEC_Scale, VEC_Copy, VEC_Set, VEC_AXPY, VEC_AYPX, VEC_WAXPY, VEC_Duplicate;
 PetscLogEvent VEC_MTDot, VEC_MAXPY, VEC_Swap, VEC_AssemblyBegin, VEC_ScatterBegin, VEC_ScatterEnd;
 PetscLogEvent VEC_AssemblyEnd, VEC_PointwiseMult, VEC_SetValues, VEC_Load;
 PetscLogEvent VEC_SetRandom, VEC_ReduceArithmetic, VEC_ReduceCommunication,VEC_ReduceBegin,VEC_ReduceEnd,VEC_Ops;
@@ -364,8 +364,10 @@ PetscErrorCode  VecDuplicate(Vec v,Vec *newv)
   PetscValidHeaderSpecific(v,VEC_CLASSID,1);
   PetscValidPointer(newv,2);
   PetscValidType(v,1);
+  ierr = PetscLogEventBegin(VEC_Duplicate,v,newv,0,0);CHKERRQ(ierr);
   ierr = (*v->ops->duplicate)(v,newv);CHKERRQ(ierr);
   ierr = PetscObjectStateIncrease((PetscObject)*newv);CHKERRQ(ierr);
+  ierr = PetscLogEventEnd(VEC_Duplicate,v,newv,0,0);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
