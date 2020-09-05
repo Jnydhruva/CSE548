@@ -35,7 +35,7 @@ PetscErrorCode VecCUDAAllocateCheckHost(Vec v)
       ierr = PetscMallocSetCUDAHost();CHKERRQ(ierr);
       v->pinned_memory = PETSC_TRUE;
     }
-    ierr = PetscMalloc1(n,&array);CHKERRQ(ierr);
+    ierr = PetscCalloc1(n,&array);CHKERRQ(ierr);
     ierr = PetscLogObjectMemory((PetscObject)v,n*sizeof(PetscScalar));CHKERRQ(ierr);
     s->array           = array;
     s->array_allocated = array;
@@ -280,8 +280,7 @@ PetscErrorCode VecCreate_SeqCUDA(Vec V)
   ierr = VecCUDAAllocateCheck(V);CHKERRQ(ierr);
   ierr = VecCreate_SeqCUDA_Private(V,((Vec_CUDA*)V->spptr)->GPUarray_allocated);CHKERRQ(ierr);
   ierr = VecCUDAAllocateCheckHost(V);CHKERRQ(ierr);
-  ierr = VecSet(V,0.0);CHKERRQ(ierr);
-  ierr = VecSet_Seq(V,0.0);CHKERRQ(ierr);
+  ierr = VecSet_SeqCUDA(V,0.0);CHKERRQ(ierr);
   V->offloadmask = PETSC_OFFLOAD_BOTH;
   PetscFunctionReturn(0);
 }
