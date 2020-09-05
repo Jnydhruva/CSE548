@@ -257,16 +257,23 @@ PetscErrorCode VecCreateSeqCUDA(MPI_Comm comm,PetscInt n,Vec *v)
   PetscFunctionReturn(0);
 }
 
+int trial = 0;
+double tinit = 0, tlay = 0, tcheck = 0, tpriv = 0, thost = 0, tset = 0, ttot = 0;
 PetscErrorCode VecDuplicate_SeqCUDA(Vec win,Vec *V)
 {
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
+  double t0 = MPI_Wtime();
   ierr = VecCreateSeqCUDA(PetscObjectComm((PetscObject)win),win->map->n,V);CHKERRQ(ierr);
   ierr = PetscLayoutReference(win->map,&(*V)->map);CHKERRQ(ierr);
   ierr = PetscObjectListDuplicate(((PetscObject)win)->olist,&((PetscObject)(*V))->olist);CHKERRQ(ierr);
   ierr = PetscFunctionListDuplicate(((PetscObject)win)->qlist,&((PetscObject)(*V))->qlist);CHKERRQ(ierr);
   (*V)->stash.ignorenegidx = win->stash.ignorenegidx;
+  trial++;
+  double t1 = MPI_Wtime();
+  ttot += t1 - t0;
+  if (trial%1000 == 0) printf("%g %g %g %g %g %g %g\n",tinit, tlay, tcheck, tpriv, thost, tset, ttot);
   PetscFunctionReturn(0);
 }
 
@@ -275,12 +282,24 @@ PetscErrorCode VecCreate_SeqCUDA(Vec V)
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
+  double t0 = MPI_Wtime();
   ierr = PetscCUDAInitializeCheck();CHKERRQ(ierr);
+  tinit += MPI_Wtime()-t0;
+  t0 = MPI_Wtime();
   ierr = PetscLayoutSetUp(V->map);CHKERRQ(ierr);
+  tlay += MPI_Wtime()-t0;
+  t0 = MPI_Wtime();
   ierr = VecCUDAAllocateCheck(V);CHKERRQ(ierr);
+  tcheck += MPI_Wtime()-t0;
+  t0 = MPI_Wtime();
   ierr = VecCreate_SeqCUDA_Private(V,((Vec_CUDA*)V->spptr)->GPUarray_allocated);CHKERRQ(ierr);
+  tpriv += MPI_Wtime()-t0;
+  t0 = MPI_Wtime();
   ierr = VecCUDAAllocateCheckHost(V);CHKERRQ(ierr);
+  thost += MPI_Wtime()-t0;
+  t0 = MPI_Wtime();
   ierr = VecSet_SeqCUDA(V,0.0);CHKERRQ(ierr);
+  tset += MPI_Wtime()-t0;
   V->offloadmask = PETSC_OFFLOAD_BOTH;
   PetscFunctionReturn(0);
 }
