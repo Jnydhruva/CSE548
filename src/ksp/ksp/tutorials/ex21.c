@@ -1,5 +1,5 @@
 
-static char help[] = "Solves a RBF kernel matrix with KSP and PCHARA.\n\n";
+static char help[] = "Solves a RBF kernel matrix with KSP and PCH2OPUS.\n\n";
 
 #include <petscksp.h>
 
@@ -76,7 +76,7 @@ int main(int argc,char **args)
     ierr = MatAssemblyBegin(Ad,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
     ierr = MatAssemblyEnd(Ad,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
   }
-  ierr = MatCreateHaraFromKernel(PETSC_COMM_WORLD,n,n,PETSC_DECIDE,PETSC_DECIDE,sdim,coords,RBF,&fctx,eta,leafsize,basisord,&A);CHKERRQ(ierr);
+  ierr = MatCreateH2OpusFromKernel(PETSC_COMM_WORLD,n,n,PETSC_DECIDE,PETSC_DECIDE,sdim,coords,RBF,&fctx,eta,leafsize,basisord,&A);CHKERRQ(ierr);
   ierr = MatSetOption(A,MAT_SYMMETRY_ETERNAL,PETSC_TRUE);CHKERRQ(ierr);
   ierr = MatSetOption(A,MAT_SYMMETRIC,PETSC_TRUE);CHKERRQ(ierr);
   ierr = MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
@@ -98,7 +98,7 @@ int main(int argc,char **args)
   ierr = KSPCreate(PETSC_COMM_WORLD,&ksp);CHKERRQ(ierr);
   ierr = KSPSetOperators(ksp,Ad ? Ad : A,A);CHKERRQ(ierr);
   ierr = KSPGetPC(ksp,&pc);CHKERRQ(ierr);
-  ierr = PCSetType(pc,PCHARA);CHKERRQ(ierr);
+  ierr = PCSetType(pc,PCH2OPUS);CHKERRQ(ierr);
   ierr = KSPSetFromOptions(ksp);CHKERRQ(ierr);
   ierr = KSPGetPC(ksp,&pc);CHKERRQ(ierr);
   ierr = PCSetCoordinates(pc,sdim,n,coords);CHKERRQ(ierr);
@@ -125,22 +125,22 @@ int main(int argc,char **args)
 /*TEST
 
   build:
-    requires: hara
+    requires: h2opus
 
   test:
-    requires: hara
+    requires: h2opus
     suffix: 1
-    args: -pc_hara_monitor
+    args: -pc_h2opus_monitor
 
   test:
-    requires: hara
+    requires: h2opus
     suffix: 1_ns
     output_file: output/ex21_1.out
-    args: -pc_hara_monitor -pc_hara_hyperorder 2
+    args: -pc_h2opus_monitor -pc_h2opus_hyperorder 2
 
   test:
-    requires: hara
+    requires: h2opus
     suffix: 2
-    args: -pc_hara_monitor -pc_hara_hyperorder 4
+    args: -pc_h2opus_monitor -pc_h2opus_hyperorder 4
 
 TEST*/
