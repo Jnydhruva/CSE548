@@ -1,123 +1,89 @@
-#include <hara.h>
-#include <distributed/distributed_hara_handle.h>
-#include <distributed/distributed_hmatrix.h>
-#include <distributed/distributed_geometric_construction.h>
-#include <distributed/distributed_hgemv.h>
+#include <h2opus.h>
+#include <h2opus/distributed/distributed_h2opus_handle.h>
+#include <h2opus/distributed/distributed_geometric_construction.h>
+#include <h2opus/distributed/distributed_hgemv.h>
+#include <h2opus/util/boxentrygen.h>
 #include <petsc/private/matimpl.h>
 #include <petscsf.h>
 
-#define MatHaraGetThrustPointer(v) thrust::raw_pointer_cast((v).data())
+#define MatH2OpusGetThrustPointer(v) thrust::raw_pointer_cast((v).data())
 
-// TODO HARA:
-// MatDuplicate buggy with commsize > 1
+// TODO H2OPUS:
 // kernel needs (global?) id of points (issues with Chebyshev points and coupling matrix computation)
-// unsymmetrix DistributedHMatrix (transpose for distributed_hgemv?)
+// DistributedHMatrix
+//   unsymmetric ?
+//   transpose for distributed_hgemv?
+//   clearData()
 // Unify interface for sequential and parallel?
 // Reuse geometric construction (almost possible, only the unsymmetric case is explicitly handled)
-// Fix includes:
-// - everything under hara/ dir (except for hara.h)
-// - fix kblas includes
-// - namespaces?
-// Fix naming convention DistributedHMatrix_GPU vs GPU_HMatrix
+// Namespace H2OPUS stuff?
 // Diagnostics? FLOPS, MEMORY USAGE IN PARALLEL
-// Why do we need to template the admissibility condition in the hmatrix construction?
 //
-template<typename T, int D>
-struct PetscPointCloud
+template <class T> class PetscPointCloud : public H2OpusDataSet<T>
 {
-  static const int Dim = D;
-  typedef T ElementType;
+  private:
+    int dimension;
+    size_t num_points;
+    std::vector<std::vector<T>> pts;
 
-  struct Point
-  {
-    T x[D];
-    Point() {
-      for (int i = 0; i < D; i++) x[i] = 0;
+  public:
+    PetscPointCloud(int dim, size_t num_pts, const T coords[])
+    {
+      this->dimension = dim;
+      this->num_points = num_pts;
+
+      pts.resize(dim);
+      for (int i = 0; i < dim; i++)
+        pts[i].resize(num_points);
+
+      for (size_t n = 0; n < num_points; n++)
+        for (int i = 0; i < dim; i++)
+          pts[i][n] = coords[n*dim + i];
     }
-    Point(const T xx[]) {
-      for (int i = 0; i < D; i++) x[i] = xx[i];
+
+    PetscPointCloud(const PetscPointCloud<T>& other)
+    {
+      this->dimension = other.dimension;
+      this->num_points = other.num_points;
+      this->pts = other.pts;
     }
-  };
 
-  std::vector<Point> pts;
+    size_t getDimension() const
+    {
+        return dimension;
+    }
 
-  // Must return the number of data points
-  inline size_t kdtree_get_point_count() const { return pts.size(); }
+    size_t getDataSetSize() const
+    {
+        return num_points;
+    }
 
-  // Returns the dim'th component of the idx'th point in the class:
-  inline T kdtree_get_pt(const size_t idx, int dim) const
-  {
-    return pts[idx].x[dim];
-  }
-
-  inline T get_pt(const size_t idx, int dim) const
-  {
-    return kdtree_get_pt(idx, dim);
-  }
-
-  inline bool kdtree_ignore_point(const size_t idx) const { return false; }
-
-  // Optional bounding-box computation: return false to default to a standard bbox computation loop.
-  //   Return true if the BBOX was already computed by the class and returned in "bb" so it can be avoided to redo it again.
-  //   Look at bb.size() to find out the expected dimensionality (e.g. 2 or 3 for point clouds)
-  template <class BBOX>
-  bool kdtree_get_bbox(BBOX& /* bb */) const { return false; }
-
-  PetscPointCloud(PetscInt,const T[]);
-  PetscPointCloud(PetscPointCloud&);
+    T getDataPoint(size_t idx, size_t dim) const
+    {
+        return pts[dim][idx];
+    }
 };
 
-template<typename T, int D>
-PetscPointCloud<T,D>::PetscPointCloud(PetscInt n, const T coords[])
-{
-  this->pts.resize(n);
-  for (PetscInt i = 0; i < n; i++) {
-    Point p(coords);
-    this->pts[i] = p;
-    coords += D;
-  }
-}
-
-template<typename T, int D>
-PetscPointCloud<T,D>::PetscPointCloud(PetscPointCloud<T,D>& other)
-{
-  this->pts = other.pts;
-}
-
-template <typename T>
-using PetscPointCloud3D = PetscPointCloud<T,3>;
-template <typename T>
-using PetscPointCloud2D = PetscPointCloud<T,2>;
-template <typename T>
-using PetscPointCloud1D = PetscPointCloud<T,1>;
-
-template<typename T, int Dim>
-struct PetscFunctionGenerator
+template<class T> class PetscFunctionGenerator
 {
 private:
-  MatHaraKernel k;
-  void          *ctx;
+  MatH2OpusKernel k;
+  int             dim;
+  void            *ctx;
 
 public:
-    PetscFunctionGenerator(MatHaraKernel k, void* ctx) { this->k = k; this->ctx = ctx; }
-    PetscFunctionGenerator(PetscFunctionGenerator& other) { this->k = other.k; this->ctx = other.ctx; }
-    T operator()(PetscReal pt1[Dim], PetscReal pt2[Dim])
+    PetscFunctionGenerator(MatH2OpusKernel k, int dim, void* ctx) { this->k = k; this->dim = dim; this->ctx = ctx; }
+    PetscFunctionGenerator(PetscFunctionGenerator& other) { this->k = other.k; this->dim = other.dim; this->ctx = other.ctx; }
+    T operator()(PetscReal *pt1, PetscReal *pt2)
     {
-        return (T)(this->k ? (*this->k)(Dim,pt1,pt2,this->ctx) : 0);
+        return (T)(this->k ? (*this->k)(this->dim,pt1,pt2,this->ctx) : 0);
     }
 };
 
-template <typename T>
-using PetscFunctionGenerator3D = PetscFunctionGenerator<T,3>;
-template <typename T>
-using PetscFunctionGenerator2D = PetscFunctionGenerator<T,2>;
-template <typename T>
-using PetscFunctionGenerator1D = PetscFunctionGenerator<T,1>;
-
-#include <../src/mat/impls/hara/matharasampler.hpp>
+#include <../src/mat/impls/h2opus/math2opussampler.hpp>
 
 typedef struct {
-  distributedHaraHandle_t handle;
+  distributedH2OpusHandle_t handle;
 
   /* two different classes at the moment */
   HMatrix *hmatrix;
@@ -125,14 +91,14 @@ typedef struct {
 
   /* May use permutations */
   PetscSF sf;
-  PetscLayout hara_rmap;
+  PetscLayout h2opus_rmap;
   thrust::host_vector<PetscScalar> *xx,*yy;
   PetscInt xxs,yys;
   PetscBool multsetup;
 
   /* GPU */
-#if defined(HARA_USE_GPU)
-  GPU_HMatrix *hmatrix_gpu;
+#if defined(H2OPUS_USE_GPU)
+  HMatrix_GPU *hmatrix_gpu;
   DistributedHMatrix_GPU *dist_hmatrix_gpu;
   thrust::device_vector<PetscScalar> *xx_gpu,*yy_gpu;
   PetscInt xxs_gpu,yys_gpu;
@@ -146,15 +112,10 @@ typedef struct {
   PetscInt  leafsize;
 
   /* for dof reordering */
-  PetscInt spacedim;
-  PetscPointCloud1D<PetscReal> *ptcloud1;
-  PetscPointCloud2D<PetscReal> *ptcloud2;
-  PetscPointCloud3D<PetscReal> *ptcloud3;
+  PetscPointCloud<PetscReal> *ptcloud;
 
   /* kernel for generating matrix entries */
-  PetscFunctionGenerator1D<PetscScalar> *kernel1;
-  PetscFunctionGenerator2D<PetscScalar> *kernel2;
-  PetscFunctionGenerator3D<PetscScalar> *kernel3;
+  PetscFunctionGenerator<PetscScalar> *kernel;
 
   /* customization */
   PetscInt  basisord;
@@ -166,38 +127,34 @@ typedef struct {
 
   /* keeps track of MatScale values */
   PetscScalar s;
-} Mat_HARA;
+} Mat_H2OPUS;
 
-static PetscErrorCode MatDestroy_HARA(Mat A)
+static PetscErrorCode MatDestroy_H2OPUS(Mat A)
 {
-  Mat_HARA       *a = (Mat_HARA*)A->data;
+  Mat_H2OPUS     *a = (Mat_H2OPUS*)A->data;
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
-  haraDestroyDistributedHandle(a->handle);
+  h2opusDestroyDistributedHandle(a->handle);
   delete a->hmatrix;
   delete a->dist_hmatrix;
   ierr = PetscSFDestroy(&a->sf);CHKERRQ(ierr);
-  ierr = PetscLayoutDestroy(&a->hara_rmap);CHKERRQ(ierr);
+  ierr = PetscLayoutDestroy(&a->h2opus_rmap);CHKERRQ(ierr);
   delete a->xx;
   delete a->yy;
-#if defined(HARA_USE_GPU)
+#if defined(H2OPUS_USE_GPU)
   delete a->hmatrix_gpu;
   delete a->dist_hmatrix_gpu;
   delete a->xx_gpu;
   delete a->yy_gpu;
 #endif
   delete a->sampler;
-  delete a->ptcloud1;
-  delete a->ptcloud2;
-  delete a->ptcloud3;
-  delete a->kernel1;
-  delete a->kernel2;
-  delete a->kernel3;
-  ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_hara_seqdense_C",NULL);CHKERRQ(ierr);
-  ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_hara_seqdensecuda_C",NULL);CHKERRQ(ierr);
-  ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_hara_mpidense_C",NULL);CHKERRQ(ierr);
-  ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_hara_mpidensecuda_C",NULL);CHKERRQ(ierr);
+  delete a->ptcloud;
+  delete a->kernel;
+  ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_h2opus_seqdense_C",NULL);CHKERRQ(ierr);
+  ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_h2opus_seqdensecuda_C",NULL);CHKERRQ(ierr);
+  ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_h2opus_mpidense_C",NULL);CHKERRQ(ierr);
+  ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_h2opus_mpidensecuda_C",NULL);CHKERRQ(ierr);
   ierr = PetscObjectChangeTypeName((PetscObject)A,NULL);CHKERRQ(ierr);
   ierr = PetscFree(A->data);CHKERRQ(ierr);
   PetscFunctionReturn(0);
@@ -393,16 +350,16 @@ static PetscErrorCode MatApproximateNorm_Private(Mat A, NormType normtype, Petsc
   PetscFunctionReturn(0);
 }
 
-PETSC_EXTERN PetscErrorCode MatNorm_HARA(Mat A, NormType normtype, PetscReal* n)
+PETSC_EXTERN PetscErrorCode MatNorm_H2OPUS(Mat A, NormType normtype, PetscReal* n)
 {
   PetscErrorCode ierr;
-  PetscBool      ishara;
+  PetscBool      ish2opus;
   PetscInt       nmax = PETSC_DECIDE;
 
   PetscFunctionBegin;
-  ierr = PetscObjectTypeCompare((PetscObject)A,MATHARA,&ishara);CHKERRQ(ierr);
-  if (ishara) {
-    Mat_HARA *a = (Mat_HARA*)A->data;
+  ierr = PetscObjectTypeCompare((PetscObject)A,MATH2OPUS,&ish2opus);CHKERRQ(ierr);
+  if (ish2opus) {
+    Mat_H2OPUS *a = (Mat_H2OPUS*)A->data;
 
     nmax = a->norm_max_samples;
   }
@@ -410,10 +367,10 @@ PETSC_EXTERN PetscErrorCode MatNorm_HARA(Mat A, NormType normtype, PetscReal* n)
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatMultNKernel_HARA(Mat A, PetscBool transA, Mat B, Mat C)
+static PetscErrorCode MatMultNKernel_H2OPUS(Mat A, PetscBool transA, Mat B, Mat C)
 {
-  Mat_HARA       *hara = (Mat_HARA*)A->data;
-  haraHandle_t   handle = hara->handle->handle;
+  Mat_H2OPUS     *h2opus = (Mat_H2OPUS*)A->data;
+  h2opusHandle_t handle = h2opus->handle->handle;
   PetscBool      boundtocpu = PETSC_TRUE;
   PetscScalar    *xx,*yy,*uxx,*uyy;
   PetscInt       blda,clda;
@@ -421,40 +378,40 @@ static PetscErrorCode MatMultNKernel_HARA(Mat A, PetscBool transA, Mat B, Mat C)
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
-#if defined(HARA_USE_GPU)
+#if defined(H2OPUS_USE_GPU)
   boundtocpu = A->boundtocpu;
 #endif
   ierr = MatDenseGetLDA(B,&blda);CHKERRQ(ierr);
   ierr = MatDenseGetLDA(C,&clda);CHKERRQ(ierr);
-  if (hara->sf) {
+  if (h2opus->sf) {
     PetscInt n;
 
-    ierr = PetscSFGetGraph(hara->sf,NULL,&n,NULL,NULL);CHKERRQ(ierr);
-    ierr = PetscObjectQuery((PetscObject)B,"_mathara_vectorsf",(PetscObject*)&bsf);CHKERRQ(ierr);
+    ierr = PetscSFGetGraph(h2opus->sf,NULL,&n,NULL,NULL);CHKERRQ(ierr);
+    ierr = PetscObjectQuery((PetscObject)B,"_math2opus_vectorsf",(PetscObject*)&bsf);CHKERRQ(ierr);
     if (!bsf) {
-      ierr = PetscSFGetVectorSF(hara->sf,B->cmap->N,blda,PETSC_DECIDE,&bsf);CHKERRQ(ierr);
-      ierr = PetscObjectCompose((PetscObject)B,"_mathara_vectorsf",(PetscObject)bsf);CHKERRQ(ierr);
+      ierr = PetscSFGetVectorSF(h2opus->sf,B->cmap->N,blda,PETSC_DECIDE,&bsf);CHKERRQ(ierr);
+      ierr = PetscObjectCompose((PetscObject)B,"_math2opus_vectorsf",(PetscObject)bsf);CHKERRQ(ierr);
       ierr = PetscObjectDereference((PetscObject)bsf);CHKERRQ(ierr);
     }
-    ierr = PetscObjectQuery((PetscObject)C,"_mathara_vectorsf",(PetscObject*)&csf);CHKERRQ(ierr);
+    ierr = PetscObjectQuery((PetscObject)C,"_math2opus_vectorsf",(PetscObject*)&csf);CHKERRQ(ierr);
     if (!csf) {
-      ierr = PetscSFGetVectorSF(hara->sf,B->cmap->N,clda,PETSC_DECIDE,&csf);CHKERRQ(ierr);
-      ierr = PetscObjectCompose((PetscObject)C,"_mathara_vectorsf",(PetscObject)csf);CHKERRQ(ierr);
+      ierr = PetscSFGetVectorSF(h2opus->sf,B->cmap->N,clda,PETSC_DECIDE,&csf);CHKERRQ(ierr);
+      ierr = PetscObjectCompose((PetscObject)C,"_math2opus_vectorsf",(PetscObject)csf);CHKERRQ(ierr);
       ierr = PetscObjectDereference((PetscObject)csf);CHKERRQ(ierr);
     }
     blda = n;
     clda = n;
   }
   if (!boundtocpu) {
-#if defined(HARA_USE_GPU)
+#if defined(H2OPUS_USE_GPU)
     PetscBool ciscuda,biscuda;
 
-    if (hara->sf) {
+    if (h2opus->sf) {
       PetscInt n;
 
-      ierr = PetscSFGetGraph(hara->sf,NULL,&n,NULL,NULL);CHKERRQ(ierr);
-      if (hara->xxs_gpu < B->cmap->n) { hara->xx_gpu->resize(n*B->cmap->N); hara->xxs_gpu = B->cmap->N; }
-      if (hara->yys_gpu < B->cmap->n) { hara->yy_gpu->resize(n*B->cmap->N); hara->yys_gpu = B->cmap->N; }
+      ierr = PetscSFGetGraph(h2opus->sf,NULL,&n,NULL,NULL);CHKERRQ(ierr);
+      if (h2opus->xxs_gpu < B->cmap->n) { h2opus->xx_gpu->resize(n*B->cmap->N); h2opus->xxs_gpu = B->cmap->N; }
+      if (h2opus->yys_gpu < B->cmap->n) { h2opus->yy_gpu->resize(n*B->cmap->N); h2opus->yys_gpu = B->cmap->N; }
     }
     /* If not of type seqdensecuda, convert on the fly (i.e. allocate GPU memory) */
     ierr = PetscObjectTypeCompareAny((PetscObject)B,&biscuda,MATSEQDENSECUDA,MATMPIDENSECUDA,"");CHKERRQ(ierr);
@@ -468,23 +425,23 @@ static PetscErrorCode MatMultNKernel_HARA(Mat A, PetscBool transA, Mat B, Mat C)
     }
     ierr = MatDenseCUDAGetArrayRead(B,(const PetscScalar**)&xx);CHKERRQ(ierr);
     ierr = MatDenseCUDAGetArrayWrite(C,&yy);CHKERRQ(ierr);
-    if (hara->sf) {
-      uxx  = MatHaraGetThrustPointer(*hara->xx_gpu);
-      uyy  = MatHaraGetThrustPointer(*hara->yy_gpu);
+    if (h2opus->sf) {
+      uxx  = MatH2OpusGetThrustPointer(*h2opus->xx_gpu);
+      uyy  = MatH2OpusGetThrustPointer(*h2opus->yy_gpu);
       ierr = PetscSFBcastBegin(bsf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
       ierr = PetscSFBcastEnd(bsf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
     } else {
       uxx = xx;
       uyy = yy;
     }
-    if (hara->dist_hmatrix_gpu) {
+    if (h2opus->dist_hmatrix_gpu) {
       if (transA && !A->symmetric) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_SUP,"MatMultTranspose not yet coded in parallel");
-      distributed_hgemv(/* transA ? HARA_Trans : HARA_NoTrans, */hara->s, *hara->dist_hmatrix_gpu, uxx, blda, 0.0, uyy, clda, B->cmap->N, hara->handle);
+      distributed_hgemv(/* transA ? H2Opus_Trans : H2Opus_NoTrans, */h2opus->s, *h2opus->dist_hmatrix_gpu, uxx, blda, 0.0, uyy, clda, B->cmap->N, h2opus->handle);
     } else {
-      hgemv(transA ? HARA_Trans : HARA_NoTrans, hara->s, *hara->hmatrix_gpu, uxx, blda, 0.0, uyy, clda, B->cmap->N, handle);
+      hgemv(transA ? H2Opus_Trans : H2Opus_NoTrans, h2opus->s, *h2opus->hmatrix_gpu, uxx, blda, 0.0, uyy, clda, B->cmap->N, handle);
     }
     ierr = MatDenseCUDARestoreArrayRead(B,(const PetscScalar**)&xx);CHKERRQ(ierr);
-    if (hara->sf) {
+    if (h2opus->sf) {
       ierr = PetscSFReduceBegin(csf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
       ierr = PetscSFReduceEnd(csf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
     }
@@ -497,32 +454,32 @@ static PetscErrorCode MatMultNKernel_HARA(Mat A, PetscBool transA, Mat B, Mat C)
     }
 #endif
   } else {
-    if (hara->sf) {
+    if (h2opus->sf) {
       PetscInt n;
 
-      ierr = PetscSFGetGraph(hara->sf,NULL,&n,NULL,NULL);CHKERRQ(ierr);
-      if (hara->xxs < B->cmap->n) { hara->xx->resize(n*B->cmap->N); hara->xxs = B->cmap->N; }
-      if (hara->yys < B->cmap->n) { hara->yy->resize(n*B->cmap->N); hara->yys = B->cmap->N; }
+      ierr = PetscSFGetGraph(h2opus->sf,NULL,&n,NULL,NULL);CHKERRQ(ierr);
+      if (h2opus->xxs < B->cmap->n) { h2opus->xx->resize(n*B->cmap->N); h2opus->xxs = B->cmap->N; }
+      if (h2opus->yys < B->cmap->n) { h2opus->yy->resize(n*B->cmap->N); h2opus->yys = B->cmap->N; }
     }
     ierr = MatDenseGetArrayRead(B,(const PetscScalar**)&xx);CHKERRQ(ierr);
     ierr = MatDenseGetArrayWrite(C,&yy);CHKERRQ(ierr);
-    if (hara->sf) {
-      uxx  = MatHaraGetThrustPointer(*hara->xx);
-      uyy  = MatHaraGetThrustPointer(*hara->yy);
+    if (h2opus->sf) {
+      uxx  = MatH2OpusGetThrustPointer(*h2opus->xx);
+      uyy  = MatH2OpusGetThrustPointer(*h2opus->yy);
       ierr = PetscSFBcastBegin(bsf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
       ierr = PetscSFBcastEnd(bsf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
     } else {
       uxx = xx;
       uyy = yy;
     }
-    if (hara->dist_hmatrix) {
+    if (h2opus->dist_hmatrix) {
       if (transA && !A->symmetric) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_SUP,"MatMultTranspose not yet coded in parallel");
-      distributed_hgemv(/*transA ? HARA_Trans : HARA_NoTrans, */hara->s, *hara->dist_hmatrix, uxx, blda, 0.0, uyy, clda, B->cmap->N, hara->handle);
+      distributed_hgemv(/*transA ? H2Opus_Trans : H2Opus_NoTrans, */h2opus->s, *h2opus->dist_hmatrix, uxx, blda, 0.0, uyy, clda, B->cmap->N, h2opus->handle);
     } else {
-      hgemv(transA ? HARA_Trans : HARA_NoTrans, hara->s, *hara->hmatrix, uxx, blda, 0.0, uyy, clda, B->cmap->N, handle);
+      hgemv(transA ? H2Opus_Trans : H2Opus_NoTrans, h2opus->s, *h2opus->hmatrix, uxx, blda, 0.0, uyy, clda, B->cmap->N, handle);
     }
     ierr = MatDenseRestoreArrayRead(B,(const PetscScalar**)&xx);CHKERRQ(ierr);
-    if (hara->sf) {
+    if (h2opus->sf) {
       ierr = PetscSFReduceBegin(csf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
       ierr = PetscSFReduceEnd(csf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
     }
@@ -531,7 +488,7 @@ static PetscErrorCode MatMultNKernel_HARA(Mat A, PetscBool transA, Mat B, Mat C)
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatProductNumeric_HARA(Mat C)
+static PetscErrorCode MatProductNumeric_H2OPUS(Mat C)
 {
   Mat_Product    *product = C->product;
   PetscErrorCode ierr;
@@ -540,10 +497,10 @@ static PetscErrorCode MatProductNumeric_HARA(Mat C)
   MatCheckProduct(C,1);
   switch (product->type) {
   case MATPRODUCT_AB:
-    ierr = MatMultNKernel_HARA(product->A,PETSC_FALSE,product->B,C);CHKERRQ(ierr);
+    ierr = MatMultNKernel_H2OPUS(product->A,PETSC_FALSE,product->B,C);CHKERRQ(ierr);
     break;
   case MATPRODUCT_AtB:
-    ierr = MatMultNKernel_HARA(product->A,PETSC_TRUE,product->B,C);CHKERRQ(ierr);
+    ierr = MatMultNKernel_H2OPUS(product->A,PETSC_TRUE,product->B,C);CHKERRQ(ierr);
     break;
   default:
     SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_SUP,"MatProduct type %s is not supported",MatProductTypes[product->type]);
@@ -551,7 +508,7 @@ static PetscErrorCode MatProductNumeric_HARA(Mat C)
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatProductSymbolic_HARA(Mat C)
+static PetscErrorCode MatProductSymbolic_H2OPUS(Mat C)
 {
   PetscErrorCode ierr;
   Mat_Product    *product = C->product;
@@ -581,68 +538,68 @@ static PetscErrorCode MatProductSymbolic_HARA(Mat C)
     SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_SUP,"MatProduct type %s is not supported",MatProductTypes[product->type]);
   }
   C->ops->productsymbolic = NULL;
-  C->ops->productnumeric = MatProductNumeric_HARA;
+  C->ops->productnumeric = MatProductNumeric_H2OPUS;
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatProductSetFromOptions_HARA(Mat C)
+static PetscErrorCode MatProductSetFromOptions_H2OPUS(Mat C)
 {
   PetscFunctionBegin;
   MatCheckProduct(C,1);
   if (C->product->type == MATPRODUCT_AB || C->product->type == MATPRODUCT_AtB) {
-    C->ops->productsymbolic = MatProductSymbolic_HARA;
+    C->ops->productsymbolic = MatProductSymbolic_H2OPUS;
   }
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatMultKernel_HARA(Mat A, Vec x, PetscScalar sy, Vec y, PetscBool trans)
+static PetscErrorCode MatMultKernel_H2OPUS(Mat A, Vec x, PetscScalar sy, Vec y, PetscBool trans)
 {
-  Mat_HARA       *hara = (Mat_HARA*)A->data;
-  haraHandle_t   handle = hara->handle->handle;
+  Mat_H2OPUS     *h2opus = (Mat_H2OPUS*)A->data;
+  h2opusHandle_t handle = h2opus->handle->handle;
   PetscBool      boundtocpu = PETSC_TRUE;
   PetscInt       n;
   PetscScalar    *xx,*yy,*uxx,*uyy;
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
-#if defined(HARA_USE_GPU)
+#if defined(H2OPUS_USE_GPU)
   boundtocpu = A->boundtocpu;
 #endif
-  if (hara->sf) {
-    ierr = PetscSFGetGraph(hara->sf,NULL,&n,NULL,NULL);CHKERRQ(ierr);
+  if (h2opus->sf) {
+    ierr = PetscSFGetGraph(h2opus->sf,NULL,&n,NULL,NULL);CHKERRQ(ierr);
   } else n = A->rmap->n;
   if (!boundtocpu) {
-#if defined(HARA_USE_GPU)
+#if defined(H2OPUS_USE_GPU)
     ierr = VecCUDAGetArrayRead(x,(const PetscScalar**)&xx);CHKERRQ(ierr);
     if (sy == 0.0) {
       ierr = VecCUDAGetArrayWrite(y,&yy);CHKERRQ(ierr);
     } else {
       ierr = VecCUDAGetArray(y,&yy);CHKERRQ(ierr);
     }
-    if (hara->sf) {
-      uxx = MatHaraGetThrustPointer(*hara->xx_gpu);
-      uyy = MatHaraGetThrustPointer(*hara->yy_gpu);
+    if (h2opus->sf) {
+      uxx = MatH2OpusGetThrustPointer(*h2opus->xx_gpu);
+      uyy = MatH2OpusGetThrustPointer(*h2opus->yy_gpu);
 
-      ierr = PetscSFBcastBegin(hara->sf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
-      ierr = PetscSFBcastEnd(hara->sf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
+      ierr = PetscSFBcastBegin(h2opus->sf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
+      ierr = PetscSFBcastEnd(h2opus->sf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
       if (sy != 0.0) {
-        ierr = PetscSFBcastBegin(hara->sf,MPIU_SCALAR,yy,uyy);CHKERRQ(ierr);
-        ierr = PetscSFBcastEnd(hara->sf,MPIU_SCALAR,yy,uyy);CHKERRQ(ierr);
+        ierr = PetscSFBcastBegin(h2opus->sf,MPIU_SCALAR,yy,uyy);CHKERRQ(ierr);
+        ierr = PetscSFBcastEnd(h2opus->sf,MPIU_SCALAR,yy,uyy);CHKERRQ(ierr);
       }
     } else {
       uxx = xx;
       uyy = yy;
     }
-    if (hara->dist_hmatrix_gpu) {
+    if (h2opus->dist_hmatrix_gpu) {
       if (trans && !A->symmetric) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_SUP,"MatMultTranspose not yet coded in parallel");
-      distributed_hgemv(/*trans ? HARA_Trans : HARA_NoTrans, */hara->s, *hara->dist_hmatrix_gpu, uxx, n, sy, uyy, n, 1, hara->handle);
+      distributed_hgemv(/*trans ? H2Opus_Trans : H2Opus_NoTrans, */h2opus->s, *h2opus->dist_hmatrix_gpu, uxx, n, sy, uyy, n, 1, h2opus->handle);
     } else {
-      hgemv(trans ? HARA_Trans : HARA_NoTrans, hara->s, *hara->hmatrix_gpu, uxx, n, sy, uyy, n, 1, handle);
+      hgemv(trans ? H2Opus_Trans : H2Opus_NoTrans, h2opus->s, *h2opus->hmatrix_gpu, uxx, n, sy, uyy, n, 1, handle);
     }
     ierr = VecCUDARestoreArrayRead(x,(const PetscScalar**)&xx);CHKERRQ(ierr);
-    if (hara->sf) {
-      ierr = PetscSFReduceBegin(hara->sf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
-      ierr = PetscSFReduceEnd(hara->sf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
+    if (h2opus->sf) {
+      ierr = PetscSFReduceBegin(h2opus->sf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
+      ierr = PetscSFReduceEnd(h2opus->sf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
     }
     if (sy == 0.0) {
       ierr = VecCUDARestoreArrayWrite(y,&yy);CHKERRQ(ierr);
@@ -657,30 +614,30 @@ static PetscErrorCode MatMultKernel_HARA(Mat A, Vec x, PetscScalar sy, Vec y, Pe
     } else {
       ierr = VecGetArray(y,&yy);CHKERRQ(ierr);
     }
-    if (hara->sf) {
-      uxx = MatHaraGetThrustPointer(*hara->xx);
-      uyy = MatHaraGetThrustPointer(*hara->yy);
+    if (h2opus->sf) {
+      uxx = MatH2OpusGetThrustPointer(*h2opus->xx);
+      uyy = MatH2OpusGetThrustPointer(*h2opus->yy);
 
-      ierr = PetscSFBcastBegin(hara->sf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
-      ierr = PetscSFBcastEnd(hara->sf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
+      ierr = PetscSFBcastBegin(h2opus->sf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
+      ierr = PetscSFBcastEnd(h2opus->sf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
       if (sy != 0.0) {
-        ierr = PetscSFBcastBegin(hara->sf,MPIU_SCALAR,yy,uyy);CHKERRQ(ierr);
-        ierr = PetscSFBcastEnd(hara->sf,MPIU_SCALAR,yy,uyy);CHKERRQ(ierr);
+        ierr = PetscSFBcastBegin(h2opus->sf,MPIU_SCALAR,yy,uyy);CHKERRQ(ierr);
+        ierr = PetscSFBcastEnd(h2opus->sf,MPIU_SCALAR,yy,uyy);CHKERRQ(ierr);
       }
     } else {
       uxx = xx;
       uyy = yy;
     }
-    if (hara->dist_hmatrix) {
+    if (h2opus->dist_hmatrix) {
       if (trans && !A->symmetric) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_SUP,"MatMultTranspose not yet coded in parallel");
-      distributed_hgemv(/*trans ? HARA_Trans : HARA_NoTrans, */hara->s, *hara->dist_hmatrix, uxx, n, sy, uyy, n, 1, hara->handle);
+      distributed_hgemv(/*trans ? H2Opus_Trans : H2Opus_NoTrans, */h2opus->s, *h2opus->dist_hmatrix, uxx, n, sy, uyy, n, 1, h2opus->handle);
     } else {
-      hgemv(trans ? HARA_Trans : HARA_NoTrans, hara->s, *hara->hmatrix, uxx, n, sy, uyy, n, 1, handle);
+      hgemv(trans ? H2Opus_Trans : H2Opus_NoTrans, h2opus->s, *h2opus->hmatrix, uxx, n, sy, uyy, n, 1, handle);
     }
     ierr = VecRestoreArrayRead(x,(const PetscScalar**)&xx);CHKERRQ(ierr);
-    if (hara->sf) {
-      ierr = PetscSFReduceBegin(hara->sf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
-      ierr = PetscSFReduceEnd(hara->sf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
+    if (h2opus->sf) {
+      ierr = PetscSFReduceBegin(h2opus->sf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
+      ierr = PetscSFReduceEnd(h2opus->sf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
     }
     if (sy == 0.0) {
       ierr = VecRestoreArrayWrite(y,&yy);CHKERRQ(ierr);
@@ -691,120 +648,115 @@ static PetscErrorCode MatMultKernel_HARA(Mat A, Vec x, PetscScalar sy, Vec y, Pe
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatMultTranspose_HARA(Mat A, Vec x, Vec y)
+static PetscErrorCode MatMultTranspose_H2OPUS(Mat A, Vec x, Vec y)
 {
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
-  ierr = MatMultKernel_HARA(A,x,0.0,y,PETSC_TRUE);CHKERRQ(ierr);
+  ierr = MatMultKernel_H2OPUS(A,x,0.0,y,PETSC_TRUE);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatMult_HARA(Mat A, Vec x, Vec y)
+static PetscErrorCode MatMult_H2OPUS(Mat A, Vec x, Vec y)
 {
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
-  ierr = MatMultKernel_HARA(A,x,0.0,y,PETSC_FALSE);CHKERRQ(ierr);
+  ierr = MatMultKernel_H2OPUS(A,x,0.0,y,PETSC_FALSE);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatMultTransposeAdd_HARA(Mat A, Vec x, Vec y, Vec z)
-{
-  PetscErrorCode ierr;
-
-  PetscFunctionBegin;
-  ierr = VecCopy(y,z);CHKERRQ(ierr);
-  ierr = MatMultKernel_HARA(A,x,1.0,z,PETSC_TRUE);CHKERRQ(ierr);
-  PetscFunctionReturn(0);
-}
-
-static PetscErrorCode MatMultAdd_HARA(Mat A, Vec x, Vec y, Vec z)
+static PetscErrorCode MatMultTransposeAdd_H2OPUS(Mat A, Vec x, Vec y, Vec z)
 {
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
   ierr = VecCopy(y,z);CHKERRQ(ierr);
-  ierr = MatMultKernel_HARA(A,x,1.0,z,PETSC_FALSE);CHKERRQ(ierr);
+  ierr = MatMultKernel_H2OPUS(A,x,1.0,z,PETSC_TRUE);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatScale_HARA(Mat A, PetscScalar s)
+static PetscErrorCode MatMultAdd_H2OPUS(Mat A, Vec x, Vec y, Vec z)
 {
-  Mat_HARA *a = (Mat_HARA*)A->data;
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  ierr = VecCopy(y,z);CHKERRQ(ierr);
+  ierr = MatMultKernel_H2OPUS(A,x,1.0,z,PETSC_FALSE);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode MatScale_H2OPUS(Mat A, PetscScalar s)
+{
+  Mat_H2OPUS *a = (Mat_H2OPUS*)A->data;
 
   PetscFunctionBegin;
   a->s *= s;
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatSetFromOptions_HARA(PetscOptionItems *PetscOptionsObject,Mat A)
+static PetscErrorCode MatSetFromOptions_H2OPUS(PetscOptionItems *PetscOptionsObject,Mat A)
 {
-  Mat_HARA       *a = (Mat_HARA*)A->data;
+  Mat_H2OPUS     *a = (Mat_H2OPUS*)A->data;
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
-  ierr = PetscOptionsHead(PetscOptionsObject,"HARA options");CHKERRQ(ierr);
-  ierr = PetscOptionsInt("-mat_hara_leafsize","Leaf size when constructed from kernel",NULL,a->leafsize,&a->leafsize,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsReal("-mat_hara_eta","Admissibility condition tolerance",NULL,a->eta,&a->eta,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsInt("-mat_hara_order","Basis order for off-diagonal sampling when constructed from kernel",NULL,a->basisord,&a->basisord,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsInt("-mat_hara_maxrank","Maximum rank when constructed from matvecs",NULL,a->max_rank,&a->max_rank,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsInt("-mat_hara_samples","Number of samples to be taken concurrently when constructing from matvecs",NULL,a->bs,&a->bs,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsReal("-mat_hara_rtol","Relative tolerance for construction from sampling",NULL,a->rtol,&a->rtol,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsBool("-mat_hara_check","Check error when constructing from sampling during MatAssemblyEnd()",NULL,a->check_construction,&a->check_construction,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsHead(PetscOptionsObject,"H2OPUS options");CHKERRQ(ierr);
+  ierr = PetscOptionsInt("-mat_h2opus_leafsize","Leaf size when constructed from kernel",NULL,a->leafsize,&a->leafsize,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsReal("-mat_h2opus_eta","Admissibility condition tolerance",NULL,a->eta,&a->eta,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsInt("-mat_h2opus_order","Basis order for off-diagonal sampling when constructed from kernel",NULL,a->basisord,&a->basisord,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsInt("-mat_h2opus_maxrank","Maximum rank when constructed from matvecs",NULL,a->max_rank,&a->max_rank,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsInt("-mat_h2opus_samples","Number of samples to be taken concurrently when constructing from matvecs",NULL,a->bs,&a->bs,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsReal("-mat_h2opus_rtol","Relative tolerance for construction from sampling",NULL,a->rtol,&a->rtol,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool("-mat_h2opus_check","Check error when constructing from sampling during MatAssemblyEnd()",NULL,a->check_construction,&a->check_construction,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsTail();CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatHaraSetCoords_HARA(Mat,PetscInt,const PetscReal[],MatHaraKernel,void*);
+static PetscErrorCode MatH2OpusSetCoords_H2OPUS(Mat,PetscInt,const PetscReal[],MatH2OpusKernel,void*);
 
-static PetscErrorCode MatHaraInferCoordinates_Private(Mat A)
+static PetscErrorCode MatH2OpusInferCoordinates_Private(Mat A)
 {
-  Mat_HARA          *a = (Mat_HARA*)A->data;
+  Mat_H2OPUS        *a = (Mat_H2OPUS*)A->data;
   Vec               c;
   PetscInt          spacedim;
   const PetscScalar *coords;
   PetscErrorCode    ierr;
 
   PetscFunctionBegin;
-  if (a->spacedim) PetscFunctionReturn(0);
-  ierr = PetscObjectQuery((PetscObject)A,"__mathara_coords",(PetscObject*)&c);CHKERRQ(ierr);
+  if (a->ptcloud) PetscFunctionReturn(0);
+  ierr = PetscObjectQuery((PetscObject)A,"__math2opus_coords",(PetscObject*)&c);CHKERRQ(ierr);
   if (!c && a->sampler) {
     Mat S = a->sampler->GetSamplingMat();
 
-    ierr = PetscObjectQuery((PetscObject)S,"__mathara_coords",(PetscObject*)&c);CHKERRQ(ierr);
+    ierr = PetscObjectQuery((PetscObject)S,"__math2opus_coords",(PetscObject*)&c);CHKERRQ(ierr);
+#if 0
     if (!c) {
-      PetscBool ishara;
+      PetscBool ish2opus;
 
-      ierr = PetscObjectTypeCompare((PetscObject)S,MATHARA,&ishara);CHKERRQ(ierr);
-      if (ishara) {
-        Mat_HARA *s = (Mat_HARA*)S->data;
+      ierr = PetscObjectTypeCompare((PetscObject)S,MATH2OPUS,&ish2opus);CHKERRQ(ierr);
+      if (ish2opus) {
+        Mat_H2OPUS *s = (Mat_H2OPUS*)S->data;
 
-        a->spacedim = s->spacedim;
-        if (s->ptcloud1) {
-          a->ptcloud1 = new PetscPointCloud1D<PetscReal>(*s->ptcloud1);
-        } else if (s->ptcloud2) {
-          a->ptcloud2 = new PetscPointCloud2D<PetscReal>(*s->ptcloud2);
-        } else if (s->ptcloud3) {
-          a->ptcloud3 = new PetscPointCloud3D<PetscReal>(*s->ptcloud3);
-        }
+        a->ptcloud = new PetscPointCloud<PetscReal>(*s->ptcloud);
       }
     }
+#endif
   }
   if (!c) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_SUP,"Missing coordinates");
   ierr = VecGetArrayRead(c,&coords);CHKERRQ(ierr);
   ierr = VecGetBlockSize(c,&spacedim);CHKERRQ(ierr);
-  ierr = MatHaraSetCoords_HARA(A,spacedim,coords,NULL,NULL);CHKERRQ(ierr);
+  ierr = MatH2OpusSetCoords_H2OPUS(A,spacedim,coords,NULL,NULL);CHKERRQ(ierr);
   ierr = VecRestoreArrayRead(c,&coords);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatSetUpMultiply_HARA(Mat A)
+static PetscErrorCode MatSetUpMultiply_H2OPUS(Mat A)
 {
   MPI_Comm       comm;
   PetscMPIInt    size;
   PetscErrorCode ierr;
-  Mat_HARA       *a = (Mat_HARA*)A->data;
+  Mat_H2OPUS     *a = (Mat_H2OPUS*)A->data;
   IS             is;
   PetscInt       n,*idx;
   int            *iidx;
@@ -816,11 +768,11 @@ static PetscErrorCode MatSetUpMultiply_HARA(Mat A)
   ierr = PetscObjectGetComm((PetscObject)A,&comm);CHKERRQ(ierr);
   ierr = MPI_Comm_size(comm,&size);CHKERRQ(ierr);
   if (size > 1) {
-    iidx = MatHaraGetThrustPointer(a->dist_hmatrix->basis_tree.basis_branch.index_map);
+    iidx = MatH2OpusGetThrustPointer(a->dist_hmatrix->basis_tree.basis_branch.index_map);
     n    = a->dist_hmatrix->basis_tree.basis_branch.index_map.size();
   } else {
+    iidx = MatH2OpusGetThrustPointer(a->hmatrix->u_basis_tree.index_map);
     n    = a->hmatrix->u_basis_tree.index_map.size();
-    iidx = MatHaraGetThrustPointer(a->hmatrix->u_basis_tree.index_map);
   }
   if (PetscDefined(USE_64BIT_INDICES)) {
     PetscInt i;
@@ -837,7 +789,7 @@ static PetscErrorCode MatSetUpMultiply_HARA(Mat A)
   if (!rid) {
     ierr = PetscSFCreate(comm,&a->sf);CHKERRQ(ierr);
     ierr = PetscSFSetGraphLayout(a->sf,A->rmap,n,NULL,PETSC_OWN_POINTER,idx);CHKERRQ(ierr);
-#if defined(HARA_USE_GPU)
+#if defined(H2OPUS_USE_GPU)
     a->xx_gpu  = new thrust::device_vector<PetscScalar>(n);
     a->yy_gpu  = new thrust::device_vector<PetscScalar>(n);
     a->xxs_gpu = 1;
@@ -853,10 +805,10 @@ static PetscErrorCode MatSetUpMultiply_HARA(Mat A)
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatAssemblyEnd_HARA(Mat A, MatAssemblyType asstype)
+static PetscErrorCode MatAssemblyEnd_H2OPUS(Mat A, MatAssemblyType assemblytype)
 {
-  Mat_HARA       *a = (Mat_HARA*)A->data;
-  haraHandle_t   handle = a->handle->handle;
+  Mat_H2OPUS     *a = (Mat_H2OPUS*)A->data;
+  h2opusHandle_t handle = a->handle->handle;
   PetscBool      kernel = PETSC_FALSE;
   PetscBool      boundtocpu = PETSC_TRUE;
   MPI_Comm       comm;
@@ -869,76 +821,42 @@ static PetscErrorCode MatAssemblyEnd_HARA(Mat A, MatAssemblyType asstype)
   /* TODO REUSABILITY of geometric construction */
   delete a->hmatrix;
   delete a->dist_hmatrix;
-#if defined(HARA_USE_GPU)
+#if defined(H2OPUS_USE_GPU)
   delete a->hmatrix_gpu;
   delete a->dist_hmatrix_gpu;
 #endif
   /* TODO: other? */
-  BoxCenterAdmissibility<Hara_Real,1> adm1(a->eta,a->leafsize);
-  BoxCenterAdmissibility<Hara_Real,2> adm2(a->eta,a->leafsize);
-  BoxCenterAdmissibility<Hara_Real,3> adm3(a->eta,a->leafsize);
+  H2OpusBoxCenterAdmissibility adm(a->eta);
+
   if (size > 1) {
     a->dist_hmatrix = new DistributedHMatrix(A->rmap->n/*,A->symmetric*/);
   } else {
     a->hmatrix = new HMatrix(A->rmap->n,A->symmetric);
   }
-  ierr = MatHaraInferCoordinates_Private(A);CHKERRQ(ierr);
-  switch (a->spacedim) {
-  case 1:
-    if (!a->ptcloud1) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_PLIB,"Missing pointcloud");
-    if (a->kernel1) {
-      kernel = PETSC_TRUE;
-      if (size > 1) {
-        buildDistributedHMatrix(*a->dist_hmatrix,*a->ptcloud1,adm1,*a->kernel1,a->leafsize,a->basisord/*,a->basisord*/,a->handle);
-      } else {
-        buildHMatrix(*a->hmatrix,*a->ptcloud1,adm1,*a->kernel1,a->leafsize,a->basisord,a->basisord);
-      }
+  ierr = MatH2OpusInferCoordinates_Private(A);CHKERRQ(ierr);
+  if (!a->ptcloud) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_PLIB,"Missing pointcloud");
+  if (a->kernel) {
+    BoxEntryGen<PetscScalar, H2OPUS_HWTYPE_CPU, PetscFunctionGenerator<PetscScalar>> entry_gen(*a->kernel);
+    if (size > 1) {
+      buildDistributedHMatrix(*a->dist_hmatrix,a->ptcloud,adm,entry_gen,a->leafsize,a->basisord,a->handle);
     } else {
-      if (size > 1) SETERRQ(comm,PETSC_ERR_SUP,"Construction from sampling not supported in parallel");
-      buildHMatrixStructure(*a->hmatrix,*a->ptcloud1,adm1,a->leafsize,0,0);
+      buildHMatrix(*a->hmatrix,a->ptcloud,adm,entry_gen,a->leafsize,a->basisord);
     }
-    break;
-  case 2:
-    if (!a->ptcloud2) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_PLIB,"Missing pointcloud");
-    if (a->kernel2) {
-      kernel = PETSC_TRUE;
-      if (size > 1) {
-        buildDistributedHMatrix(*a->dist_hmatrix,*a->ptcloud2,adm2,*a->kernel2,a->leafsize,a->basisord/*,a->basisord*/,a->handle);
-      } else {
-        buildHMatrix(*a->hmatrix,*a->ptcloud2,adm2,*a->kernel2,a->leafsize,a->basisord,a->basisord);
-      }
-    } else {
-      if (size > 1) SETERRQ(comm,PETSC_ERR_SUP,"Construction from sampling not supported in parallel");
-      buildHMatrixStructure(*a->hmatrix,*a->ptcloud2,adm2,a->leafsize,0,0);
-    }
-    break;
-  case 3:
-    if (!a->ptcloud3) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_PLIB,"Missing pointcloud");
-    if (a->kernel3) {
-      kernel = PETSC_TRUE;
-      if (size > 1) {
-        buildDistributedHMatrix(*a->dist_hmatrix,*a->ptcloud3,adm3,*a->kernel3,a->leafsize,a->basisord/*,a->basisord*/,a->handle);
-      } else {
-        buildHMatrix(*a->hmatrix,*a->ptcloud3,adm3,*a->kernel3,a->leafsize,a->basisord,a->basisord);
-      }
-    } else {
-      if (size > 1) SETERRQ(comm,PETSC_ERR_SUP,"Construction from sampling not supported in parallel");
-      buildHMatrixStructure(*a->hmatrix,*a->ptcloud3,adm3,a->leafsize,0,0);
-    }
-    break;
-  default:
-    SETERRQ1(PetscObjectComm((PetscObject)A),PETSC_ERR_SUP,"Unhandled dimension %D",a->spacedim);
+    kernel = PETSC_TRUE;
+  } else {
+    if (size > 1) SETERRQ(comm,PETSC_ERR_SUP,"Construction from sampling not supported in parallel");
+    buildHMatrixStructure(*a->hmatrix,a->ptcloud,a->leafsize,adm);
   }
 
-  ierr = MatSetUpMultiply_HARA(A);CHKERRQ(ierr);
+  ierr = MatSetUpMultiply_H2OPUS(A);CHKERRQ(ierr);
 
-#if defined(HARA_USE_GPU)
+#if defined(H2OPUS_USE_GPU)
   boundtocpu = A->boundtocpu;
   if (!boundtocpu) {
     if (size > 1) {
       a->dist_hmatrix_gpu = new DistributedHMatrix_GPU(*a->dist_hmatrix);
     } else {
-      a->hmatrix_gpu = new GPU_HMatrix(*a->hmatrix);
+      a->hmatrix_gpu = new HMatrix_GPU(*a->hmatrix);
     }
   }
 #endif
@@ -951,7 +869,7 @@ static PetscErrorCode MatAssemblyEnd_HARA(Mat A, MatAssemblyType asstype)
       if (boundtocpu) {
         a->sampler->SetGPUSampling(false);
         hara(a->sampler, *a->hmatrix, a->max_rank, 10 /* TODO */,a->rtol*Anorm,a->bs,handle,verbose);
-#if defined(HARA_USE_GPU)
+#if defined(H2OPUS_USE_GPU)
       } else {
         a->sampler->SetGPUSampling(true);
         hara(a->sampler, *a->hmatrix_gpu, a->max_rank, 10 /* TODO */,a->rtol*Anorm,a->bs,handle,verbose);
@@ -959,7 +877,7 @@ static PetscErrorCode MatAssemblyEnd_HARA(Mat A, MatAssemblyType asstype)
       }
     }
   }
-#if defined(HARA_USE_GPU)
+#if defined(H2OPUS_USE_GPU)
   if (kernel) A->offloadmask = PETSC_OFFLOAD_BOTH;
   else A->offloadmask = boundtocpu ? PETSC_OFFLOAD_CPU : PETSC_OFFLOAD_GPU;
 #endif
@@ -970,7 +888,7 @@ static PetscErrorCode MatAssemblyEnd_HARA(Mat A, MatAssemblyType asstype)
   if (a->sampler) {
     PetscBool check = a->check_construction;
 
-    ierr = PetscOptionsGetBool(((PetscObject)A)->options,((PetscObject)A)->prefix,"-mat_hara_check",&check,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetBool(((PetscObject)A)->options,((PetscObject)A)->prefix,"-mat_h2opus_check",&check,NULL);CHKERRQ(ierr);
     if (check) {
       Mat       E,Ae;
       PetscReal n1,ni,n2;
@@ -979,14 +897,14 @@ static PetscErrorCode MatAssemblyEnd_HARA(Mat A, MatAssemblyType asstype)
 
       Ae   = a->sampler->GetSamplingMat();
       ierr = MatConvert(A,MATSHELL,MAT_INITIAL_MATRIX,&E);CHKERRQ(ierr);
-      ierr = MatShellSetOperation(E,MATOP_NORM,(void (*)(void))MatNorm_HARA);CHKERRQ(ierr);
+      ierr = MatShellSetOperation(E,MATOP_NORM,(void (*)(void))MatNorm_H2OPUS);CHKERRQ(ierr);
       ierr = MatAXPY(E,-1.0,Ae,DIFFERENT_NONZERO_PATTERN);CHKERRQ(ierr);
       ierr = MatNorm(E,NORM_1,&n1);CHKERRQ(ierr);
       ierr = MatNorm(E,NORM_INFINITY,&ni);CHKERRQ(ierr);
       ierr = MatNorm(E,NORM_2,&n2);CHKERRQ(ierr);
 
       ierr = MatGetOperation(Ae,MATOP_NORM,&normfunc);CHKERRQ(ierr);
-      ierr = MatSetOperation(Ae,MATOP_NORM,(void (*)(void))MatNorm_HARA);CHKERRQ(ierr);
+      ierr = MatSetOperation(Ae,MATOP_NORM,(void (*)(void))MatNorm_H2OPUS);CHKERRQ(ierr);
       ierr = MatNorm(Ae,NORM_1,&n1A);CHKERRQ(ierr);
       ierr = MatNorm(Ae,NORM_INFINITY,&niA);CHKERRQ(ierr);
       ierr = MatNorm(Ae,NORM_2,&n2A);CHKERRQ(ierr);
@@ -994,36 +912,36 @@ static PetscErrorCode MatAssemblyEnd_HARA(Mat A, MatAssemblyType asstype)
       n2A  = PetscMax(n2A,PETSC_SMALL);
       niA  = PetscMax(niA,PETSC_SMALL);
       ierr = MatSetOperation(Ae,MATOP_NORM,normfunc);CHKERRQ(ierr);
-      ierr = PetscPrintf(PetscObjectComm((PetscObject)A),"MATHARA construction errors: NORM_1 %g, NORM_INFINITY %g, NORM_2 %g (%g %g %g)\n",(double)n1,(double)ni,(double)n2,(double)(n1/n1A),(double)(ni/niA),(double)(n2/n2A));
+      ierr = PetscPrintf(PetscObjectComm((PetscObject)A),"MATH2OPUS construction errors: NORM_1 %g, NORM_INFINITY %g, NORM_2 %g (%g %g %g)\n",(double)n1,(double)ni,(double)n2,(double)(n1/n1A),(double)(ni/niA),(double)(n2/n2A));
       ierr = MatDestroy(&E);CHKERRQ(ierr);
     }
   }
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatZeroEntries_HARA(Mat A)
+static PetscErrorCode MatZeroEntries_H2OPUS(Mat A)
 {
   PetscErrorCode ierr;
   PetscMPIInt    size;
-  Mat_HARA       *a = (Mat_HARA*)A->data;
+  Mat_H2OPUS     *a = (Mat_H2OPUS*)A->data;
 
   PetscFunctionBegin;
   ierr = MPI_Comm_size(PetscObjectComm((PetscObject)A),&size);CHKERRQ(ierr);
   if (size > 1) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_SUP,"Not yet supported");
   else {
     a->hmatrix->clearData();
-#if defined(HARA_USE_GPU)
+#if defined(H2OPUS_USE_GPU)
     if (a->hmatrix_gpu) a->hmatrix_gpu->clearData();
 #endif
   }
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatDuplicate_HARA(Mat B, MatDuplicateOption op, Mat *nA)
+static PetscErrorCode MatDuplicate_H2OPUS(Mat B, MatDuplicateOption op, Mat *nA)
 {
   Mat            A;
-  Mat_HARA       *a, *b = (Mat_HARA*)B->data;
-#if defined(PETSC_HAVE_CUDA)
+  Mat_H2OPUS     *a, *b = (Mat_H2OPUS*)B->data;
+#if defined(H2OPUS_USE_GPU)
   PetscBool      iscpu = PETSC_FALSE;
 #else
   PetscBool      iscpu = PETSC_TRUE;
@@ -1035,49 +953,34 @@ static PetscErrorCode MatDuplicate_HARA(Mat B, MatDuplicateOption op, Mat *nA)
   ierr = PetscObjectGetComm((PetscObject)B,&comm);CHKERRQ(ierr);
   ierr = MatCreate(comm,&A);CHKERRQ(ierr);
   ierr = MatSetSizes(A,B->rmap->n,B->cmap->n,B->rmap->N,B->cmap->N);CHKERRQ(ierr);
-  ierr = MatSetType(A,MATHARA);CHKERRQ(ierr);
+  ierr = MatSetType(A,MATH2OPUS);CHKERRQ(ierr);
   ierr = MatPropagateSymmetryOptions(B,A);CHKERRQ(ierr);
 
-  a = (Mat_HARA*)A->data;
+  a = (Mat_H2OPUS*)A->data;
   a->s = b->s;
-  a->spacedim = b->spacedim;
-  if (b->ptcloud1) {
-    a->ptcloud1 = new PetscPointCloud1D<PetscReal>(*b->ptcloud1);
-  } else if (b->ptcloud2) {
-    a->ptcloud2 = new PetscPointCloud2D<PetscReal>(*b->ptcloud2);
-  } else if (b->ptcloud3) {
-    a->ptcloud3 = new PetscPointCloud3D<PetscReal>(*b->ptcloud3);
-  }
-  if (op == MAT_COPY_VALUES) {
-    if (b->kernel1) {
-      a->kernel1 = new PetscFunctionGenerator1D<PetscScalar>(*b->kernel1);
-    } else if (b->kernel2) {
-      a->kernel2 = new PetscFunctionGenerator2D<PetscScalar>(*b->kernel2);
-    } else if (b->kernel3) {
-      a->kernel3 = new PetscFunctionGenerator3D<PetscScalar>(*b->kernel3);
-    }
-  }
+  a->ptcloud = new PetscPointCloud<PetscReal>(*b->ptcloud);
+  if (op == MAT_COPY_VALUES && b->kernel) a->kernel = new PetscFunctionGenerator<PetscScalar>(*b->kernel);
 
   if (b->dist_hmatrix) { a->dist_hmatrix = new DistributedHMatrix(*b->dist_hmatrix); }
-#if defined(HARA_USE_GPU)
+#if defined(H2OPUS_USE_GPU)
   if (b->dist_hmatrix_gpu) { a->dist_hmatrix_gpu = new DistributedHMatrix_GPU(*b->dist_hmatrix_gpu); }
 #endif
   if (b->hmatrix) {
     a->hmatrix = new HMatrix(*b->hmatrix);
     if (op == MAT_DO_NOT_COPY_VALUES) a->hmatrix->clearData();
   }
-#if defined(HARA_USE_GPU)
+#if defined(H2OPUS_USE_GPU)
   if (b->hmatrix_gpu) {
-    a->hmatrix_gpu = new GPU_HMatrix(*b->hmatrix_gpu);
+    a->hmatrix_gpu = new HMatrix_GPU(*b->hmatrix_gpu);
     if (op == MAT_DO_NOT_COPY_VALUES) a->hmatrix_gpu->clearData();
   }
 #endif
 
   ierr = MatSetUp(A);CHKERRQ(ierr);
-  ierr = MatSetUpMultiply_HARA(A);CHKERRQ(ierr);
+  ierr = MatSetUpMultiply_H2OPUS(A);CHKERRQ(ierr);
   if (op == MAT_COPY_VALUES) {
     A->assembled = PETSC_TRUE;
-#if defined(PETSC_HAVE_CUDA)
+#if defined(H2OPUS_USE_GPU)
     iscpu = B->boundtocpu;
 #endif
   }
@@ -1087,9 +990,9 @@ static PetscErrorCode MatDuplicate_HARA(Mat B, MatDuplicateOption op, Mat *nA)
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatView_HARA(Mat A, PetscViewer view)
+static PetscErrorCode MatView_H2OPUS(Mat A, PetscViewer view)
 {
-  Mat_HARA          *hara = (Mat_HARA*)A->data;
+  Mat_H2OPUS        *h2opus = (Mat_H2OPUS*)A->data;
   PetscBool         isascii;
   PetscErrorCode    ierr;
   PetscMPIInt       size;
@@ -1100,23 +1003,23 @@ static PetscErrorCode MatView_HARA(Mat A, PetscViewer view)
   ierr = PetscViewerGetFormat(view,&format);CHKERRQ(ierr);
   ierr = MPI_Comm_size(PetscObjectComm((PetscObject)A),&size);CHKERRQ(ierr);
   if (isascii) {
-    ierr = PetscViewerASCIIPrintf(view,"  H-Matrix constructed from %s\n",hara->sampler ? "Mat" : (hara->spacedim ? "Kernel" : "None"));CHKERRQ(ierr);
-    ierr = PetscViewerASCIIPrintf(view,"  PointCloud dim %D\n",hara->spacedim);CHKERRQ(ierr);
-    ierr = PetscViewerASCIIPrintf(view,"  Admissibility parameters: leaf size %D, eta %g\n",hara->leafsize,(double)hara->eta);CHKERRQ(ierr);
-    if (hara->sampler) {
-      ierr = PetscViewerASCIIPrintf(view,"  Sampling parameters: max_rank %D, samples %D, tolerance %g\n",hara->max_rank,hara->bs,(double)hara->rtol);CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(view,"  H-Matrix constructed from %s\n",h2opus->sampler ? "Mat" : (h2opus->kernel ? "Kernel" : "None"));CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(view,"  PointCloud dim %D\n",h2opus->ptcloud ? h2opus->ptcloud->getDimension() : 0);CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(view,"  Admissibility parameters: leaf size %D, eta %g\n",h2opus->leafsize,(double)h2opus->eta);CHKERRQ(ierr);
+    if (h2opus->sampler) {
+      ierr = PetscViewerASCIIPrintf(view,"  Sampling parameters: max_rank %D, samples %D, tolerance %g\n",h2opus->max_rank,h2opus->bs,(double)h2opus->rtol);CHKERRQ(ierr);
     } else {
-      ierr = PetscViewerASCIIPrintf(view,"  Offdiagonal blocks approximation order %D\n",hara->basisord);CHKERRQ(ierr);
+      ierr = PetscViewerASCIIPrintf(view,"  Offdiagonal blocks approximation order %D\n",h2opus->basisord);CHKERRQ(ierr);
     }
     if (size == 1) {
-      double dense_mem_cpu = hara->hmatrix ? hara->hmatrix->getDenseMemoryUsage() : 0;
-      double low_rank_cpu = hara->hmatrix ? hara->hmatrix->getLowRankMemoryUsage() : 0;
-#if defined(HARA_USE_GPU)
-      double dense_mem_gpu = hara->hmatrix_gpu ? hara->hmatrix_gpu->getDenseMemoryUsage() : 0;
-      double low_rank_gpu = hara->hmatrix_gpu ? hara->hmatrix_gpu->getLowRankMemoryUsage() : 0;
+      double dense_mem_cpu = h2opus->hmatrix ? h2opus->hmatrix->getDenseMemoryUsage() : 0;
+      double low_rank_cpu = h2opus->hmatrix ? h2opus->hmatrix->getLowRankMemoryUsage() : 0;
+#if defined(H2OPUS_USE_GPU)
+      double dense_mem_gpu = h2opus->hmatrix_gpu ? h2opus->hmatrix_gpu->getDenseMemoryUsage() : 0;
+      double low_rank_gpu = h2opus->hmatrix_gpu ? h2opus->hmatrix_gpu->getLowRankMemoryUsage() : 0;
 #endif
       ierr = PetscViewerASCIIPrintf(view,"  Memory consumption (CPU): %g (dense) %g (low rank) %g GB (total)\n", dense_mem_cpu, low_rank_cpu, low_rank_cpu + dense_mem_cpu);CHKERRQ(ierr);
-#if defined(HARA_USE_GPU)
+#if defined(H2OPUS_USE_GPU)
       ierr = PetscViewerASCIIPrintf(view,"  Memory consumption (GPU): %g (dense) %g (low rank) %g GB (total)\n", dense_mem_gpu, low_rank_gpu, low_rank_gpu + dense_mem_gpu);CHKERRQ(ierr);
 #endif
     }
@@ -1124,9 +1027,9 @@ static PetscErrorCode MatView_HARA(Mat A, PetscViewer view)
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatHaraSetCoords_HARA(Mat A, PetscInt spacedim, const PetscReal coords[], MatHaraKernel kernel, void *kernelctx)
+static PetscErrorCode MatH2OpusSetCoords_H2OPUS(Mat A, PetscInt spacedim, const PetscReal coords[], MatH2OpusKernel kernel, void *kernelctx)
 {
-  Mat_HARA       *hara = (Mat_HARA*)A->data;
+  Mat_H2OPUS     *h2opus = (Mat_H2OPUS*)A->data;
   PetscReal      *gcoords;
   PetscInt       N;
   MPI_Comm       comm;
@@ -1158,37 +1061,18 @@ static PetscErrorCode MatHaraSetCoords_HARA(Mat A, PetscInt spacedim, const Pets
     ierr = MPI_Type_free(&dtype);CHKERRQ(ierr);
   } else gcoords = (PetscReal*)coords;
 
-  delete hara->ptcloud1;
-  delete hara->ptcloud2;
-  delete hara->ptcloud3;
-  delete hara->kernel1;
-  delete hara->kernel2;
-  delete hara->kernel3;
-  hara->spacedim = spacedim;
-  switch (spacedim) {
-  case 1:
-    hara->ptcloud1 = new PetscPointCloud1D<PetscReal>(N,gcoords);
-    if (kernel) hara->kernel1 = new PetscFunctionGenerator1D<PetscScalar>(kernel,kernelctx);
-    break;
-  case 2:
-    hara->ptcloud2 = new PetscPointCloud2D<PetscReal>(N,gcoords);
-    if (kernel) hara->kernel2 = new PetscFunctionGenerator2D<PetscScalar>(kernel,kernelctx);
-    break;
-  case 3:
-    hara->ptcloud3 = new PetscPointCloud3D<PetscReal>(N,gcoords);
-    if (kernel) hara->kernel3 = new PetscFunctionGenerator3D<PetscScalar>(kernel,kernelctx);
-    break;
-  default:
-    SETERRQ1(PetscObjectComm((PetscObject)A),PETSC_ERR_SUP,"Unhandled dimension %D",hara->spacedim);
-  }
+  delete h2opus->ptcloud;
+  delete h2opus->kernel;
+  h2opus->ptcloud = new PetscPointCloud<PetscReal>(spacedim,N,gcoords);
+  if (kernel) h2opus->kernel = new PetscFunctionGenerator<PetscScalar>(kernel,spacedim,kernelctx);
   if (gcoords != coords) { ierr = PetscFree(gcoords);CHKERRQ(ierr); }
   A->preallocated = PETSC_TRUE;
   PetscFunctionReturn(0);
 }
 
-PETSC_EXTERN PetscErrorCode MatCreate_HARA(Mat A)
+PETSC_EXTERN PetscErrorCode MatCreate_H2OPUS(Mat A)
 {
-  Mat_HARA       *a;
+  Mat_H2OPUS     *a;
   PetscErrorCode ierr;
   PetscMPIInt    size;
 
@@ -1204,66 +1088,63 @@ PETSC_EXTERN PetscErrorCode MatCreate_HARA(Mat A)
   a->rtol             = 1.e-4;
   a->s                = 1.0;
   a->norm_max_samples = 10;
-  haraCreateDistributedHandleComm(&a->handle,PetscObjectComm((PetscObject)A));
+  h2opusCreateDistributedHandleComm(&a->handle,PetscObjectComm((PetscObject)A));
 
   ierr = MPI_Comm_size(PetscObjectComm((PetscObject)A),&size);CHKERRQ(ierr);
-  ierr = PetscObjectChangeTypeName((PetscObject)A,MATHARA);CHKERRQ(ierr);
+  ierr = PetscObjectChangeTypeName((PetscObject)A,MATH2OPUS);CHKERRQ(ierr);
   ierr = PetscMemzero(A->ops,sizeof(struct _MatOps));CHKERRQ(ierr);
 
-  A->ops->destroy          = MatDestroy_HARA;
-  A->ops->view             = MatView_HARA;
-  A->ops->assemblyend      = MatAssemblyEnd_HARA;
-  A->ops->mult             = MatMult_HARA;
-  A->ops->multtranspose    = MatMultTranspose_HARA;
-  A->ops->multadd          = MatMultAdd_HARA;
-  A->ops->multtransposeadd = MatMultTransposeAdd_HARA;
-  A->ops->scale            = MatScale_HARA;
-  A->ops->duplicate        = MatDuplicate_HARA;
-  A->ops->setfromoptions   = MatSetFromOptions_HARA;
-  A->ops->norm             = MatNorm_HARA;
-  A->ops->zeroentries      = MatZeroEntries_HARA;
+  A->ops->destroy          = MatDestroy_H2OPUS;
+  A->ops->view             = MatView_H2OPUS;
+  A->ops->assemblyend      = MatAssemblyEnd_H2OPUS;
+  A->ops->mult             = MatMult_H2OPUS;
+  A->ops->multtranspose    = MatMultTranspose_H2OPUS;
+  A->ops->multadd          = MatMultAdd_H2OPUS;
+  A->ops->multtransposeadd = MatMultTransposeAdd_H2OPUS;
+  A->ops->scale            = MatScale_H2OPUS;
+  A->ops->duplicate        = MatDuplicate_H2OPUS;
+  A->ops->setfromoptions   = MatSetFromOptions_H2OPUS;
+  A->ops->norm             = MatNorm_H2OPUS;
+  A->ops->zeroentries      = MatZeroEntries_H2OPUS;
 
-  ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_hara_seqdense_C",MatProductSetFromOptions_HARA);CHKERRQ(ierr);
-  ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_hara_seqdensecuda_C",MatProductSetFromOptions_HARA);CHKERRQ(ierr);
-  ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_hara_mpidense_C",MatProductSetFromOptions_HARA);CHKERRQ(ierr);
-  ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_hara_mpidensecuda_C",MatProductSetFromOptions_HARA);CHKERRQ(ierr);
-#if defined(PETSC_HAVE_CUDA)
+  ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_h2opus_seqdense_C",MatProductSetFromOptions_H2OPUS);CHKERRQ(ierr);
+  ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_h2opus_seqdensecuda_C",MatProductSetFromOptions_H2OPUS);CHKERRQ(ierr);
+  ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_h2opus_mpidense_C",MatProductSetFromOptions_H2OPUS);CHKERRQ(ierr);
+  ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_h2opus_mpidensecuda_C",MatProductSetFromOptions_H2OPUS);CHKERRQ(ierr);
+#if defined(H2OPUS_USE_GPU)
   ierr = PetscFree(A->defaultvectype);CHKERRQ(ierr);
   ierr = PetscStrallocpy(VECCUDA,&A->defaultvectype);CHKERRQ(ierr);
 #endif
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode MatHaraSetSamplingMat(Mat A, Mat B, PetscInt bs, PetscReal tol)
+PetscErrorCode MatH2OpusSetSamplingMat(Mat A, Mat B, PetscInt bs, PetscReal tol)
 {
-  PetscBool      ishara;
+  PetscBool      ish2opus;
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
   PetscValidHeaderSpecific(A,MAT_CLASSID,1);
   PetscValidType(A,1);
   PetscValidHeaderSpecific(B,MAT_CLASSID,2);
-  ierr = PetscObjectTypeCompare((PetscObject)A,MATHARA,&ishara);CHKERRQ(ierr);
-  if (ishara) {
-    Mat_HARA *a = (Mat_HARA*)A->data;
-
+  ierr = PetscObjectTypeCompare((PetscObject)A,MATH2OPUS,&ish2opus);CHKERRQ(ierr);
+  if (ish2opus) {
+    Mat_H2OPUS *a = (Mat_H2OPUS*)A->data;
 
     if (!a->sampler) a->sampler = new PetscMatrixSampler();
     a->sampler->SetSamplingMat(B);
     if (bs > 0) a->bs = bs;
     if (tol > 0.) a->rtol = tol;
-    delete a->kernel1;
-    delete a->kernel2;
-    delete a->kernel3;
+    delete a->kernel;
   }
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode MatCreateHaraFromKernel(MPI_Comm comm, PetscInt m, PetscInt n, PetscInt M, PetscInt N, PetscInt spacedim, const PetscReal coords[], MatHaraKernel kernel,void *kernelctx, PetscReal eta, PetscInt leafsize, PetscInt basisord, Mat* nA)
+PetscErrorCode MatCreateH2OpusFromKernel(MPI_Comm comm, PetscInt m, PetscInt n, PetscInt M, PetscInt N, PetscInt spacedim, const PetscReal coords[], MatH2OpusKernel kernel, void *kernelctx, PetscReal eta, PetscInt leafsize, PetscInt basisord, Mat* nA)
 {
   Mat            A;
-  Mat_HARA       *hara;
-#if defined(PETSC_HAVE_CUDA)
+  Mat_H2OPUS     *h2opus;
+#if defined(H2OPUS_USE_GPU)
   PetscBool      iscpu = PETSC_FALSE;
 #else
   PetscBool      iscpu = PETSC_TRUE;
@@ -1273,25 +1154,25 @@ PetscErrorCode MatCreateHaraFromKernel(MPI_Comm comm, PetscInt m, PetscInt n, Pe
   PetscFunctionBegin;
   ierr = MatCreate(comm,&A);CHKERRQ(ierr);
   ierr = MatSetSizes(A,m,n,M,N);CHKERRQ(ierr);
-  ierr = MatSetType(A,MATHARA);CHKERRQ(ierr);
+  ierr = MatSetType(A,MATH2OPUS);CHKERRQ(ierr);
   ierr = MatBindToCPU(A,iscpu);CHKERRQ(ierr);
-  ierr = MatHaraSetCoords_HARA(A,spacedim,coords,kernel,kernelctx);CHKERRQ(ierr);
+  ierr = MatH2OpusSetCoords_H2OPUS(A,spacedim,coords,kernel,kernelctx);CHKERRQ(ierr);
 
-  hara = (Mat_HARA*)A->data;
-  if (eta > 0.) hara->eta = eta;
-  if (leafsize > 0) hara->leafsize = leafsize;
-  if (basisord > 0) hara->basisord = basisord;
+  h2opus = (Mat_H2OPUS*)A->data;
+  if (eta > 0.) h2opus->eta = eta;
+  if (leafsize > 0) h2opus->leafsize = leafsize;
+  if (basisord > 0) h2opus->basisord = basisord;
 
   *nA = A;
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode MatCreateHaraFromMat(Mat B, PetscInt spacedim, const PetscReal coords[], PetscReal eta, PetscInt leafsize, PetscInt maxrank, PetscInt bs, PetscReal rtol, Mat *nA)
+PetscErrorCode MatCreateH2OpusFromMat(Mat B, PetscInt spacedim, const PetscReal coords[], PetscReal eta, PetscInt leafsize, PetscInt maxrank, PetscInt bs, PetscReal rtol, Mat *nA)
 {
   Mat            A;
-  Mat_HARA       *hara;
+  Mat_H2OPUS     *h2opus;
   MPI_Comm       comm;
-#if defined(PETSC_HAVE_CUDA)
+#if defined(H2OPUS_USE_GPU)
   PetscBool      iscpu = PETSC_FALSE;
 #else
   PetscBool      iscpu = PETSC_TRUE;
@@ -1305,22 +1186,21 @@ PetscErrorCode MatCreateHaraFromMat(Mat B, PetscInt spacedim, const PetscReal co
   ierr = PetscObjectGetComm((PetscObject)B,&comm);CHKERRQ(ierr);
   ierr = MatCreate(comm,&A);CHKERRQ(ierr);
   ierr = MatSetSizes(A,B->rmap->n,B->cmap->n,B->rmap->N,B->cmap->N);CHKERRQ(ierr);
-  ierr = MatSetType(A,MATHARA);CHKERRQ(ierr);
+  ierr = MatSetType(A,MATH2OPUS);CHKERRQ(ierr);
   ierr = MatBindToCPU(A,iscpu);CHKERRQ(ierr);
   if (spacedim) {
-    ierr = MatHaraSetCoords_HARA(A,spacedim,coords,NULL,NULL);CHKERRQ(ierr);
+    ierr = MatH2OpusSetCoords_H2OPUS(A,spacedim,coords,NULL,NULL);CHKERRQ(ierr);
   }
   ierr = MatPropagateSymmetryOptions(B,A);CHKERRQ(ierr);
   /* if (!A->symmetric) SETERRQ(comm,PETSC_ERR_SUP,"Unsymmetric sampling does not work"); */
 
-  hara = (Mat_HARA*)A->data;
-  hara->sampler = new PetscMatrixSampler(B);
-  if (eta > 0.) hara->eta = eta;
-  if (leafsize > 0) hara->leafsize = leafsize;
-  if (maxrank > 0) hara->max_rank = maxrank;
-  if (bs > 0) hara->bs = bs;
-  if (rtol > 0.) hara->rtol = rtol;
-
+  h2opus = (Mat_H2OPUS*)A->data;
+  h2opus->sampler = new PetscMatrixSampler(B);
+  if (eta > 0.) h2opus->eta = eta;
+  if (leafsize > 0) h2opus->leafsize = leafsize;
+  if (maxrank > 0) h2opus->max_rank = maxrank;
+  if (bs > 0) h2opus->bs = bs;
+  if (rtol > 0.) h2opus->rtol = rtol;
   *nA = A;
   A->preallocated = PETSC_TRUE;
   PetscFunctionReturn(0);

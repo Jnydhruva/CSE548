@@ -1,8 +1,8 @@
 #include <petscmat.h>
-#include <hara.h>
+#include <h2opus.h>
 
-#ifndef __MATHARA_HPP
-#define __MATHARA_HPP
+#ifndef __MATH2OPUS_HPP
+#define __MATH2OPUS_HPP
 
 class PetscMatrixSampler : public HMatrixSampler
 {
@@ -19,7 +19,7 @@ public:
   ~PetscMatrixSampler();
   void SetSamplingMat(Mat);
   void SetGPUSampling(bool);
-  virtual void sample(Hara_Real*,Hara_Real*,int);
+  virtual void sample(H2Opus_Real*,H2Opus_Real*,int);
   Mat GetSamplingMat() { return A; }
 };
 
@@ -61,11 +61,11 @@ PetscMatrixSampler::~PetscMatrixSampler()
   ierr = MatDestroy(&A);CHKERRCONTINUE(ierr);
 }
 
-void PetscMatrixSampler::sample(Hara_Real *x, Hara_Real *y, int samples)
+void PetscMatrixSampler::sample(H2Opus_Real *x, H2Opus_Real *y, int samples)
 {
   PetscErrorCode ierr;
   MPI_Comm       comm = PetscObjectComm((PetscObject)this->A);
-  Mat            X,Y;
+  Mat            X = NULL,Y = NULL;
   PetscInt       M,N,m,n;
 
   ierr = MatGetLocalSize(this->A,&m,&n);CHKERRCONTINUE(ierr);

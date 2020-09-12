@@ -1,17 +1,17 @@
 -include ../../../../../petscdir.mk
-#requirespackage 'PETSC_HAVE_HARA'
+#requirespackage 'PETSC_HAVE_H2OPUS'
 
 ALL: lib
 
 FFLAGS    =
-SOURCECXX = pcharacpu.cxx
-SOURCECU  = pchara.cu
+SOURCECXX = pch2opuscpu.cxx
+SOURCECU  = pch2opus.cu
 SOURCEF   =
 SOURCEH   =
 LIBBASE   = libpetscksp
 DIRS      =
 MANSEC    = PC
-LOCDIR    = src/ksp/pc/impls/hara/
+LOCDIR    = src/ksp/pc/impls/h2opus/
 
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules

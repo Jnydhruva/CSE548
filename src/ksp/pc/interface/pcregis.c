@@ -61,8 +61,8 @@ PETSC_EXTERN PetscErrorCode PCCreate_Deflation(PC);
 #if defined(PETSC_HAVE_HPDDM)
 PETSC_EXTERN PetscErrorCode PCCreate_HPDDM(PC);
 #endif
-#if defined(PETSC_HAVE_HARA)
-PETSC_EXTERN PetscErrorCode PCCreate_HARA(PC);
+#if defined(PETSC_HAVE_H2OPUS)
+PETSC_EXTERN PetscErrorCode PCCreate_H2OPUS(PC);
 #endif
 
 /*@C
@@ -145,8 +145,8 @@ PetscErrorCode  PCRegisterAll(void)
 #if defined(PETSC_HAVE_HPDDM)
   ierr = PCRegister(PCHPDDM        ,PCCreate_HPDDM);CHKERRQ(ierr);
 #endif
-#if defined(PETSC_HAVE_HARA)
-  ierr = PCRegister(PCHARA         ,PCCreate_HARA);CHKERRQ(ierr);
+#if defined(PETSC_HAVE_H2OPUS)
+  ierr = PCRegister(PCH2OPUS       ,PCCreate_H2OPUS);CHKERRQ(ierr);
 #endif
   PetscFunctionReturn(0);
 }

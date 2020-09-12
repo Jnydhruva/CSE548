@@ -12,10 +12,8 @@ class Configure(config.package.Package):
     #self.minversion       = '2.5.2'
     #self.versionname      = ???
     #self.gitcommit        = 'v'+self.version
-    version               = '2.5.2'
+    version               = '2.5.3'
     self.gitcommit        = 'v'+version
-    # hg stashing mechanism seems broken
-    #self.download         = ['https://bitbucket.org/icl/magma/get/'+self.gitcommit+'.tar.gz','hg://https://bitbucket.org/icl/magma']
     self.download         = ['https://bitbucket.org/icl/magma/get/'+self.gitcommit+'.tar.gz']
     self.downloaddirnames = ['icl-magma']
     self.functions        = ['magma_init']
@@ -34,8 +32,8 @@ class Configure(config.package.Package):
   def setupHelp(self, help):
     import nargs
     config.package.Package.setupHelp(self, help)
-    help.addArgument('MAGMA', '-with-magma-gputarget', nargs.ArgString(None, '', 'GPU_TARGET make variable'))
-    help.addArgument('MAGMA', '-with-magma-fortran-bindings', nargs.ArgBool(None, 1, 'Compile MAGMA Fortran bindings'))
+    help.addArgument('MAGMA', '-with-magma-gputarget=<string>', nargs.ArgString(None, '', 'GPU_TARGET make variable'))
+    help.addArgument('MAGMA', '-with-magma-fortran-bindings=<bool>', nargs.ArgBool(None, 1, 'Compile MAGMA Fortran bindings'))
     return
 
   def setupDependencies(self, framework):
@@ -175,8 +173,8 @@ class Configure(config.package.Package):
         raise RuntimeError('Error running make clean on MAGMA')
       try:
         self.logPrintBox('Compiling MAGMA; this may take several minutes')
-        # make -j seems broken
         output2,err2,ret2 = config.package.Package.executeShellCommand(self.make.make_jnp + ' ' + self.makerulename, cwd=self.packageDir, timeout=2500, log = self.log)
+        # make -j seems broken
         #output2,err2,ret2 = config.package.Package.executeShellCommand(self.make.make + ' ' + self.makerulename, cwd=self.packageDir, timeout=2500, log = self.log)
         # magma install (2.5.2) is broken when fortran bindings are not requested
         dummymod = os.path.join(self.packageDir,'include','magma_petsc_dummy.mod')

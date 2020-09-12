@@ -82,8 +82,8 @@ PETSC_EXTERN PetscErrorCode MatCreate_HYPRE(Mat);
 
 PETSC_EXTERN PetscErrorCode MatCreate_ConstantDiagonal(Mat);
 
-#if defined(PETSC_HAVE_HARA)
-PETSC_EXTERN PetscErrorCode MatCreate_HARA(Mat);
+#if defined(PETSC_HAVE_H2OPUS)
+PETSC_EXTERN PetscErrorCode MatCreate_H2OPUS(Mat);
 #endif
 
 /*@C
@@ -204,8 +204,8 @@ PetscErrorCode  MatRegisterAll(void)
   ierr = MatRegister(MATHYPRE,          MatCreate_HYPRE);CHKERRQ(ierr);
 #endif
 
-#if defined(PETSC_HAVE_HARA)
-  ierr = MatRegister(MATHARA,           MatCreate_HARA);CHKERRQ(ierr);
+#if defined(PETSC_HAVE_H2OPUS)
+  ierr = MatRegister(MATH2OPUS,         MatCreate_H2OPUS);CHKERRQ(ierr);
 #endif
   PetscFunctionReturn(0);
 }

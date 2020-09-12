@@ -153,7 +153,7 @@
 #define MATLMVMSYMBROYDEN  'lmvmsymbroyden'
 #define MATLMVMSYMBADBROYDEN 'lmvmsymbadbroyden'
 #define MATLMVMDIAGBROYDEN 'lmvmdiagbroyden'
-#define MATHARA            'hara'
+#define MATH2OPUS          'h2opus'
 
 !
 ! MatMFFDType values
