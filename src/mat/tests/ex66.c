@@ -1,4 +1,4 @@
-static char help[] = "Tests MATHARA\n\n";
+static char help[] = "Tests MATH2OPUS\n\n";
 
 #include <petscmat.h>
 #include <petscsf.h>
@@ -39,7 +39,7 @@ int main(int argc,char **argv)
   PetscMPIInt    size,rank;
   PetscBool      testlayout = PETSC_FALSE,flg,symm = PETSC_FALSE, Asymm = PETSC_TRUE, kernel = PETSC_TRUE;
   PetscBool      checkexpl = PETSC_FALSE, agpu = PETSC_FALSE, bgpu = PETSC_FALSE, cgpu = PETSC_FALSE;
-  PetscBool      testtrans, testnorm, randommat = PETSC_TRUE;
+  PetscBool      testtrans, testnorm, randommat = PETSC_TRUE, testorthog, testcompress;
   void           (*approxnormfunc)(void);
   void           (*Anormfunc)(void);
   PetscErrorCode ierr;
@@ -65,9 +65,11 @@ int main(int argc,char **argv)
   if (!Asymm) symm = PETSC_FALSE;
 
   ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);CHKERRMPI(ierr);
-  /* MatMultTranspose for nonsymmetric matrices not implemented */
+  /* MatMultTranspose for nonsymmetric matrices in parallel not implemented */
   testtrans = (PetscBool)(size == 1 || symm);
   testnorm = (PetscBool)(size == 1 || symm);
+  testorthog = symm;
+  testcompress = (PetscBool)(size == 1 && symm);
 
   ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRMPI(ierr);
   ierr = PetscLayoutCreate(PETSC_COMM_WORLD,&map);CHKERRQ(ierr);
@@ -97,9 +99,9 @@ int main(int argc,char **argv)
     }
   }
   if (kernel || !randommat) {
-    MatHaraKernel k = Asymm ? GenEntry_Symm : GenEntry_Unsymm;
-    PetscInt      ist,ien;
-    PetscReal     *gcoords;
+    MatH2OpusKernel k = Asymm ? GenEntry_Symm : GenEntry_Unsymm;
+    PetscInt        ist,ien;
+    PetscReal       *gcoords;
 
     if (size > 1) { /* replicated coords so that we can populate the dense matrix */
       PetscSF      sf;
@@ -127,9 +129,9 @@ int main(int argc,char **argv)
     ierr = MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
     ierr = MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
     if (kernel) {
-      ierr = MatCreateHaraFromKernel(PETSC_COMM_WORLD,n,n,N,N,dim,coords,k,NULL,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,&B);CHKERRQ(ierr);
+      ierr = MatCreateH2OpusFromKernel(PETSC_COMM_WORLD,n,n,N,N,dim,coords,k,NULL,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,&B);CHKERRQ(ierr);
     } else {
-      ierr = MatCreateHaraFromMat(A,dim,coords,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,&B);CHKERRQ(ierr);
+      ierr = MatCreateH2OpusFromMat(A,dim,coords,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,&B);CHKERRQ(ierr);
     }
     if (gcoords != coords) { ierr = PetscFree(gcoords);CHKERRQ(ierr); }
   } else {
@@ -140,7 +142,7 @@ int main(int argc,char **argv)
       ierr = MatDestroy(&B);CHKERRQ(ierr);
       ierr = MatSetOption(A,MAT_SYMMETRIC,PETSC_TRUE);CHKERRQ(ierr);
     }
-    ierr = MatCreateHaraFromMat(A,dim,coords,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,&B);CHKERRQ(ierr);
+    ierr = MatCreateH2OpusFromMat(A,dim,coords,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,&B);CHKERRQ(ierr);
   }
   if (agpu) {
     ierr = MatConvert(A,MATDENSECUDA,MAT_INPLACE_MATRIX,&A);CHKERRQ(ierr);
@@ -209,6 +211,7 @@ int main(int argc,char **argv)
 
   /* Test MatDuplicate */
   ierr = MatDuplicate(B,MAT_COPY_VALUES,&D);CHKERRQ(ierr);
+  ierr = MatSetOption(D,MAT_SYMMETRIC,symm);CHKERRQ(ierr);
   ierr = MatMultEqual(B,D,10,&flg);CHKERRQ(ierr);
   if (!flg) {
     ierr = PetscPrintf(PETSC_COMM_WORLD,"MatMult error after MatDuplicate\n");CHKERRQ(ierr);
@@ -302,6 +305,24 @@ int main(int argc,char **argv)
     ierr = MatDestroy(&D);CHKERRQ(ierr);
   }
 
+  if (testorthog) {
+    ierr = MatDuplicate(B,MAT_COPY_VALUES,&D);CHKERRQ(ierr);
+    ierr = MatSetOption(D,MAT_SYMMETRIC,symm);CHKERRQ(ierr);
+    ierr = MatH2OpusOrthogonalize(D);CHKERRQ(ierr);
+    ierr = MatMultEqual(B,D,10,&flg);CHKERRQ(ierr);
+    if (!flg) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"MatMult error after basis ortogonalization\n");CHKERRQ(ierr);
+    }
+    ierr = MatDestroy(&D);CHKERRQ(ierr);
+  }
+
+  if (testcompress) {
+    ierr = MatDuplicate(B,MAT_COPY_VALUES,&D);CHKERRQ(ierr);
+    ierr = MatSetOption(D,MAT_SYMMETRIC,symm);CHKERRQ(ierr);
+    ierr = MatH2OpusCompress(D,PETSC_SMALL);CHKERRQ(ierr);
+    ierr = MatDestroy(&D);CHKERRQ(ierr);
+  }
+
   /* check explicit operator */
   if (checkexpl) {
     Mat Be, Bet;
@@ -352,58 +373,58 @@ int main(int argc,char **argv)
 /*TEST
 
    build:
-     requires: hara
+     requires: h2opus define(PETSC_HAVE_MPI_INIT_THREAD)
 
 #tests from kernel
    test:
-     requires: hara
+     requires: h2opus
      nsize: 1
      suffix: 1
      args: -n {{17 33}} -kernel 1 -dim {{1 2 3}} -symm {{0 1}} -checkexpl -bgpu 0
 
    test:
-     requires: hara
+     requires: h2opus
      nsize: 1
      suffix: 1_ld
      output_file: output/ex66_1.out
      args: -n 33 -kernel 1 -dim 1 -lda 13 -ldc 11 -symm 0 -checkexpl -bgpu 0
 
    test:
-     requires: hara cuda
+     requires: h2opus cuda
      nsize: 1
      suffix: 1_cuda
      output_file: output/ex66_1.out
      args: -n {{17 33}} -kernel 1 -dim {{1 2 3}} -symm {{0 1}} -checkexpl -bgpu 1
 
    test:
-     requires: hara cuda
+     requires: h2opus cuda
      nsize: 1
      suffix: 1_cuda_ld
      output_file: output/ex66_1.out
      args: -n 33 -kernel 1 -dim 1 -lda 13 -ldc 11 -symm 0 -checkexpl -bgpu 1
 
    test:
-     requires: hara define(PETSC_HAVE_MPI_INIT_THREAD)
+     requires: h2opus
      nsize: 2
      suffix: 1_par
-     args: -n 32 -kernel 1 -dim 1 -ldc 12 -testlayout {{0 1}} -bgpu 0 -cgpu 0
+     args: -n 64 -symm -kernel 1 -dim 1 -ldc 12 -testlayout {{0 1}} -bgpu 0 -cgpu 0
 
    test:
-     requires: hara cuda define(PETSC_HAVE_MPI_INIT_THREAD)
+     requires: h2opus cuda
      nsize: 2
      suffix: 1_par_cuda
-     args: -n 32 -kernel 1 -dim 1 -ldc 12 -testlayout {{0 1}} -bgpu {{0 1}} -cgpu {{0 1}}
+     args: -n 64 -symm -kernel 1 -dim 1 -ldc 12 -testlayout {{0 1}} -bgpu {{0 1}} -cgpu {{0 1}}
      output_file: output/ex66_1_par.out
 
 #tests from matrix sampling (parallel or unsymmetric not supported)
    test:
-     requires: hara
+     requires: h2opus
      nsize: 1
      suffix: 2
      args: -n {{17 33}} -kernel 0 -dim 2 -symm 1 -checkexpl -bgpu 0
 
    test:
-     requires: hara cuda
+     requires: h2opus cuda
      nsize: 1
      suffix: 2_cuda
      output_file: output/ex66_2.out
