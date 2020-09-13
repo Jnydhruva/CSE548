@@ -36,6 +36,8 @@ if __name__ == '__main__':
     '--with-shared-libraries',
     '--download-magma',
     '--with-magma-fortran-bindings=0',
+    '--download-kblas',
+    '--download-cub',
   ]
 
   configure.petsc_configure(configure_options)
