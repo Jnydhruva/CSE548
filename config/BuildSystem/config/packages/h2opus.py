@@ -46,6 +46,7 @@ class Configure(config.package.Package):
     cxx = self.setCompilers.getCompiler()
     cxxflags = self.setCompilers.getCompilerFlags()
     cxxflags = cxxflags.replace('-fvisibility=hidden','')
+    cxxflags = cxxflags.replace('-std=gnu++14','-std=c++11')
     self.setCompilers.popLanguage()
 
     with_gpu=False
@@ -82,6 +83,7 @@ class Configure(config.package.Package):
       if with_gpu:
         g.write('H2OPUS_USE_GPU = 1\n')
         g.write('NVCC = '+nvcc+'\n')
+        g.write('NVCCFLAGS = '+nvopts+' -std=c++11 --expt-relaxed-constexpr\n')
         if self.cuda.gencodearch:
           g.write('H2OPUS_GENCODE_FLAGS = -gencode arch=compute_'+self.cuda.gencodearch+',code=sm_'+self.cuda.gencodearch+'\n')
         g.write('CXXCPPFLAGS += '+self.headers.toString(self.cuda.include)+'\n')

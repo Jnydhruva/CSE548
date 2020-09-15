@@ -6,7 +6,6 @@ class Configure(config.package.Package):
     self.version                = '4.0.0'
     self.gitcommit              = 'v'+self.version
     self.download               = ['git://https://github.com/ecrc/kblas-gpu.git']
-    self.skippackagewithoptions = 1
     self.cxx                    = 1 # uses nvcc to compile everything
     self.functions              = ['kblasCreate']
     self.functionsCxx           = [1,'struct KBlasHandle; typedef struct KBlasHandle *kblasHandle_t;int kblasCreate(kblasHandle_t*);','kblasHandle_t h; kblasCreate(&h)']
@@ -25,13 +24,15 @@ class Configure(config.package.Package):
     self.cuda   = framework.require('config.packages.cuda',self)
     self.magma  = framework.require('config.packages.magma',self)
     self.openmp = framework.require('config.packages.openmp',self)
-    self.deps   = [self.cub,self.cuda,self.magma]
-    self.odeps  = [self.openmp]
+    self.deps   = [self.cuda,self.magma]
+    self.odeps  = [self.openmp,self.cub] #CUB is a building dependency only
     return
 
   def Install(self):
     import os
 
+    if not self.cub.found:
+      raise RuntimeError('Package kblas requested but dependency cub not requested. Perhaps you want --download-cub')
     if self.openmp.found:
       self.usesopenmp = 'yes'
 

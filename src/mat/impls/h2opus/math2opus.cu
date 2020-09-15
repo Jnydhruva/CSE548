@@ -1114,22 +1114,22 @@ PetscErrorCode MatBindToCPU_H2OPUS(Mat A, PetscBool flg)
   if (flg && A->offloadmask == PETSC_OFFLOAD_GPU) {
     if (size > 1) {
       if (!a->dist_hmatrix_gpu) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_PLIB,"Missing GPU matrix");
-      if (!a->dist_hmatrix) dist_hmatrix = new DistributedHMatrix(*a->dist_hmatrix_gpu);
+      if (!a->dist_hmatrix) a->dist_hmatrix = new DistributedHMatrix(*a->dist_hmatrix_gpu);
       else *a->dist_hmatrix = *a->dist_hmatrix_gpu;
     } else {
       if (!a->hmatrix_gpu) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_PLIB,"Missing GPU matrix");
-      if (!a->hmatrix) hmatrix = new HMatrix(*a->hmatrix_gpu);
+      if (!a->hmatrix) a->hmatrix = new HMatrix(*a->hmatrix_gpu);
       else *a->hmatrix = *a->hmatrix_gpu;
     }
     A->offloadmask = PETSC_OFFLOAD_BOTH;
   } else if (!flg && A->offloadmask == PETSC_OFFLOAD_CPU) {
     if (size > 1) {
       if (!a->dist_hmatrix) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_PLIB,"Missing CPU matrix");
-      if (!a->dist_hmatrix_gpu) dist_hmatrix_gpu = new DistributedHMatrix(*a->dist_hmatrix);
+      if (!a->dist_hmatrix_gpu) a->dist_hmatrix_gpu = new DistributedHMatrix_GPU(*a->dist_hmatrix);
       else *a->dist_hmatrix_gpu = *a->dist_hmatrix;
     } else {
       if (!a->hmatrix) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_PLIB,"Missing CPU matrix");
-      if (!a->hmatrix_gpu) hmatrix_gpu = new HMatrix(*a->hmatrix);
+      if (!a->hmatrix_gpu) a->hmatrix_gpu = new HMatrix_GPU(*a->hmatrix);
       else *a->hmatrix_gpu = *a->hmatrix;
     }
     A->offloadmask = PETSC_OFFLOAD_BOTH;
