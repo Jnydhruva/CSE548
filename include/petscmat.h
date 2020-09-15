@@ -1800,6 +1800,8 @@ PETSC_EXTERN_TYPEDEF typedef PetscScalar (*MatH2OpusKernel)(PetscInt,PetscReal[]
 PETSC_EXTERN PetscErrorCode MatCreateH2OpusFromKernel(MPI_Comm,PetscInt,PetscInt,PetscInt,PetscInt,PetscInt,const PetscReal[],MatH2OpusKernel,void*,PetscReal,PetscInt,PetscInt,Mat*);
 PETSC_EXTERN PetscErrorCode MatCreateH2OpusFromMat(Mat,PetscInt,const PetscReal[],PetscReal,PetscInt,PetscInt,PetscInt,PetscReal,Mat*);
 PETSC_EXTERN PetscErrorCode MatH2OpusSetSamplingMat(Mat,Mat,PetscInt,PetscReal);
+PETSC_EXTERN PetscErrorCode MatH2OpusOrthogonalize(Mat);
+PETSC_EXTERN PetscErrorCode MatH2OpusCompress(Mat,PetscReal);
 #endif
 
 /*
