@@ -39,7 +39,7 @@ int main(int argc,char **argv)
   PetscMPIInt    size,rank;
   PetscBool      testlayout = PETSC_FALSE,flg,symm = PETSC_FALSE, Asymm = PETSC_TRUE, kernel = PETSC_TRUE;
   PetscBool      checkexpl = PETSC_FALSE, agpu = PETSC_FALSE, bgpu = PETSC_FALSE, cgpu = PETSC_FALSE;
-  PetscBool      testtrans, testnorm, randommat = PETSC_TRUE;
+  PetscBool      testtrans, testnorm, randommat = PETSC_TRUE, testorthog, testcompress;
   void           (*approxnormfunc)(void);
   void           (*Anormfunc)(void);
   PetscErrorCode ierr;
@@ -68,6 +68,8 @@ int main(int argc,char **argv)
   /* MatMultTranspose for nonsymmetric matrices not implemented */
   testtrans = (PetscBool)(size == 1 || symm);
   testnorm = (PetscBool)(size == 1 || symm);
+  testorthog = symm;
+  testcompress = (PetscBool)(size == 1 && symm);
 
   ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
   ierr = PetscLayoutCreate(PETSC_COMM_WORLD,&map);CHKERRQ(ierr);
@@ -300,6 +302,24 @@ int main(int argc,char **argv)
         ierr = VecDestroy(&v);CHKERRQ(ierr);
       }
     }
+    ierr = MatDestroy(&D);CHKERRQ(ierr);
+  }
+
+  if (testorthog) {
+    ierr = MatDuplicate(B,MAT_COPY_VALUES,&D);CHKERRQ(ierr);
+    ierr = MatSetOption(D,MAT_SYMMETRIC,symm);CHKERRQ(ierr);
+    ierr = MatH2OpusOrthogonalize(D);CHKERRQ(ierr);
+    ierr = MatMultEqual(B,D,10,&flg);CHKERRQ(ierr);
+    if (!flg) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"MatMult error after basis ortogonalization\n");CHKERRQ(ierr);
+    }
+    ierr = MatDestroy(&D);CHKERRQ(ierr);
+  }
+
+  if (testcompress) {
+    ierr = MatDuplicate(B,MAT_COPY_VALUES,&D);CHKERRQ(ierr);
+    ierr = MatSetOption(D,MAT_SYMMETRIC,symm);CHKERRQ(ierr);
+    ierr = MatH2OpusCompress(D,PETSC_SMALL);CHKERRQ(ierr);
     ierr = MatDestroy(&D);CHKERRQ(ierr);
   }
 
