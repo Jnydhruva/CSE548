@@ -423,19 +423,18 @@ typedef struct { /* used by MatProduct() */
   int         *j; \
   datatype    *a;\
   PetscInt    n;\
-  PetscInt    ignorezeroentries;
 
 typedef struct {
   CSRDataStructure(PetscScalar)
 } PetscCSRDataStructure;
 
-struct _p_SplitCSRMat {
+struct _n_SplitCSRMat {
   PetscInt              cstart,cend,rstart,rend;
   PetscCSRDataStructure diag,offdiag;
   PetscInt              *colmap;
   PetscBool             seq;
   PetscMPIInt           rank;
-  PetscInt              nonzerostate;
+  PetscInt              N; /* global number of columns in matrix; used for error checking */
 };
 
 struct _p_Mat {

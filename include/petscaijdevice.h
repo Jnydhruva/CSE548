@@ -22,7 +22,7 @@
         atomicAdd(&ap1[_i],value);                                     \
       }                                                                \
       else ap1[_i] = value;                                            \
-      inserted = 1; atomicAdd(&d_mat->nonzerostate,1);                 \
+      inserted = 1;                                                    \
       break;                                                           \
     }                                                                  \
   }                                                                    \
@@ -46,7 +46,7 @@
         atomicAdd(&ap2[_i],value);                                     \
       }                                                                \
       else ap2[_i] = value;                                            \
-      inserted = 1; atomicAdd(&d_mat->nonzerostate,1);                 \
+      inserted = 1;                                                    \
       break;                                                           \
     }                                                                  \
   }                                                                    \
@@ -59,17 +59,15 @@ static __device__
 #endif
 PetscErrorCode MatSetValuesDevice(PetscSplitCSRDataStructure *d_mat, PetscInt m,const PetscInt im[],PetscInt n,const PetscInt in[],const PetscScalar v[],InsertMode is)
 {
-  MatScalar value=0.0;
-  PetscInt  *ai = d_mat->diag.i;
-  PetscInt  *aj = d_mat->diag.j;
-  PetscBool ignorezeroentries = (d_mat->diag.ignorezeroentries==0) ? PETSC_FALSE : PETSC_TRUE;
-  PetscInt  *bi = d_mat->offdiag.i, *bj = d_mat->offdiag.j;
-  MatScalar *ba = d_mat->offdiag.a, *aa = d_mat->diag.a;
-  PetscInt  *rp1,*rp2=NULL,nrow1,nrow2,_i,low1,high1,low2,high2,t,lastcol1,lastcol2,inserted;
-  MatScalar *ap1,*ap2=NULL;
-  PetscBool roworiented = PETSC_TRUE;
-  PetscInt  i,j,rstart  = d_mat->rstart,rend = d_mat->rend;
-  PetscInt  cstart      = d_mat->rstart,cend = d_mat->rend,row,col;
+  MatScalar       value;
+  const PetscInt  *rp1,*rp2 = NULL,*ai = d_mat->diag.i, *aj = d_mat->diag.j;
+  const PetscInt  *bi = d_mat->offdiag.i, *bj = d_mat->offdiag.j;
+  MatScalar       *ba = d_mat->offdiag.a, *aa = d_mat->diag.a;
+  PetscInt        nrow1,nrow2,_i,low1,high1,low2,high2,t,lastcol1,lastcol2,inserted;
+  MatScalar       *ap1,*ap2 = NULL;
+  PetscBool       roworiented = PETSC_TRUE;
+  PetscInt        i,j,row,col;
+  const PetscInt rstart = d_mat->rstart,rend = d_mat->rend, cstart = d_mat->rstart,cend = d_mat->rend,N = d_mat->N;
 
   for (i=0; i<m; i++) {
     if (im[i] >= rstart && im[i] < rend) { // ignore off processor rows
@@ -89,14 +87,16 @@ PetscErrorCode MatSetValuesDevice(PetscSplitCSRDataStructure *d_mat, PetscInt m,
         high2    = nrow2;
       }
       for (j=0; j<n; j++) {
-        if (v) value = roworiented ? v[i*n+j] : v[i+j*m];
-        if (ignorezeroentries && value == 0.0 && (is == ADD_VALUES) && im[i] != in[j]) continue;
+        value = roworiented ? v[i*n+j] : v[i+j*m];
         if (in[j] >= cstart && in[j] < cend) {
           col   = in[j] - cstart;
           MatSetValues_SeqAIJ_A_Private(row,col,value,is);
           if (!inserted) SETERR;
         } else if (in[j] < 0) {
           continue; // need to check for > N also
+        } else if (in[j] >= N) {
+          printf("[%d]ERROR, MatSetValuesDevice A: Column location %d out of range\n",(int)d_mat->rank, (int)in[i]);
+          return PETSC_ERR_ARG_OUTOFRANGE;
         } else {
           col = d_mat->colmap[in[j]] - 1;
           if (col < 0) SETERR;

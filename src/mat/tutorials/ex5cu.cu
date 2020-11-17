@@ -29,7 +29,7 @@ void assemble_on_gpu(PetscSplitCSRDataStructure *d_mat, PetscInt start, PetscInt
   }
 }
 
-void assemble_on_cpu(Mat A, PetscInt start, PetscInt end, PetscInt Ne, PetscMPIInt rank)
+PetscErrorCode assemble_on_cpu(Mat A, PetscInt start, PetscInt end, PetscInt Ne, PetscMPIInt rank)
 {
   PetscInt        i;
   PetscScalar     values[] = {1,-1,-1,1.1};
@@ -37,8 +37,9 @@ void assemble_on_cpu(Mat A, PetscInt start, PetscInt end, PetscInt Ne, PetscMPII
 
   for (i=start; i<end; i++) {
     PetscInt js[] = {i-1, i};
-    ierr = MatSetValues(A,2,js,2,js,values,ADD_VALUES);if (ierr) return;
+    ierr = MatSetValues(A,2,js,2,js,values,ADD_VALUES);CHKERRQ(ierr);
   }
+  return 0;
 }
 
 int main(int argc,char **args)

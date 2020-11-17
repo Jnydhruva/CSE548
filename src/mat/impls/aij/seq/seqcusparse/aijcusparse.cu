@@ -2416,6 +2416,7 @@ static PetscErrorCode MatAssemblyEnd_SeqAIJCUSPARSE(Mat A,MatAssemblyType mode)
   PetscSplitCSRDataStructure  *d_mat = NULL, h_mat;
   PetscBool                   is_seq = PETSC_TRUE;
   PetscInt                    nnz_state = A->nonzerostate;
+
   PetscFunctionBegin;
   if (A->factortype == MAT_FACTOR_NONE) {
     d_mat = ((Mat_SeqAIJCUSPARSE*)A->spptr)->deviceMat;
@@ -2424,7 +2425,6 @@ static PetscErrorCode MatAssemblyEnd_SeqAIJCUSPARSE(Mat A,MatAssemblyType mode)
     cudaError_t err;
     ierr = PetscInfo(A,"Assemble device matrix\n");CHKERRQ(ierr);
     err = cudaMemcpy( &h_mat, d_mat, sizeof(PetscSplitCSRDataStructure), cudaMemcpyDeviceToHost);CHKERRCUDA(err);
-    nnz_state = h_mat.nonzerostate;
     is_seq = h_mat.seq;
   }
   ierr = MatAssemblyEnd_SeqAIJ(A,mode);CHKERRQ(ierr); // this does very little if assembled on GPU - call it?
@@ -2434,7 +2434,6 @@ static PetscErrorCode MatAssemblyEnd_SeqAIJCUSPARSE(Mat A,MatAssemblyType mode)
   } else if (nnz_state > A->nonzerostate) {
     A->offloadmask = PETSC_OFFLOAD_GPU;
   }
-
   PetscFunctionReturn(0);
 }
 
