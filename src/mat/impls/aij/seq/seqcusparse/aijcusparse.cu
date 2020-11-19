@@ -3712,8 +3712,7 @@ struct IJCompare4
   }
 };
 
-struct Shift
-{
+struct Shift {
   int _shift;
 
   Shift(int shift) : _shift(shift) {}
