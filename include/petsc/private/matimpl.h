@@ -418,25 +418,6 @@ typedef struct { /* used by MatProduct() */
   PetscErrorCode (*destroy)(void*); /* destroy routine */
 } Mat_Product;
 
-#define PetscCSRDataStructure_(datatype) \
-  int              *i;                   \
-  int              *j;                   \
-  datatype         *a;                   \
-  PetscInt         n;                    \
-
-typedef struct {
-  PetscCSRDataStructure_(PetscScalar)
-} PetscCSRDataStructure;
-
-struct _n_SplitCSRMat {
-  PetscInt              cstart,cend,rstart,rend;
-  PetscCSRDataStructure diag,offdiag;
-  int                   *colmap;
-  /* global number of columns in matrix and PETSc global rank; used for error checking */
-  PetscMPIInt rank;
-  PetscInt    N;
-};
-
 struct _p_Mat {
   PETSCHEADER(struct _MatOps);
   PetscLayout            rmap,cmap;

@@ -3,6 +3,7 @@
 
 #include <petscpkg_version.h>
 #include <petsc/private/cudavecimpl.h>
+#include <petscaijdevice.h>
 
 #include <cusparse_v2.h>
 

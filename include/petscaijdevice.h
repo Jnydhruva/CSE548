@@ -2,7 +2,25 @@
 #define PETSCAIJDEVICE_H
 
 #include <petscmat.h>
-#include <petsc/private/matimpl.h>
+
+#define PetscCSRDataStructure_(datatype) \
+  int              *i;                   \
+  int              *j;                   \
+  datatype         *a;                   \
+  PetscInt         n;                    \
+
+typedef struct {
+  PetscCSRDataStructure_(PetscScalar)
+} PetscCSRDataStructure;
+
+struct _n_SplitCSRMat {
+  PetscInt              cstart,cend,rstart,rend;
+  PetscCSRDataStructure diag,offdiag;
+  int                   *colmap;
+  /* global number of columns in matrix and PETSc global rank; used for error checking */
+  PetscMPIInt rank;
+  PetscInt    N;
+};
 
 #define MatSetValues_SeqAIJ_A_Private(row,col,value,addv)              \
   {                                                                    \
@@ -121,4 +139,4 @@ PetscErrorCode MatSetValuesDevice(PetscSplitCSRDataStructure d_mat, PetscInt m,c
 #undef MatSetValues_SeqAIJ_B_Private
 #undef SETERR
 
-#endif // PETSCAIJDEVICE_H
+#endif
