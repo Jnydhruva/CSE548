@@ -329,7 +329,7 @@ PetscErrorCode PetscOptionsInsertString(PetscOptions options,const char in_str[]
   char           *first,*second;
   PetscErrorCode ierr;
   PetscToken     token;
-  PetscBool      key,ispush,ispop,isopts;
+  PetscBool      key,ispush,ispop,isopts,ishelp;
 
   PetscFunctionBegin;
   ierr = PetscTokenCreate(in_str,' ',&token);CHKERRQ(ierr);
@@ -338,6 +338,7 @@ PetscErrorCode PetscOptionsInsertString(PetscOptions options,const char in_str[]
     ierr = PetscStrcasecmp(first,"-prefix_push",&ispush);CHKERRQ(ierr);
     ierr = PetscStrcasecmp(first,"-prefix_pop",&ispop);CHKERRQ(ierr);
     ierr = PetscStrcasecmp(first,"-options_file",&isopts);CHKERRQ(ierr);
+    ierr = PetscStrcasecmp(first,"-help",&ishelp);CHKERRQ(ierr);
     ierr = PetscOptionsValidKey(first,&key);CHKERRQ(ierr);
     if (ispush) {
       ierr = PetscTokenFind(token,&second);CHKERRQ(ierr);
@@ -353,7 +354,11 @@ PetscErrorCode PetscOptionsInsertString(PetscOptions options,const char in_str[]
     } else if (key) {
       ierr = PetscTokenFind(token,&second);CHKERRQ(ierr);
       ierr = PetscOptionsValidKey(second,&key);CHKERRQ(ierr);
+      if (ishelp) options->help = PETSC_TRUE;
       if (!key) {
+        PetscBool flg;
+        ierr = PetscStrcasecmp(second,"intro",&flg);CHKERRQ(ierr);
+        if (flg) options->help_intro = PETSC_TRUE;
         ierr = PetscOptionsSetValue(options,first,second);CHKERRQ(ierr);
         ierr = PetscTokenFind(token,&first);CHKERRQ(ierr);
       } else {
