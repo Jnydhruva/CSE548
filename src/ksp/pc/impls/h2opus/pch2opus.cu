@@ -39,6 +39,7 @@ typedef struct {
   PetscBool boundtocpu;
 } PC_H2OPUS;
 
+PETSC_EXTERN PetscErrorCode MatH2OpusSetNativeMult(Mat,PetscBool);
 PETSC_EXTERN PetscErrorCode MatNorm_H2OPUS(Mat,NormType,PetscReal*);
 
 static PetscErrorCode PCReset_H2OPUS(PC pc)
@@ -157,6 +158,7 @@ static PetscErrorCode PCH2OpusSetUpInit(PC pc)
   ierr = MatGetSize(A,&M,NULL);CHKERRQ(ierr);
   ierr = MatGetLocalSize(A,&m,NULL);CHKERRQ(ierr);
   ierr = MatCreateShell(PetscObjectComm((PetscObject)A),m,m,M,M,&aat,&AAt);CHKERRQ(ierr);
+  ierr = MatBindToCPU(AAt,pch2opus->boundtocpu);CHKERRQ(ierr);
   ierr = MatShellSetOperation(AAt,MATOP_MULT,(void (*)(void))MatMult_AAt);CHKERRQ(ierr);
   ierr = MatShellSetOperation(AAt,MATOP_MULT_TRANSPOSE,(void (*)(void))MatMult_AAt);CHKERRQ(ierr);
   ierr = MatShellSetOperation(AAt,MATOP_NORM,(void (*)(void))MatNorm_H2OPUS);CHKERRQ(ierr);
@@ -369,10 +371,22 @@ static PetscErrorCode MatMatMultKernel_Hyper(Mat M, Mat X, Mat Y, PetscBool t)
   ierr = MatShellGetContext(M,(void*)&pc);CHKERRQ(ierr);
   pch2opus = (PC_H2OPUS*)pc->data;
   A = pch2opus->A;
-  ierr = MatDuplicate(X,MAT_SHARE_NONZERO_PATTERN,&pch2opus->wnsmat[0]);CHKERRQ(ierr);
-  ierr = MatDuplicate(Y,MAT_SHARE_NONZERO_PATTERN,&pch2opus->wnsmat[1]);CHKERRQ(ierr);
-  ierr = MatDuplicate(X,MAT_SHARE_NONZERO_PATTERN,&pch2opus->wnsmat[2]);CHKERRQ(ierr);
-  ierr = MatDuplicate(Y,MAT_SHARE_NONZERO_PATTERN,&pch2opus->wnsmat[3]);CHKERRQ(ierr);
+  if (pch2opus->wnsmat[0] && pch2opus->wnsmat[0]->cmap->N != X->cmap->N) {
+    ierr = MatDestroy(&pch2opus->wnsmat[0]);CHKERRQ(ierr);
+    ierr = MatDestroy(&pch2opus->wnsmat[1]);CHKERRQ(ierr);
+  }
+  if (!pch2opus->wnsmat[0]) {
+    ierr = MatDuplicate(X,MAT_SHARE_NONZERO_PATTERN,&pch2opus->wnsmat[0]);CHKERRQ(ierr);
+    ierr = MatDuplicate(Y,MAT_SHARE_NONZERO_PATTERN,&pch2opus->wnsmat[1]);CHKERRQ(ierr);
+  }
+  if (pch2opus->wnsmat[2] && pch2opus->wnsmat[2]->cmap->N != X->cmap->N) {
+    ierr = MatDestroy(&pch2opus->wnsmat[2]);CHKERRQ(ierr);
+    ierr = MatDestroy(&pch2opus->wnsmat[3]);CHKERRQ(ierr);
+  }
+  if (!pch2opus->wnsmat[2]) {
+    ierr = MatDuplicate(X,MAT_SHARE_NONZERO_PATTERN,&pch2opus->wnsmat[2]);CHKERRQ(ierr);
+    ierr = MatDuplicate(Y,MAT_SHARE_NONZERO_PATTERN,&pch2opus->wnsmat[3]);CHKERRQ(ierr);
+  }
   ierr = MatCopy(X,pch2opus->wnsmat[0],SAME_NONZERO_PATTERN);CHKERRQ(ierr);
   ierr = MatCopy(X,pch2opus->wnsmat[3],SAME_NONZERO_PATTERN);CHKERRQ(ierr);
   if (t) {
@@ -392,10 +406,6 @@ static PetscErrorCode MatMatMultKernel_Hyper(Mat M, Mat X, Mat Y, PetscBool t)
     }
     ierr = PCApplyMat_H2OPUS(pc,pch2opus->wnsmat[3],Y);CHKERRQ(ierr);
   }
-  ierr = MatDestroy(&pch2opus->wnsmat[0]);CHKERRQ(ierr);
-  ierr = MatDestroy(&pch2opus->wnsmat[1]);CHKERRQ(ierr);
-  ierr = MatDestroy(&pch2opus->wnsmat[2]);CHKERRQ(ierr);
-  ierr = MatDestroy(&pch2opus->wnsmat[3]);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -467,8 +477,14 @@ static PetscErrorCode MatMatMultKernel_NS(Mat M, Mat X, Mat Y, PetscBool t)
   ierr = MatShellGetContext(M,(void*)&pc);CHKERRQ(ierr);
   pch2opus = (PC_H2OPUS*)pc->data;
   A = pch2opus->A;
-  ierr = MatDuplicate(X,MAT_SHARE_NONZERO_PATTERN,&pch2opus->wnsmat[0]);CHKERRQ(ierr);
-  ierr = MatDuplicate(Y,MAT_SHARE_NONZERO_PATTERN,&pch2opus->wnsmat[1]);CHKERRQ(ierr);
+  if (pch2opus->wnsmat[0] && pch2opus->wnsmat[0]->cmap->N != X->cmap->N) {
+    ierr = MatDestroy(&pch2opus->wnsmat[0]);CHKERRQ(ierr);
+    ierr = MatDestroy(&pch2opus->wnsmat[1]);CHKERRQ(ierr);
+  }
+  if (!pch2opus->wnsmat[0]) {
+    ierr = MatDuplicate(X,MAT_SHARE_NONZERO_PATTERN,&pch2opus->wnsmat[0]);CHKERRQ(ierr);
+    ierr = MatDuplicate(Y,MAT_SHARE_NONZERO_PATTERN,&pch2opus->wnsmat[1]);CHKERRQ(ierr);
+  }
   if (t) {
     ierr = PCApplyTransposeMat_H2OPUS(pc,X,Y);CHKERRQ(ierr);
     ierr = MatTransposeMatMult(A,Y,MAT_REUSE_MATRIX,PETSC_DEFAULT,&pch2opus->wnsmat[1]);CHKERRQ(ierr);
@@ -482,8 +498,6 @@ static PetscErrorCode MatMatMultKernel_NS(Mat M, Mat X, Mat Y, PetscBool t)
     ierr = MatScale(Y,2.);CHKERRQ(ierr);
     ierr = MatAXPY(Y,-1.,pch2opus->wnsmat[1],SAME_NONZERO_PATTERN);CHKERRQ(ierr);
   }
-  ierr = MatDestroy(&pch2opus->wnsmat[0]);CHKERRQ(ierr);
-  ierr = MatDestroy(&pch2opus->wnsmat[1]);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -581,7 +595,7 @@ static PetscErrorCode PCSetUp_H2OPUS(PC pc)
     /* XXX */
     ierr = MatSetOption(pch2opus->A,MAT_SYMMETRIC,PETSC_TRUE);CHKERRQ(ierr);
   }
-#if defined(PETSC_HAVE_CUDA) && defined(H2OPUS_USE_GPU)
+#if defined(PETSC_HAVE_CUDA)
   pch2opus->boundtocpu = pch2opus->A->boundtocpu;
 #endif
   ierr = MatBindToCPU(pch2opus->T,pch2opus->boundtocpu);CHKERRQ(ierr);
@@ -630,8 +644,14 @@ static PetscErrorCode PCSetUp_H2OPUS(PC pc)
       ierr = MatSetOptionsPrefix(M,prefix);CHKERRQ(ierr);
       ierr = MatH2OpusSetSamplingMat(M,pch2opus->S,PETSC_DECIDE,PETSC_DECIDE);CHKERRQ(ierr);
       ierr = MatSetFromOptions(M);CHKERRQ(ierr);
+      ierr = MatH2OpusSetNativeMult(pch2opus->A,PETSC_TRUE);CHKERRQ(ierr);
+      ierr = MatH2OpusSetNativeMult(pch2opus->M,PETSC_TRUE);CHKERRQ(ierr);
+      ierr = MatH2OpusSetNativeMult(M,PETSC_TRUE);CHKERRQ(ierr);
       ierr = MatAssemblyBegin(M,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
       ierr = MatAssemblyEnd(M,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+      ierr = MatH2OpusSetNativeMult(pch2opus->A,PETSC_FALSE);CHKERRQ(ierr);
+      ierr = MatH2OpusSetNativeMult(pch2opus->M,PETSC_FALSE);CHKERRQ(ierr);
+      ierr = MatH2OpusSetNativeMult(M,PETSC_FALSE);CHKERRQ(ierr);
 
       ierr = MatDestroy(&pch2opus->M);CHKERRQ(ierr);
       pch2opus->M = M;
@@ -649,6 +669,15 @@ static PetscErrorCode PCSetUp_H2OPUS(PC pc)
       if (err < pch2opus->atol || err < pch2opus->rtol*initerr || pc->failedreason) break;
     }
   }
+  /* cleanup setup workspace */
+  ierr = VecDestroy(&pch2opus->wns[0]);CHKERRQ(ierr);
+  ierr = VecDestroy(&pch2opus->wns[1]);CHKERRQ(ierr);
+  ierr = VecDestroy(&pch2opus->wns[2]);CHKERRQ(ierr);
+  ierr = VecDestroy(&pch2opus->wns[3]);CHKERRQ(ierr);
+  ierr = MatDestroy(&pch2opus->wnsmat[0]);CHKERRQ(ierr);
+  ierr = MatDestroy(&pch2opus->wnsmat[1]);CHKERRQ(ierr);
+  ierr = MatDestroy(&pch2opus->wnsmat[2]);CHKERRQ(ierr);
+  ierr = MatDestroy(&pch2opus->wnsmat[3]);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -695,7 +724,7 @@ PETSC_EXTERN PetscErrorCode PCCreate_H2OPUS(PC pc)
   pch2opus->max_rank   = PETSC_DECIDE;
   pch2opus->bs         = PETSC_DECIDE;
   pch2opus->mrtol      = PETSC_DECIDE;
-#if defined(PETSC_HAVE_CUDA) && defined(H2OPUS_USE_GPU)
+#if defined(PETSC_HAVE_CUDA)
   pch2opus->boundtocpu = PETSC_FALSE;
 #else
   pch2opus->boundtocpu = PETSC_TRUE;
