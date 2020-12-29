@@ -14,6 +14,7 @@
 #include <thrust/device_ptr.h>
 #include <thrust/transform.h>
 #include <thrust/functional.h>
+#include <thrust/reduce.h>
 
 /*
     Allocates space for the vector array on the GPU if it does not exist.
@@ -1137,5 +1138,119 @@ PetscErrorCode VecRestoreLocalVector_SeqCUDA(Vec v,Vec w)
       ierr = PetscFree(w->spptr);CHKERRQ(ierr);
     }
   }
+  PetscFunctionReturn(0);
+}
+
+struct petscmax : public thrust::binary_function<PetscScalar,PetscScalar,PetscReal>
+{
+  __host__ __device__
+  PetscReal operator()(PetscScalar x, PetscScalar y) {
+    return PetscRealPart(x) < PetscRealPart(y) ? PetscRealPart(y) : PetscRealPart(x);
+  }
+};
+
+struct petscmaxi : public thrust::binary_function<thrust::tuple<PetscScalar, PetscInt>,thrust::tuple<PetscScalar, PetscInt>,thrust::tuple<PetscReal, PetscInt>>
+{
+  __host__ __device__
+  thrust::tuple<PetscReal, PetscInt> operator()(thrust::tuple<PetscScalar, PetscInt> x, thrust::tuple<PetscScalar, PetscInt> y) {
+    return PetscRealPart(x.get<0>()) < PetscRealPart(y.get<0>()) ?
+           thrust::make_tuple(PetscRealPart(y.get<0>()), PetscRealPart(y.get<1>())) :
+           thrust::make_tuple(PetscRealPart(x.get<0>()), PetscRealPart(x.get<1>()));
+  }
+};
+
+struct petscmin : public thrust::binary_function<PetscScalar,PetscScalar,PetscReal>
+{
+  __host__ __device__
+  PetscReal operator()(PetscScalar x, PetscScalar y) {
+    return PetscRealPart(x) < PetscRealPart(y) ? PetscRealPart(x) : PetscRealPart(y);
+  }
+};
+
+struct petscmini : public thrust::binary_function<thrust::tuple<PetscScalar, PetscInt>,thrust::tuple<PetscScalar, PetscInt>,thrust::tuple<PetscReal, PetscInt>>
+{
+  __host__ __device__
+  thrust::tuple<PetscReal, PetscInt> operator()(thrust::tuple<PetscScalar, PetscInt> x, thrust::tuple<PetscScalar, PetscInt> y) {
+    return PetscRealPart(x.get<0>()) < PetscRealPart(y.get<0>()) ?
+           thrust::make_tuple(PetscRealPart(x.get<0>()), PetscRealPart(x.get<1>())) :
+           thrust::make_tuple(PetscRealPart(y.get<0>()), PetscRealPart(y.get<1>()));
+  }
+};
+
+PetscErrorCode VecMax_SeqCUDA(Vec v, PetscInt *p, PetscReal *m)
+{
+  PetscErrorCode                        ierr;
+  PetscInt                              n = v->map->n;
+  const PetscScalar                     *av;
+  thrust::device_ptr<const PetscScalar> avpt;
+
+  PetscFunctionBegin;
+  PetscCheckTypeNames(v,VECSEQCUDA,VECMPICUDA);
+  if (!n) {
+    *m = PETSC_MIN_REAL;
+    if (p) *p = -1;
+    PetscFunctionReturn(0);
+  }
+  ierr = VecCUDAGetArrayRead(v,&av);CHKERRQ(ierr);
+  avpt = thrust::device_pointer_cast(av);
+  ierr = PetscLogGpuTimeBegin();CHKERRQ(ierr);
+  if (p) {
+    thrust::tuple<PetscReal,PetscInt> res(PETSC_MIN_REAL,-1);
+    auto zibit = thrust::make_zip_iterator(thrust::make_tuple(avpt,thrust::counting_iterator<PetscInt>(0)));
+    try {
+      res = thrust::reduce(zibit,zibit+n,res,petscmaxi());
+    } catch (char *ex) {
+      SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_LIB,"Thrust error: %s", ex);
+    }
+    *m = res.get<0>();
+    *p = res.get<1>();
+  } else {
+    try {
+      *m = thrust::reduce(avpt,avpt+n,PETSC_MIN_REAL,petscmax());
+    } catch (char *ex) {
+      SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_LIB,"Thrust error: %s", ex);
+    }
+  }
+  ierr = PetscLogGpuTimeEnd();CHKERRQ(ierr);
+  ierr = VecCUDARestoreArrayRead(v,&av);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode VecMin_SeqCUDA(Vec v, PetscInt *p, PetscReal *m)
+{
+  PetscErrorCode                        ierr;
+  PetscInt                              n = v->map->n;
+  const PetscScalar                     *av;
+  thrust::device_ptr<const PetscScalar> avpt;
+
+  PetscFunctionBegin;
+  PetscCheckTypeNames(v,VECSEQCUDA,VECMPICUDA);
+  if (!n) {
+    *m = PETSC_MAX_REAL;
+    if (p) *p = -1;
+    PetscFunctionReturn(0);
+  }
+  ierr = VecCUDAGetArrayRead(v,&av);CHKERRQ(ierr);
+  avpt = thrust::device_pointer_cast(av);
+  ierr = PetscLogGpuTimeBegin();CHKERRQ(ierr);
+  if (p) {
+    thrust::tuple<PetscReal,PetscInt> res(PETSC_MAX_REAL,-1);
+    auto zibit = thrust::make_zip_iterator(thrust::make_tuple(avpt,thrust::counting_iterator<PetscInt>(0)));
+    try {
+      res = thrust::reduce(zibit,zibit+n,res,petscmini());
+    } catch (char *ex) {
+      SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_LIB,"Thrust error: %s", ex);
+    }
+    *m = res.get<0>();
+    *p = res.get<1>();
+  } else {
+    try {
+      *m = thrust::reduce(avpt,avpt+n,PETSC_MAX_REAL,petscmin());
+    } catch (char *ex) {
+      SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_LIB,"Thrust error: %s", ex);
+    }
+  }
+  ierr = PetscLogGpuTimeEnd();CHKERRQ(ierr);
+  ierr = VecCUDARestoreArrayRead(v,&av);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
