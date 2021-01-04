@@ -164,7 +164,9 @@ void PetscMatrixSampler::sample(H2Opus_Real *x, H2Opus_Real *y, int samples)
   ierr = MatGetSize(this->A,&M,&N);CHKERRV(ierr);
   ierr = MatGetLocalSize(this->A,&m,&n);CHKERRV(ierr);
   ierr = PetscObjectGetComm((PetscObject)A,&comm);CHKERRV(ierr);
+  cudaDeviceSynchronize();
   PermuteBuffersIn(samples,x,&px,y,&py);
+  cudaDeviceSynchronize();
   if (!this->gpusampling) {
     ierr = MatCreateDense(comm,n,PETSC_DECIDE,N,samples,px,&X);CHKERRV(ierr);
     ierr = MatCreateDense(comm,m,PETSC_DECIDE,M,samples,py,&Y);CHKERRV(ierr);
@@ -177,6 +179,7 @@ void PetscMatrixSampler::sample(H2Opus_Real *x, H2Opus_Real *y, int samples)
   ierr = PetscLogObjectParent((PetscObject)this->A,(PetscObject)X);CHKERRV(ierr);
   ierr = PetscLogObjectParent((PetscObject)this->A,(PetscObject)Y);CHKERRV(ierr);
   ierr = MatMatMult(this->A,X,MAT_REUSE_MATRIX,PETSC_DEFAULT,&Y);CHKERRV(ierr);
+  cudaDeviceSynchronize();
 #if defined(PETSC_HAVE_CUDA)
   if (this->gpusampling) {
     const PetscScalar *dummy;
