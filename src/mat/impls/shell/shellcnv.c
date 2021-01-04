@@ -51,7 +51,7 @@ PetscErrorCode MatConvert_Shell(Mat oldmat, MatType newtype,MatReuse reuse,Mat *
     ierr = MatMult(oldmat,in,out);CHKERRQ(ierr);
     ierr = VecGetArray(out,&array);CHKERRQ(ierr);
     for (j=0, im = 0; j<m; j++) {
-      if (PetscAbsScalar(array[j]) == 0.0) continue;
+      if (PetscAbsScalar(array[j]) < PETSC_MACHINE_EPSILON) continue;
       rows[im]  = j+start;
       array[im] = array[j];
       im++;
