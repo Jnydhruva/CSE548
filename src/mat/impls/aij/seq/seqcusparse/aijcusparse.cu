@@ -65,6 +65,7 @@ static PetscErrorCode MatSolveTranspose_SeqAIJCUSPARSE(Mat,Vec,Vec);
 static PetscErrorCode MatSolveTranspose_SeqAIJCUSPARSE_NaturalOrdering(Mat,Vec,Vec);
 static PetscErrorCode MatSetFromOptions_SeqAIJCUSPARSE(PetscOptionItems *PetscOptionsObject,Mat);
 static PetscErrorCode MatAXPY_SeqAIJCUSPARSE(Mat,PetscScalar,Mat,MatStructure);
+static PetscErrorCode MatScale_SeqAIJCUSPARSE(Mat,PetscScalar);
 static PetscErrorCode MatMult_SeqAIJCUSPARSE(Mat,Vec,Vec);
 static PetscErrorCode MatMultAdd_SeqAIJCUSPARSE(Mat,Vec,Vec,Vec);
 static PetscErrorCode MatMultTranspose_SeqAIJCUSPARSE(Mat,Vec,Vec);
@@ -3143,6 +3144,30 @@ static PetscErrorCode MatAXPY_SeqAIJCUSPARSE(Mat Y,PetscScalar a,Mat X,MatStruct
   PetscFunctionReturn(0);
 }
 
+static PetscErrorCode MatScale_SeqAIJCUSPARSE(Mat Y,PetscScalar a)
+{
+  PetscErrorCode ierr;
+  Mat_SeqAIJ     *y = (Mat_SeqAIJ*)Y->data;
+  PetscScalar    *ay;
+  cudaError_t    cerr;
+  cublasHandle_t cublasv2handle;
+  cublasStatus_t berr;
+  PetscBLASInt   one = 1, bnz = 1;
+
+  PetscFunctionBegin;
+  ierr = MatSeqAIJCUSPARSEGetArray(Y,&ay);CHKERRQ(ierr);
+  ierr = PetscCUBLASGetHandle(&cublasv2handle);CHKERRQ(ierr);
+  ierr = PetscBLASIntCast(y->nz,&bnz);CHKERRQ(ierr);
+  ierr = PetscLogGpuTimeBegin();CHKERRQ(ierr);
+  berr = cublasXscal(cublasv2handle,bnz,&a,ay,one);CHKERRCUBLAS(berr);
+  cerr = WaitForCUDA();CHKERRCUDA(cerr);
+  ierr = PetscLogGpuFlops(bnz);CHKERRQ(ierr);
+  ierr = PetscLogGpuTimeEnd();CHKERRQ(ierr);
+  ierr = MatSeqAIJCUSPARSERestoreArray(Y,&ay);CHKERRQ(ierr);
+  ierr = MatSeqAIJInvalidateDiagonal(Y);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
 static PetscErrorCode MatZeroEntries_SeqAIJCUSPARSE(Mat A)
 {
   PetscErrorCode             ierr;
@@ -3185,6 +3210,7 @@ static PetscErrorCode MatBindToCPU_SeqAIJCUSPARSE(Mat A,PetscBool flg)
   if (flg) {
     ierr = MatSeqAIJCUSPARSECopyFromGPU(A);CHKERRQ(ierr);
 
+    A->ops->scale                     = MatScale_SeqAIJ;
     A->ops->axpy                      = MatAXPY_SeqAIJ;
     A->ops->zeroentries               = MatZeroEntries_SeqAIJ;
     A->ops->mult                      = MatMult_SeqAIJ;
@@ -3202,6 +3228,7 @@ static PetscErrorCode MatBindToCPU_SeqAIJCUSPARSE(Mat A,PetscBool flg)
     ierr = PetscObjectComposeFunction((PetscObject)A,"MatSeqAIJGetArray_C",MatSeqAIJGetArray_SeqAIJ);CHKERRQ(ierr);
     ierr = PetscObjectComposeFunction((PetscObject)A,"MatProductSetFromOptions_seqaijcusparse_seqaijcusparse_C",NULL);CHKERRQ(ierr);
   } else {
+    A->ops->scale                     = MatScale_SeqAIJCUSPARSE;
     A->ops->axpy                      = MatAXPY_SeqAIJCUSPARSE;
     A->ops->zeroentries               = MatZeroEntries_SeqAIJCUSPARSE;
     A->ops->mult                      = MatMult_SeqAIJCUSPARSE;
