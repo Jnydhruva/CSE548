@@ -882,18 +882,6 @@ static PetscErrorCode MatH2OpusInferCoordinates_Private(Mat A)
     Mat S = a->sampler->GetSamplingMat();
 
     ierr = PetscObjectQuery((PetscObject)S,"__math2opus_coords",(PetscObject*)&c);CHKERRQ(ierr);
-#if 0
-    if (!c) {
-      PetscBool ish2opus;
-
-      ierr = PetscObjectTypeCompare((PetscObject)S,MATH2OPUS,&ish2opus);CHKERRQ(ierr);
-      if (ish2opus) {
-        Mat_H2OPUS *s = (Mat_H2OPUS*)S->data;
-
-        a->ptcloud = new PetscPointCloud<PetscReal>(*s->ptcloud);
-      }
-    }
-#endif
   }
   if (!c) SETERRQ(PetscObjectComm((PetscObject)A),PETSC_ERR_SUP,"Missing coordinates");
   ierr = VecGetArrayRead(c,&coords);CHKERRQ(ierr);
@@ -1015,17 +1003,6 @@ static PetscErrorCode MatAssemblyEnd_H2OPUS(Mat A, MatAssemblyType assemblytype)
     if (size > 1) SETERRQ(comm,PETSC_ERR_SUP,"Construction from sampling not supported in parallel");
     buildHMatrixStructure(*a->hmatrix,a->ptcloud,a->leafsize,adm);
   }
-
-#if 0
-  if (size == 1) {
-    char filename[256];
-    const char *name;
-
-    ierr = PetscObjectGetName((PetscObject)A,&name);CHKERRQ(ierr);
-    ierr = PetscSNPrintf(filename,sizeof(filename),"%s_structure.eps",name);CHKERRQ(ierr);
-    outputEps(*a->hmatrix,filename);
-  }
-#endif
   ierr = MatSetUpMultiply_H2OPUS(A);CHKERRQ(ierr);
 
 #if defined(PETSC_H2OPUS_USE_GPU)
@@ -1248,6 +1225,16 @@ static PetscErrorCode MatView_H2OPUS(Mat A, PetscViewer view)
 #endif
     }
   }
+#if 0
+  if (size == 1) {
+    char filename[256];
+    const char *name;
+
+    ierr = PetscObjectGetName((PetscObject)A,&name);CHKERRQ(ierr);
+    ierr = PetscSNPrintf(filename,sizeof(filename),"%s_structure.eps",name);CHKERRQ(ierr);
+    outputEps(*a->hmatrix,filename);
+  }
+#endif
   PetscFunctionReturn(0);
 }
 
