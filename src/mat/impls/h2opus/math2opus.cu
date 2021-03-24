@@ -238,8 +238,8 @@ static PetscErrorCode PetscSFGetVectorSF(PetscSF sf, PetscInt nv, PetscInt ldr, 
   ierr = PetscSFDuplicate(sf,PETSCSF_DUPLICATE_CONFONLY,&rankssf);CHKERRQ(ierr);
   ierr = PetscSFSetGraph(rankssf,1,nranks,NULL,PETSC_OWN_POINTER,rremotes,PETSC_OWN_POINTER);CHKERRQ(ierr);
   ierr = PetscMalloc1(nranks,&ldrs);CHKERRQ(ierr);
-  ierr = PetscSFBcastBegin(rankssf,MPIU_INT,&ldr,ldrs);CHKERRQ(ierr);
-  ierr = PetscSFBcastEnd(rankssf,MPIU_INT,&ldr,ldrs);CHKERRQ(ierr);
+  ierr = PetscSFBcastBegin(rankssf,MPIU_INT,&ldr,ldrs,MPI_REPLACE);CHKERRQ(ierr);
+  ierr = PetscSFBcastEnd(rankssf,MPIU_INT,&ldr,ldrs,MPI_REPLACE);CHKERRQ(ierr);
   ierr = PetscSFDestroy(&rankssf);CHKERRQ(ierr);
 
   j = -1;
@@ -538,8 +538,8 @@ static PetscErrorCode MatMultNKernel_H2OPUS(Mat A, PetscBool transA, Mat B, Mat 
     if (usesf) {
       uxx  = MatH2OpusGetThrustPointer(*h2opus->xx);
       uyy  = MatH2OpusGetThrustPointer(*h2opus->yy);
-      ierr = PetscSFBcastBegin(bsf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
-      ierr = PetscSFBcastEnd(bsf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
+      ierr = PetscSFBcastBegin(bsf,MPIU_SCALAR,xx,uxx,MPI_REPLACE);CHKERRQ(ierr);
+      ierr = PetscSFBcastEnd(bsf,MPIU_SCALAR,xx,uxx,MPI_REPLACE);CHKERRQ(ierr);
     } else {
       uxx = xx;
       uyy = yy;
@@ -554,8 +554,8 @@ static PetscErrorCode MatMultNKernel_H2OPUS(Mat A, PetscBool transA, Mat B, Mat 
     }
     ierr = MatDenseRestoreArrayRead(B,(const PetscScalar**)&xx);CHKERRQ(ierr);
     if (usesf) {
-      ierr = PetscSFReduceBegin(csf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
-      ierr = PetscSFReduceEnd(csf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
+      ierr = PetscSFReduceBegin(csf,MPIU_SCALAR,uyy,yy,MPI_REPLACE);CHKERRQ(ierr);
+      ierr = PetscSFReduceEnd(csf,MPIU_SCALAR,uyy,yy,MPI_REPLACE);CHKERRQ(ierr);
     }
     ierr = MatDenseRestoreArrayWrite(C,&yy);CHKERRQ(ierr);
 #if defined(PETSC_H2OPUS_USE_GPU)
@@ -584,8 +584,8 @@ static PetscErrorCode MatMultNKernel_H2OPUS(Mat A, PetscBool transA, Mat B, Mat 
     if (usesf) {
       uxx  = MatH2OpusGetThrustPointer(*h2opus->xx_gpu);
       uyy  = MatH2OpusGetThrustPointer(*h2opus->yy_gpu);
-      ierr = PetscSFBcastBegin(bsf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
-      ierr = PetscSFBcastEnd(bsf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
+      ierr = PetscSFBcastBegin(bsf,MPIU_SCALAR,xx,uxx,MPI_REPLACE);CHKERRQ(ierr);
+      ierr = PetscSFBcastEnd(bsf,MPIU_SCALAR,xx,uxx,MPI_REPLACE);CHKERRQ(ierr);
     } else {
       uxx = xx;
       uyy = yy;
@@ -600,8 +600,8 @@ static PetscErrorCode MatMultNKernel_H2OPUS(Mat A, PetscBool transA, Mat B, Mat 
     }
     ierr = MatDenseCUDARestoreArrayRead(B,(const PetscScalar**)&xx);CHKERRQ(ierr);
     if (usesf) {
-      ierr = PetscSFReduceBegin(csf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
-      ierr = PetscSFReduceEnd(csf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
+      ierr = PetscSFReduceBegin(csf,MPIU_SCALAR,uyy,yy,MPI_REPLACE);CHKERRQ(ierr);
+      ierr = PetscSFReduceEnd(csf,MPIU_SCALAR,uyy,yy,MPI_REPLACE);CHKERRQ(ierr);
     }
     ierr = MatDenseCUDARestoreArrayWrite(C,&yy);CHKERRQ(ierr);
     if (!biscuda) {
@@ -709,11 +709,11 @@ static PetscErrorCode MatMultKernel_H2OPUS(Mat A, Vec x, PetscScalar sy, Vec y, 
       uxx = MatH2OpusGetThrustPointer(*h2opus->xx);
       uyy = MatH2OpusGetThrustPointer(*h2opus->yy);
 
-      ierr = PetscSFBcastBegin(h2opus->sf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
-      ierr = PetscSFBcastEnd(h2opus->sf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
+      ierr = PetscSFBcastBegin(h2opus->sf,MPIU_SCALAR,xx,uxx,MPI_REPLACE);CHKERRQ(ierr);
+      ierr = PetscSFBcastEnd(h2opus->sf,MPIU_SCALAR,xx,uxx,MPI_REPLACE);CHKERRQ(ierr);
       if (sy != 0.0) {
-        ierr = PetscSFBcastBegin(h2opus->sf,MPIU_SCALAR,yy,uyy);CHKERRQ(ierr);
-        ierr = PetscSFBcastEnd(h2opus->sf,MPIU_SCALAR,yy,uyy);CHKERRQ(ierr);
+        ierr = PetscSFBcastBegin(h2opus->sf,MPIU_SCALAR,yy,uyy,MPI_REPLACE);CHKERRQ(ierr);
+        ierr = PetscSFBcastEnd(h2opus->sf,MPIU_SCALAR,yy,uyy,MPI_REPLACE);CHKERRQ(ierr);
       }
     } else {
       uxx = xx;
@@ -729,8 +729,8 @@ static PetscErrorCode MatMultKernel_H2OPUS(Mat A, Vec x, PetscScalar sy, Vec y, 
     }
     ierr = VecRestoreArrayRead(x,(const PetscScalar**)&xx);CHKERRQ(ierr);
     if (usesf) {
-      ierr = PetscSFReduceBegin(h2opus->sf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
-      ierr = PetscSFReduceEnd(h2opus->sf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
+      ierr = PetscSFReduceBegin(h2opus->sf,MPIU_SCALAR,uyy,yy,MPI_REPLACE);CHKERRQ(ierr);
+      ierr = PetscSFReduceEnd(h2opus->sf,MPIU_SCALAR,uyy,yy,MPI_REPLACE);CHKERRQ(ierr);
     }
     if (sy == 0.0) {
       ierr = VecRestoreArrayWrite(y,&yy);CHKERRQ(ierr);
@@ -749,11 +749,11 @@ static PetscErrorCode MatMultKernel_H2OPUS(Mat A, Vec x, PetscScalar sy, Vec y, 
       uxx = MatH2OpusGetThrustPointer(*h2opus->xx_gpu);
       uyy = MatH2OpusGetThrustPointer(*h2opus->yy_gpu);
 
-      ierr = PetscSFBcastBegin(h2opus->sf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
-      ierr = PetscSFBcastEnd(h2opus->sf,MPIU_SCALAR,xx,uxx);CHKERRQ(ierr);
+      ierr = PetscSFBcastBegin(h2opus->sf,MPIU_SCALAR,xx,uxx,MPI_REPLACE);CHKERRQ(ierr);
+      ierr = PetscSFBcastEnd(h2opus->sf,MPIU_SCALAR,xx,uxx,MPI_REPLACE);CHKERRQ(ierr);
       if (sy != 0.0) {
-        ierr = PetscSFBcastBegin(h2opus->sf,MPIU_SCALAR,yy,uyy);CHKERRQ(ierr);
-        ierr = PetscSFBcastEnd(h2opus->sf,MPIU_SCALAR,yy,uyy);CHKERRQ(ierr);
+        ierr = PetscSFBcastBegin(h2opus->sf,MPIU_SCALAR,yy,uyy,MPI_REPLACE);CHKERRQ(ierr);
+        ierr = PetscSFBcastEnd(h2opus->sf,MPIU_SCALAR,yy,uyy,MPI_REPLACE);CHKERRQ(ierr);
       }
     } else {
       uxx = xx;
@@ -769,8 +769,8 @@ static PetscErrorCode MatMultKernel_H2OPUS(Mat A, Vec x, PetscScalar sy, Vec y, 
     }
     ierr = VecCUDARestoreArrayRead(x,(const PetscScalar**)&xx);CHKERRQ(ierr);
     if (usesf) {
-      ierr = PetscSFReduceBegin(h2opus->sf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
-      ierr = PetscSFReduceEnd(h2opus->sf,MPIU_SCALAR,uyy,yy,MPIU_REPLACE);CHKERRQ(ierr);
+      ierr = PetscSFReduceBegin(h2opus->sf,MPIU_SCALAR,uyy,yy,MPI_REPLACE);CHKERRQ(ierr);
+      ierr = PetscSFReduceEnd(h2opus->sf,MPIU_SCALAR,uyy,yy,MPI_REPLACE);CHKERRQ(ierr);
     }
     if (sy == 0.0) {
       ierr = VecCUDARestoreArrayWrite(y,&yy);CHKERRQ(ierr);
@@ -1266,8 +1266,8 @@ static PetscErrorCode MatH2OpusSetCoords_H2OPUS(Mat A, PetscInt spacedim, const 
     ierr = PetscSFCreate(comm,&sf);CHKERRQ(ierr);
     ierr = PetscSFSetGraphWithPattern(sf,A->rmap,PETSCSF_PATTERN_ALLGATHER);CHKERRQ(ierr);
     ierr = PetscMalloc1(spacedim*N,&gcoords);CHKERRQ(ierr);
-    ierr = PetscSFBcastBegin(sf,dtype,coords,gcoords);CHKERRQ(ierr);
-    ierr = PetscSFBcastEnd(sf,dtype,coords,gcoords);CHKERRQ(ierr);
+    ierr = PetscSFBcastBegin(sf,dtype,coords,gcoords,MPI_REPLACE);CHKERRQ(ierr);
+    ierr = PetscSFBcastEnd(sf,dtype,coords,gcoords,MPI_REPLACE);CHKERRQ(ierr);
     ierr = PetscSFDestroy(&sf);CHKERRQ(ierr);
     ierr = MPI_Type_free(&dtype);CHKERRQ(ierr);
   } else gcoords = (PetscReal*)coords;

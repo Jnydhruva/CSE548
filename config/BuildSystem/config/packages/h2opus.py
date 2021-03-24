@@ -89,6 +89,8 @@ class Configure(config.package.Package):
         g.write('H2OPUS_CUDA_LIBS += '+self.libraries.toString(self.cuda.lib)+'\n')
         g.write('H2OPUS_MAGMA_LIBS += '+self.libraries.toString(self.magma.lib)+'\n')
         g.write('H2OPUS_KBLAS_LIBS += '+self.libraries.toString(self.kblas.lib)+'\n')
+        # kblas-gpu-dev
+        g.write('H2OPUS_USE_MAGMA_POTRF = 1\n')
       else:
         if self.thrust.found:
           g.write('CXXCPPFLAGS += '+self.headers.toString(self.thrust.include)+'\n')
