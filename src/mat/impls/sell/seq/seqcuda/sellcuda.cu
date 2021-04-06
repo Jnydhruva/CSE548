@@ -574,6 +574,7 @@ PetscErrorCode MatMult_SeqSELLCUDA(Mat A, Vec xx, Vec yy)
   PetscInt          *sliidx;
   PetscInt           blocky, nblocks, blocksize = 512; /* blocksize must be multiple of SLICE_HEIGHT*32 */
   dim3               block2(256, 2), block4(128, 4), block8(64, 8), block16(32, 16), block32(16, 32);
+  PetscReal          maxoveravg;
 
   PetscFunctionBegin;
   if (32 % sliceheight) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_SUP, "The kernel requires a slice height of 16, but the input matrix has a slice height of %" PetscInt_FMT, sliceheight);
