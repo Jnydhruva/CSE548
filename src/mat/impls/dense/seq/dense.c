@@ -2068,7 +2068,7 @@ static PetscErrorCode MatSetOption_SeqDense(Mat A,MatOption op,PetscBool flg)
   PetscFunctionReturn(0);
 }
 
-static PetscErrorCode MatZeroEntries_SeqDense(Mat A)
+PetscErrorCode MatZeroEntries_SeqDense(Mat A)
 {
   Mat_SeqDense   *l = (Mat_SeqDense*)A->data;
   PetscErrorCode ierr;
@@ -2076,15 +2076,17 @@ static PetscErrorCode MatZeroEntries_SeqDense(Mat A)
   PetscScalar    *v;
 
   PetscFunctionBegin;
-  ierr = MatDenseGetArray(A,&v);CHKERRQ(ierr);
   if (lda>m) {
+    ierr = MatDenseGetArray(A,&v);CHKERRQ(ierr);
     for (j=0; j<A->cmap->n; j++) {
       ierr = PetscArrayzero(v+j*lda,m);CHKERRQ(ierr);
     }
+    ierr = MatDenseRestoreArray(A,&v);CHKERRQ(ierr);
   } else {
+    ierr = MatDenseGetArrayWrite(A,&v);CHKERRQ(ierr);
     ierr = PetscArrayzero(v,A->rmap->n*A->cmap->n);CHKERRQ(ierr);
+    ierr = MatDenseRestoreArrayWrite(A,&v);CHKERRQ(ierr);
   }
-  ierr = MatDenseRestoreArray(A,&v);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
