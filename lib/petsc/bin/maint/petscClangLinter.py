@@ -1599,7 +1599,7 @@ checkFunctionMap = {
   "VecNestCheckCompatible2"           : checkObjIdxGenericN,
   "VecNestCheckCompatible3"           : checkObjIdxGenericN,
   "MatCheckPreallocated"              : checkObjIdxGenericN,
-  "MatCheckProduect"                  : checkObjIdxGenericN,
+  "MatCheckProduct"                   : checkObjIdxGenericN,
   "MatCheckSameLocalSize"             : checkObjIdxGenericN,
   "MatCheckSameSize"                  : checkObjIdxGenericN,
 }
