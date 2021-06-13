@@ -8,10 +8,10 @@ class Configure(config.package.Package):
     self.versionname       = 'CUDA_VERSION'
     self.versioninclude    = 'cuda.h'
     self.requiresversion   = 1
-    self.functions         = ['cublasInit', 'cufftDestroy']
+    self.functions         = ['cublasInit','cufftDestroy']
     self.includes          = ['cublas.h','cufft.h','cusparse.h','cusolverDn.h','curand.h','thrust/version.h']
-    self.basicliblist      = [['libcudart.a'],
-                              ['cudart.lib']]
+    self.basicliblist      = [['libcuda.a','libcudart.a'],
+                              ['cuda.lib','cudart.lib']]
     self.mathliblist       = [['libcufft.a', 'libcublas.a','libcusparse.a','libcusolver.a','libcurand.a'],
                               ['cufft.lib','cublas.lib','cusparse.lib','cusolver.lib','curand.lib']]
     self.liblist           = 'dummy' # existence of self.liblist is used by package.py to determine if --with-cuda-lib must be provided

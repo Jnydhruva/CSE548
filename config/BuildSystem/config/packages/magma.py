@@ -31,8 +31,8 @@ class Configure(config.package.Package):
   def setupHelp(self, help):
     import nargs
     config.package.Package.setupHelp(self, help)
-    help.addArgument('MAGMA', '-with-magma-gputarget', nargs.ArgString(None, '', 'GPU_TARGET make variable'))
-    help.addArgument('MAGMA', '-with-magma-fortran-bindings', nargs.ArgBool(None, 1, 'Compile MAGMA Fortran bindings'))
+    help.addArgument('MAGMA', '-with-magma-gputarget=<string>', nargs.ArgString(None, '', 'GPU_TARGET make variable'))
+    help.addArgument('MAGMA', '-with-magma-fortran-bindings=<bool>', nargs.ArgBool(None, 1, 'Compile MAGMA Fortran bindings'))
     return
 
   def setupDependencies(self, framework):
@@ -152,13 +152,11 @@ class Configure(config.package.Package):
         g.write('BACKEND = cuda\n')
         g.write('NVCC = '+nvcc+'\n')
         g.write('DEVCC = '+nvcc+'\n')
-        #g.write('NVCCFLAGS = '+nvccflags+'\n')
         g.write('DEVCCFLAGS = '+nvccflags+'\n')
       if usehip:
         g.write('BACKEND = hip\n')
         g.write('HIPCC = '+hipcc+'\n')
         g.write('DEVCC = '+hipcc+'\n')
-        g.write('HIPCCFLAGS = '+hipccflags+'\n')
         g.write('DEVCCFLAGS = '+hipccflags+'\n')
       if fcbindings:
         g.write('FORT = '+fc+'\n')
@@ -167,7 +165,7 @@ class Configure(config.package.Package):
       if gputarget:
         g.write('GPU_TARGET = '+gputarget+'\n')
       if self.cuda.found and hasattr(self.cuda,'gencodearch') and self.cuda.gencodearch:
-        # g.write('NVCCFLAGS += -gencode arch=compute_'+self.cuda.gencodearch+',code=sm_'+self.cuda.gencodearch+'\n')
+        g.write('DEVCCFLAGS += -gencode arch=compute_'+self.cuda.gencodearch+',code=sm_'+self.cuda.gencodearch+'\n')
         g.write('MIN_ARCH = '+self.cuda.gencodearch+'0\n')
 
       g.write('ARCH = '+self.setCompilers.AR+'\n')
