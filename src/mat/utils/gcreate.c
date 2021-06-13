@@ -441,6 +441,8 @@ PETSC_EXTERN PetscErrorCode MatHeaderReplace(Mat A,Mat *C)
 -   flg - bind to the CPU if value of PETSC_TRUE
 
    Level: intermediate
+
+.seealso: MatBoundToCPU()
 @*/
 PetscErrorCode MatBindToCPU(Mat A,PetscBool flg)
 {
@@ -462,6 +464,32 @@ PetscErrorCode MatBindToCPU(Mat A,PetscBool flg)
   PetscValidLogicalCollectiveBool(A,flg,2);
   PetscFunctionReturn(0);
 #endif
+}
+
+/*@
+     MatBoundToCPU - query if a matrix is bound to the CPU
+
+   Input Parameters:
+.   A - the matrix
+
+   Output Parameters:
+.   flg - the logical flag
+
+   Level: intermediate
+
+.seealso: MatBindToCPU()
+@*/
+PetscErrorCode MatBoundToCPU(Mat A,PetscBool *flg)
+{
+  PetscFunctionBegin;
+  PetscValidHeaderSpecific(A,MAT_CLASSID,1);
+  PetscValidPointer(flg,2);
+#if defined(PETSC_HAVE_DEVICE)
+  *flg = A->boundtocpu;
+#else
+  *flg = PETSC_TRUE;
+#endif
+  PetscFunctionReturn(0);
 }
 
 PetscErrorCode MatSetValuesCOO_Basic(Mat A,const PetscScalar coo_v[],InsertMode imode)
