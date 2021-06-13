@@ -88,7 +88,7 @@
 #define PCHMG 'hmg'
 #define PCDEFLATION 'deflation'
 #define PCHPDDM 'hpddm'
-#define PCHARA 'hara'
+#define PCH2OPUS 'h2opus'
 
 #define PCMGType PetscEnum
 #define PCMGCycleType PetscEnum
