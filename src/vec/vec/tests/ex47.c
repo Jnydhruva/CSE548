@@ -18,7 +18,8 @@ int main(int argc,char **args)
   ierr = VecSetSizes(x,11,PETSC_DETERMINE);CHKERRQ(ierr);
   ierr = VecSet(x,22.3);CHKERRQ(ierr);
 
-  ierr = PetscViewerHDF5Open(PETSC_COMM_WORLD,"x.h5",FILE_MODE_WRITE,&H5viewer);CHKERRQ(ierr);
+  /* This file is run by make check, use /tmp since we may not have write permissions (i.e. if run from a batch script) */
+  ierr = PetscViewerHDF5Open(PETSC_COMM_WORLD,"/tmp/x.h5",FILE_MODE_WRITE,&H5viewer);CHKERRQ(ierr);
   ierr = PetscViewerSetFromOptions(H5viewer);CHKERRQ(ierr);
 
   /* Write the Vec without one extra dimension for BS */
@@ -35,7 +36,7 @@ int main(int argc,char **args)
   ierr = VecDuplicate(x,&y);CHKERRQ(ierr);
 
   /* Create the HDF5 viewer for reading */
-  ierr = PetscViewerHDF5Open(PETSC_COMM_WORLD,"x.h5",FILE_MODE_READ,&H5viewer);CHKERRQ(ierr);
+  ierr = PetscViewerHDF5Open(PETSC_COMM_WORLD,"/tmp/x.h5",FILE_MODE_READ,&H5viewer);CHKERRQ(ierr);
   ierr = PetscViewerSetFromOptions(H5viewer);CHKERRQ(ierr);
 
   /* Load the Vec without the BS dim and compare */
