@@ -238,6 +238,7 @@ to set the right generation for your hardware.')
         self.setCompilers.CUDAFLAGS += ' -gencode arch=compute_'+self.gencodearch+',code=sm_'+self.gencodearch+' '
         self.addDefine('CUDA_GENERATION',self.gencodearch)
 
+    self.setCompilers.CUDAFLAGS += '-Xcompiler -fopenmp'
     self.addDefine('HAVE_CUDA','1')
     if not self.version_tuple:
       self.checkVersion(); # set version_tuple
