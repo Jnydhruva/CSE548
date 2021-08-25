@@ -79,9 +79,11 @@ class Configure(config.package.GNUPackage):
 
     cucc = ''
     devflags = ''
+    hipbuild = False
     cudabuild = False
     hasharch = 'with-gpu-arch' in  args
     if self.hip.found:
+      hipbuild = True
       args.append('--with-hip')
       if not hasharch:
         if not 'with-hypre-gpu-arch' in self.framework.clArgDB:
@@ -154,6 +156,8 @@ class Configure(config.package.GNUPackage):
     if cudabuild:
       args = [arg.replace('-std=gnu++14','-std=c++11') for arg in args]
       args = [arg.replace('-std=c++14','-std=c++11') for arg in args]
+    if hipbuild:
+      args = [arg.replace('-std=c++17','-std=c++14') for arg in args]
 
     return args
 
