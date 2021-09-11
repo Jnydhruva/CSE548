@@ -14,6 +14,7 @@ Changes: Development
 -  Change ``MPIU_Allreduce()`` to always returns a MPI error code that
    should be checked with ``CHKERRMPI(ierr)``
 -  Add support for ESSL 5.2 and later; drop support for ESSL <=5.1
+-  Add support for NEC-SX Tsubasa Vector Engine
 
 .. rubric:: Configure/Build:
 -  Remove --with-kokkos-cuda-arch. One can use -with-cuda-gencodearch to specify the cuda arch for Kokkos. Usually not needed since PETSc auto detects that
