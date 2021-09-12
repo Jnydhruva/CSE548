@@ -363,7 +363,7 @@ class Configure(config.base.Configure):
     try:
       (output, error, status) = config.base.Configure.executeShellCommand(compiler+' -V',checkCommand = noCheck, log = log)
       output = output + error
-      if output.find(' Sun C ') or output.find(' Sun C++ ') or output.find(' Sun Fortran ')>= 0:
+      if output.find(' Sun C ')>=0 or output.find(' Sun C++ ')>=0 or output.find(' Sun Fortran ')>= 0:
         if log: log.write('Detected Sun/Oracle compiler\n')
         return 1
     except RuntimeError:
