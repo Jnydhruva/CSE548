@@ -73,7 +73,7 @@ PetscInt PetscDeviceContextAllocator::PetscDeviceContextID = 1;
 
 static Petsc::ObjectPool<PetscDeviceContext,PetscDeviceContextAllocator> contextPool;
 
-/*@C
+/*@
   PetscDeviceContextCreate - Creates a PetscDeviceContext
 
   Not Collective, Asynchronous
@@ -104,7 +104,7 @@ PetscErrorCode PetscDeviceContextCreate(PetscDeviceContext *dctx)
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceContextDestroy - Frees a PetscDeviceContext
 
   Not Collective, Asynchronous
@@ -137,7 +137,7 @@ PetscErrorCode PetscDeviceContextDestroy(PetscDeviceContext *dctx)
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceContextSetStreamType - Set the implementation type of the underlying stream for a PetscDeviceContext
 
   Not Collective, Asynchronous
@@ -171,7 +171,7 @@ PetscErrorCode PetscDeviceContextSetStreamType(PetscDeviceContext dctx, PetscStr
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceContextGetStreamType - Get the implementation type of the underlying stream for a PetscDeviceContext
 
   Not Collective, Asynchronous
@@ -198,7 +198,7 @@ PetscErrorCode PetscDeviceContextGetStreamType(PetscDeviceContext dctx, PetscStr
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceContextSetDevice - Set the underlying device for the PetscDeviceContext
 
   Not Collective, Possibly Synchronous
@@ -242,7 +242,7 @@ PetscErrorCode PetscDeviceContextSetDevice(PetscDeviceContext dctx, PetscDevice 
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceContextGetDevice - Get the underlying PetscDevice for a PetscDeviceContext
 
   Not Collective, Asynchronous
@@ -270,7 +270,7 @@ PetscErrorCode PetscDeviceContextGetDevice(PetscDeviceContext dctx, PetscDevice 
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceContextSetUp - Prepares a PetscDeviceContext for use
 
   Not Collective, Asynchronous
@@ -302,7 +302,7 @@ PetscErrorCode PetscDeviceContextSetUp(PetscDeviceContext dctx)
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceContextDuplicate - Duplicates a PetscDeviceContext object
 
   Not Collective, Asynchronous
@@ -339,7 +339,7 @@ PetscErrorCode PetscDeviceContextDuplicate(PetscDeviceContext dctx, PetscDeviceC
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceContextQueryIdle - Returns whether or not a PetscDeviceContext is idle
 
   Not Collective, Asynchronous
@@ -379,7 +379,7 @@ PetscErrorCode PetscDeviceContextQueryIdle(PetscDeviceContext dctx, PetscBool *i
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceContextWaitForContext - Make one context wait for another context to finish
 
   Not Collective, Asynchronous
@@ -412,7 +412,7 @@ PetscErrorCode PetscDeviceContextWaitForContext(PetscDeviceContext dctxa, PetscD
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceContextFork - Create a set of dependent child contexts from a parent context
 
   Not Collective, Asynchronous
@@ -508,7 +508,7 @@ PetscErrorCode PetscDeviceContextFork(PetscDeviceContext dctx, PetscInt n, Petsc
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceContextJoin - Converge a set of child contexts
 
   Not Collective, Asynchronous
@@ -634,7 +634,7 @@ PetscErrorCode PetscDeviceContextJoin(PetscDeviceContext dctx, PetscInt n, Petsc
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceContextSynchronize - Block the host until all work queued on or associated with a PetscDeviceContext has finished
 
   Not Collective, Synchronous
@@ -716,7 +716,7 @@ static PetscErrorCode PetscDeviceContextSetupGlobalContext_Private(void)
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceContextGetCurrentContext - Get the current active PetscDeviceContext
 
   Not Collective, Asynchronous
@@ -752,7 +752,7 @@ PetscErrorCode PetscDeviceContextGetCurrentContext(PetscDeviceContext *dctx)
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceContextSetCurrentContext - Set the current active PetscDeviceContext
 
   Not Collective, Asynchronous

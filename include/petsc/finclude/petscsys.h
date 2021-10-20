@@ -17,6 +17,7 @@
 #include "petsc/finclude/petscviewer.h"
 #include "petsc/finclude/petsclog.h"
 #include "petsc/finclude/petscbag.h"
+#include "petsc/finclude/petscdevice.h"
 
 !
 ! The real*8,complex*16 notatiton is used so that the

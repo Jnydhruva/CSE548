@@ -59,7 +59,7 @@ static_assert(
 
 #define PETSC_DEVICE_UNUSED_IF_NO_DEVICE(var) (void)(var)
 
-/*@C
+/*@
   PetscDeviceCreate - Get a new handle for a particular device type
 
   Not Collective, Possibly Synchronous
@@ -109,7 +109,7 @@ PetscErrorCode PetscDeviceCreate(PetscDeviceType type, PetscInt devid, PetscDevi
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceDestroy - Free a PetscDevice
 
   Not Collective, Asynchronous
@@ -138,7 +138,7 @@ PetscErrorCode PetscDeviceDestroy(PetscDevice *device)
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceConfigure - Configure a particular PetscDevice
 
   Not Collective, Asynchronous
@@ -174,7 +174,7 @@ PetscErrorCode PetscDeviceConfigure(PetscDevice device)
   PetscFunctionReturn(0);
 }
 
-/*@C
+/*@
   PetscDeviceView - View a PetscDevice
 
   Collective on viewer, Asynchronous
@@ -203,7 +203,7 @@ static std::array<bool,PETSC_DEVICE_MAX>        initializedDevice = {};
 static std::array<PetscDevice,PETSC_DEVICE_MAX> defaultDevices    = {};
 static_assert(initializedDevice.size() == defaultDevices.size(),"");
 
-/*@C
+/*@
   PetscDeviceInitialize - Initialize PetscDevice
 
   Not Collective, Possibly Synchronous

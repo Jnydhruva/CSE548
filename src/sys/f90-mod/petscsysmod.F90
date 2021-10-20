@@ -48,6 +48,7 @@
 #include <../src/sys/f90-mod/petscbag.h>
 #include <../src/sys/f90-mod/petscerror.h>
 #include <../src/sys/f90-mod/petsclog.h>
+#include <../src/sys/f90-mod/petscdevice.h>
         end module petscsysdefdummy
 
         module petscsysdef
