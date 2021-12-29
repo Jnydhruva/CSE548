@@ -416,6 +416,7 @@ static PetscErrorCode DMPlexInterpolateFaces_Internal(DM dm, PetscInt cellDepth,
       }
     }
   }
+  /* TODO We need to respect existing points in non-manifold mehses */
   /* Add new points, always at the end of the numbering */
   ierr = DMPlexGetChart(dm, &pStart, &Np);CHKERRQ(ierr);
   ierr = DMPlexSetChart(idm, pStart, Np + (fEnd - fStart));CHKERRQ(ierr);
@@ -481,6 +482,7 @@ static PetscErrorCode DMPlexInterpolateFaces_Internal(DM dm, PetscInt cellDepth,
     ierr = PetscSectionGetStorageSize(cs, &csize);CHKERRQ(ierr);
     for (c = 0; c < csize; ++c) cones[c] = -1;
   }
+  /* TODO We need to respect existing points in non-manifold mehses */
   /* Set cones */
   for (d = 0; d <= depth; ++d) {
     const PetscInt *cone;
@@ -1337,7 +1339,8 @@ PetscErrorCode DMPlexInterpolate(DM dm, DM *dmInt)
       ierr = DMSetType(idm, DMPLEX);CHKERRQ(ierr);
       ierr = DMSetDimension(idm, dim);CHKERRQ(ierr);
       if (depth > 0) {
-        ierr = DMPlexInterpolateFaces_Internal(odm, 1, idm);CHKERRQ(ierr);
+        //ierr = DMPlexInterpolateFaces_Internal(odm, 1, idm);CHKERRQ(ierr);
+        ierr = DMPlexInterpolateFaces_Internal(odm, dim+1-d, idm);CHKERRQ(ierr);
         ierr = DMGetPointSF(odm, &sfPoint);CHKERRQ(ierr);
         {
           /* TODO: We need to systematically fix cases of distributed Plexes with no graph set */
@@ -1738,11 +1741,13 @@ PetscErrorCode DMPlexIsInterpolated(DM dm, DMPlexInterpolatedFlag *interpolated)
   PetscValidPointer(interpolated,2);
   if (plex->interpolated < 0) {
     ierr = DMPlexIsInterpolated_Internal(dm, &plex->interpolated);CHKERRQ(ierr);
+#if 0
   } else if (PetscDefined (USE_DEBUG)) {
     DMPlexInterpolatedFlag flg;
 
     ierr = DMPlexIsInterpolated_Internal(dm, &flg);CHKERRQ(ierr);
     if (flg != plex->interpolated) SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_PLIB, "Stashed DMPlexInterpolatedFlag %s is inconsistent with current %s", DMPlexInterpolatedFlags[plex->interpolated], DMPlexInterpolatedFlags[flg]);
+#endif
   }
   *interpolated = plex->interpolated;
   PetscFunctionReturn(0);
