@@ -3839,60 +3839,57 @@ static PetscErrorCode DMPlexCreateDepthStratum(DM dm, DMLabel label, PetscInt de
   PetscFunctionReturn(0);
 }
 
-/*@
-  DMPlexStratify - The DAG for most topologies is a graded poset (https://en.wikipedia.org/wiki/Graded_poset), and
-  can be illustrated by a Hasse Diagram (https://en.wikipedia.org/wiki/Hasse_diagram). The strata group all points of the
-  same grade, and this function calculates the strata. This grade can be seen as the height (or depth) of the point in
-  the DAG.
-
-  Collective on dm
-
-  Input Parameter:
-. mesh - The DMPlex
-
-  Output Parameter:
-
-  Notes:
-  Concretely, DMPlexStratify() creates a new label named "depth" containing the depth in the DAG of each point. For cell-vertex
-  meshes, vertices are depth 0 and cells are depth 1. For fully interpolated meshes, depth 0 for vertices, 1 for edges, and so on
-  until cells have depth equal to the dimension of the mesh. The depth label can be accessed through DMPlexGetDepthLabel() or DMPlexGetDepthStratum(), or
-  manually via DMGetLabel().  The height is defined implicitly by height = maxDimension - depth, and can be accessed
-  via DMPlexGetHeightStratum().  For example, cells have height 0 and faces have height 1.
-
-  The depth of a point is calculated by executing a breadth-first search (BFS) on the DAG. This could produce surprising results
-  if run on a partially interpolated mesh, meaning one that had some edges and faces, but not others. For example, suppose that
-  we had a mesh consisting of one triangle (c0) and three vertices (v0, v1, v2), and only one edge is on the boundary so we choose
-  to interpolate only that one (e0), so that
-$  cone(c0) = {e0, v2}
-$  cone(e0) = {v0, v1}
-  If DMPlexStratify() is run on this mesh, it will give depths
-$  depth 0 = {v0, v1, v2}
-$  depth 1 = {e0, c0}
-  where the triangle has been given depth 1, instead of 2, because it is reachable from vertex v2.
-
-  DMPlexStratify() should be called after all calls to DMPlexSymmetrize()
-
-  Level: beginner
-
-.seealso: DMPlexCreate(), DMPlexSymmetrize(), DMPlexComputeCellTypes()
-@*/
-PetscErrorCode DMPlexStratify(DM dm)
+static PetscErrorCode DMPlexStratify_CellType_Private(DM dm, DMLabel label)
 {
-  DM_Plex       *mesh = (DM_Plex*) dm->data;
-  DMLabel        label;
+  PetscInt      *pMin, *pMax;
+  PetscInt       pStart, pEnd, p;
+  PetscInt       dmin = PETSC_MAX_INT, dmax = PETSC_MIN_INT, d;
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  {
+    DMLabel label2;
+
+    ierr = DMPlexGetCellTypeLabel(dm, &label2);CHKERRQ(ierr);
+    ierr = PetscObjectViewFromOptions((PetscObject) label2, NULL, "-ct_view");CHKERRQ(ierr);
+  }
+  ierr = DMPlexGetChart(dm, &pStart, &pEnd);CHKERRQ(ierr);
+  for (p = pStart; p < pEnd; ++p) {
+    DMPolytopeType ct;
+
+    ierr = DMPlexGetCellType(dm, p, &ct);CHKERRQ(ierr);
+    dmin = PetscMin(DMPolytopeTypeGetDim(ct), dmin);
+    dmax = PetscMax(DMPolytopeTypeGetDim(ct), dmax);
+  }
+  ierr = PetscMalloc2(dmax+1, &pMin, dmax+1, &pMax);CHKERRQ(ierr);
+  for (d = dmin; d <= dmax; ++d) {
+    pMin[d] = PETSC_MAX_INT;
+    pMax[d] = PETSC_MIN_INT;
+  }
+  for (p = pStart; p < pEnd; ++p) {
+    DMPolytopeType ct;
+
+    ierr = DMPlexGetCellType(dm, p, &ct);CHKERRQ(ierr);
+    d       = DMPolytopeTypeGetDim(ct);
+    pMin[d] = PetscMin(p, pMin[d]);
+    pMax[d] = PetscMax(p, pMax[d]);
+  }
+  for (d = dmin; d <= dmax; ++d) {
+    if (pMin[d] > pMax[d]) continue;
+    ierr = DMPlexCreateDepthStratum(dm, label, d, pMin[d], pMax[d]+1);CHKERRQ(ierr);
+  }
+  ierr = PetscFree2(pMin, pMax);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode DMPlexStratify_Topological_Private(DM dm, DMLabel label)
+{
   PetscInt       pStart, pEnd, p;
   PetscInt       numRoots = 0, numLeaves = 0;
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
-  PetscValidHeaderSpecific(dm, DM_CLASSID, 1);
-  ierr = PetscLogEventBegin(DMPLEX_Stratify,dm,0,0,0);CHKERRQ(ierr);
-
-  /* Create depth label */
   ierr = DMPlexGetChart(dm, &pStart, &pEnd);CHKERRQ(ierr);
-  ierr = DMCreateLabel(dm, "depth");CHKERRQ(ierr);
-  ierr = DMPlexGetDepthLabel(dm, &label);CHKERRQ(ierr);
-
   {
     /* Initialize roots and count leaves */
     PetscInt sMin = PETSC_MAX_INT;
@@ -3956,6 +3953,65 @@ PetscErrorCode DMPlexStratify(DM dm)
       ierr = DMLabelGetStratumBounds(label, level, &qStart, &qEnd);CHKERRQ(ierr);
     }
   }
+  PetscFunctionReturn(0);
+}
+
+/*@
+  DMPlexStratify - The DAG for most topologies is a graded poset (https://en.wikipedia.org/wiki/Graded_poset), and
+  can be illustrated by a Hasse Diagram (https://en.wikipedia.org/wiki/Hasse_diagram). The strata group all points of the
+  same grade, and this function calculates the strata. This grade can be seen as the height (or depth) of the point in
+  the DAG.
+
+  Collective on dm
+
+  Input Parameter:
+. mesh - The DMPlex
+
+  Output Parameter:
+
+  Notes:
+  Concretely, DMPlexStratify() creates a new label named "depth" containing the depth in the DAG of each point. For cell-vertex
+  meshes, vertices are depth 0 and cells are depth 1. For fully interpolated meshes, depth 0 for vertices, 1 for edges, and so on
+  until cells have depth equal to the dimension of the mesh. The depth label can be accessed through DMPlexGetDepthLabel() or DMPlexGetDepthStratum(), or
+  manually via DMGetLabel().  The height is defined implicitly by height = maxDimension - depth, and can be accessed
+  via DMPlexGetHeightStratum().  For example, cells have height 0 and faces have height 1.
+
+  The depth of a point is calculated by executing a breadth-first search (BFS) on the DAG. This could produce surprising results
+  if run on a partially interpolated mesh, meaning one that had some edges and faces, but not others. For example, suppose that
+  we had a mesh consisting of one triangle (c0) and three vertices (v0, v1, v2), and only one edge is on the boundary so we choose
+  to interpolate only that one (e0), so that
+$  cone(c0) = {e0, v2}
+$  cone(e0) = {v0, v1}
+  If DMPlexStratify() is run on this mesh, it will give depths
+$  depth 0 = {v0, v1, v2}
+$  depth 1 = {e0, c0}
+  where the triangle has been given depth 1, instead of 2, because it is reachable from vertex v2.
+
+  DMPlexStratify() should be called after all calls to DMPlexSymmetrize()
+
+  Level: beginner
+
+.seealso: DMPlexCreate(), DMPlexSymmetrize(), DMPlexComputeCellTypes()
+@*/
+PetscErrorCode DMPlexStratify(DM dm)
+{
+  DM_Plex       *mesh = (DM_Plex*) dm->data;
+  DMLabel        label;
+  PetscBool      flg = PETSC_FALSE;
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  PetscValidHeaderSpecific(dm, DM_CLASSID, 1);
+  ierr = PetscLogEventBegin(DMPLEX_Stratify,dm,0,0,0);CHKERRQ(ierr);
+
+  /* Create depth label */
+  ierr = DMCreateLabel(dm, "depth");CHKERRQ(ierr);
+  ierr = DMPlexGetDepthLabel(dm, &label);CHKERRQ(ierr);
+
+  ierr = PetscOptionsGetBool(NULL, dm->hdr.prefix, "-dm_plex_stratify_celltype", &flg, NULL);CHKERRQ(ierr);
+  if (flg) {ierr = DMPlexStratify_CellType_Private(dm, label);CHKERRQ(ierr);}
+  else     {ierr = DMPlexStratify_Topological_Private(dm, label);CHKERRQ(ierr);}
+
   { /* just in case there is an empty process */
     PetscInt numValues, maxValues = 0, v;
 
