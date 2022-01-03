@@ -441,13 +441,21 @@ PetscErrorCode PetscFEIntegrateResidual_Basic(PetscDS ds, PetscFormKey key, Pets
       for (i = 0; i < n1; ++i) f1_func[i](dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, NULL, a_x, t, fegeom.v, numConstants, constants, &f1[q*T[field]->Nc*dim]);
       for (c = 0; c < T[field]->Nc; ++c) for (d = 0; d < dim; ++d) f1[(q*T[field]->Nc+c)*dim+d] *= w;
       if (debug) {
-        ierr = PetscPrintf(PETSC_COMM_SELF, "  quad point %d wt %g\n", q, quadWeights[q]);CHKERRQ(ierr);
+        ierr = PetscPrintf(PETSC_COMM_SELF, "  quad point %d wt %g x:", q, quadWeights[q]);CHKERRQ(ierr);
+        for (c = 0; c < dE; ++c) {ierr = PetscPrintf(PETSC_COMM_SELF, " %g", fegeom.v[c]);CHKERRQ(ierr);}
+        ierr = PetscPrintf(PETSC_COMM_SELF, "\n");CHKERRQ(ierr);
         if (debug > 2) {
           ierr = PetscPrintf(PETSC_COMM_SELF, "  field %d:", field);CHKERRQ(ierr);
           for (c = 0; c < T[field]->Nc; ++c) {ierr = PetscPrintf(PETSC_COMM_SELF, " %g", u[uOff[field]+c]);CHKERRQ(ierr);}
           ierr = PetscPrintf(PETSC_COMM_SELF, "\n");CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_SELF, "  field der %d:", field);CHKERRQ(ierr);
+          for (c = 0; c < T[field]->Nc * dE; ++c) {ierr = PetscPrintf(PETSC_COMM_SELF, " %g", u_x[uOff[field]+c]);CHKERRQ(ierr);}
+          ierr = PetscPrintf(PETSC_COMM_SELF, "\n");CHKERRQ(ierr);
           ierr = PetscPrintf(PETSC_COMM_SELF, "  resid %d:", field);CHKERRQ(ierr);
           for (c = 0; c < T[field]->Nc; ++c) {ierr = PetscPrintf(PETSC_COMM_SELF, " %g", f0[q*T[field]->Nc+c]);CHKERRQ(ierr);}
+          ierr = PetscPrintf(PETSC_COMM_SELF, "\n");CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_SELF, "  res der %d:", field);CHKERRQ(ierr);
+          for (c = 0; c < T[field]->Nc; ++c) for(d = 0; d < dim; ++d) {ierr = PetscPrintf(PETSC_COMM_SELF, " %g", f1[(q*T[field]->Nc+c)*dim+d]);CHKERRQ(ierr);}
           ierr = PetscPrintf(PETSC_COMM_SELF, "\n");CHKERRQ(ierr);
         }
       }

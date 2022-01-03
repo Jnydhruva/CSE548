@@ -326,7 +326,7 @@ PETSC_EXTERN PetscErrorCode DMPlexVecGetClosure(DM, PetscSection, Vec, PetscInt,
 PETSC_EXTERN PetscErrorCode DMPlexVecRestoreClosure(DM, PetscSection, Vec, PetscInt, PetscInt *, PetscScalar *[]);
 PETSC_EXTERN PetscErrorCode DMPlexVecSetClosure(DM, PetscSection, Vec, PetscInt, const PetscScalar[], InsertMode);
 PETSC_EXTERN PetscErrorCode DMPlexMatSetClosure(DM, PetscSection, PetscSection, Mat, PetscInt, const PetscScalar[], InsertMode);
-PETSC_EXTERN PetscErrorCode DMPlexMatSetClosureGeneral(DM, PetscSection, PetscSection, DM, PetscSection, PetscSection, Mat, PetscInt, const PetscScalar[], InsertMode);
+PETSC_EXTERN PetscErrorCode DMPlexMatSetClosureGeneral(DM, PetscSection, PetscSection, PetscBool, DM, PetscSection, PetscSection, PetscBool, Mat, PetscInt, const PetscScalar[], InsertMode);
 PETSC_EXTERN PetscErrorCode DMPlexGetClosureIndices(DM, PetscSection, PetscSection, PetscInt, PetscBool, PetscInt *, PetscInt *[], PetscInt *, PetscScalar *[]);
 PETSC_EXTERN PetscErrorCode DMPlexRestoreClosureIndices(DM, PetscSection, PetscSection, PetscInt, PetscBool, PetscInt *, PetscInt *[], PetscInt *, PetscScalar *[]);
 PETSC_EXTERN PetscErrorCode DMPlexMatSetClosureRefined(DM, PetscSection, PetscSection, DM, PetscSection, PetscSection, Mat, PetscInt, const PetscScalar[], InsertMode);
@@ -405,6 +405,11 @@ PETSC_EXTERN PetscErrorCode DMPlexTSComputeIJacobianFEM(DM, PetscReal, Vec, Vec,
 
 PETSC_EXTERN PetscErrorCode DMPlexComputeRHSFunctionFVM(DM, PetscReal, Vec, Vec, void *);
 PETSC_EXTERN PetscErrorCode DMPlexReconstructGradientsFVM(DM,Vec,Vec);
+
+PETSC_EXTERN PetscErrorCode DMPlexGetUseCeed(DM, PetscBool *);
+PETSC_EXTERN PetscErrorCode DMPlexSetUseCeed(DM, PetscBool);
+PETSC_EXTERN PetscErrorCode DMPlexGetUseMatClosurePermutation(DM, PetscBool *);
+PETSC_EXTERN PetscErrorCode DMPlexSetUseMatClosurePermutation(DM, PetscBool);
 
 /* anchors */
 PETSC_EXTERN PetscErrorCode DMPlexGetAnchors(DM, PetscSection*, IS*);

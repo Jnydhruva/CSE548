@@ -2808,6 +2808,13 @@ static PetscErrorCode DMSetFromOptions_Plex(PetscOptionItems *PetscOptionsObject
       ierr = DMPlexReplace_Static(dm, &pdm);CHKERRQ(ierr);
     }
   }
+  /* Must check CEED options before creating function space for coordinates */
+  {
+    PetscBool useCeed = PETSC_FALSE, flg;
+
+    ierr = PetscOptionsBool("-dm_plex_use_ceed", "Use LibCEED as the FEM backend", "DMPlexSetUseCeed", useCeed, &useCeed, &flg);CHKERRQ(ierr);
+    if (flg) {ierr = DMPlexSetUseCeed(dm, useCeed);CHKERRQ(ierr);}
+  }
   /* Create coordinate space */
   if (created) {
     DM_Plex  *mesh = (DM_Plex *) dm->data;
@@ -3064,6 +3071,8 @@ static PetscErrorCode DMInitialize_Plex(DM dm)
   ierr = PetscObjectComposeFunction((PetscObject)dm,"DMCreateNeumannOverlap_C",DMCreateNeumannOverlap_Plex);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)dm,"DMPlexGetOverlap_C",DMPlexGetOverlap_Plex);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)dm,"DMInterpolateSolution_C",DMInterpolateSolution_Plex);CHKERRQ(ierr);
+  ierr = PetscObjectComposeFunction((PetscObject)dm,"DMPlexGetUseCeed_C",DMPlexGetUseCeed_Plex);CHKERRQ(ierr);
+  ierr = PetscObjectComposeFunction((PetscObject)dm,"DMPlexSetUseCeed_C",DMPlexSetUseCeed_Plex);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 

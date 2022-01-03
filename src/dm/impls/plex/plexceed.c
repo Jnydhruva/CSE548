@@ -43,7 +43,8 @@ PetscErrorCode DMPlexGetCeedRestriction(DM dm, CeedElemRestriction *ERestrict)
         for (c = 0; c < Nc[0]; ++c) {
           if (ind[i+c] != ind[i] + c) SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "Cell %D closure indices not interlaced", cell);
         }
-        erestrict[eoffset++] = ind[i];
+        // Decode position of essential boundary conditions
+        erestrict[eoffset++] = ind[i] >= 0 ? ind[i] : -(ind[i] +1);
       }
       ierr = DMPlexRestoreClosureIndices(dm, s, s, cell, PETSC_TRUE, &Ni, &ind, NULL, NULL);CHKERRQ(ierr);
     }

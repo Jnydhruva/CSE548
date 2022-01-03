@@ -867,7 +867,8 @@ PetscErrorCode  DMSetUp(DM dm)
 . -dm_distribute <bool>             - Flag to redistribute a mesh among processes
 . -dm_distribute_overlap <n>        - The size of the overlap halo
 . -dm_plex_adj_cone <bool>          - Set adjacency direction
-- -dm_plex_adj_closure <bool>       - Set adjacency size
+. -dm_plex_adj_closure <bool>       - Set adjacency size
+- -dm_plex_use_ceed <bool>          - Use LibCEED as the FEM backend
 
     DMPLEX Specific Checks
 +   -dm_plex_check_symmetry        - Check that the adjacency information in the mesh is symmetric - DMPlexCheckSymmetry()
@@ -5845,6 +5846,52 @@ PetscErrorCode DMCreateDS(DM dm)
 }
 
 /*@
+  DMUseTensorOrder - Use a tensor product closure ordering for the default section
+
+  Input Parameters:
++ dm     - The DM
+- tensor - Flag for tensor order
+
+  Level: developer
+
+.seealso: DMPlexSetClosurePermutationTensor(), PetscSectionResetClosurePermutation()
+@*/
+PetscErrorCode DMUseTensorOrder(DM dm, PetscBool tensor)
+{
+  PetscInt       Nf, f;
+  PetscBool      reorder = PETSC_TRUE, isPlex;
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  ierr = PetscObjectTypeCompare((PetscObject) dm, DMPLEX, &isPlex);CHKERRQ(ierr);
+  ierr = DMGetNumFields(dm, &Nf);CHKERRQ(ierr);
+  for (f = 0; f < Nf; ++f) {
+    PetscObject obj;
+    PetscClassId id;
+
+    ierr = DMGetField(dm, f, NULL, &obj);CHKERRQ(ierr);
+    ierr = PetscObjectGetClassId(obj, &id);CHKERRQ(ierr);
+    if (id == PETSCFE_CLASSID) {
+      PetscSpace sp;
+      PetscBool  tensor;
+
+      ierr = PetscFEGetBasisSpace((PetscFE) obj, &sp);CHKERRQ(ierr);
+      ierr = PetscSpacePolynomialGetTensor(sp, &tensor);CHKERRQ(ierr);
+      reorder = reorder && tensor;
+    } else reorder = PETSC_FALSE;
+  }
+  if (tensor) {
+    if (reorder && isPlex) {ierr = DMPlexSetClosurePermutationTensor(dm, PETSC_DETERMINE, NULL);CHKERRQ(ierr);}
+  } else {
+    PetscSection s;
+
+    ierr = DMGetLocalSection(dm, &s);CHKERRQ(ierr);
+    if (s) {ierr = PetscSectionResetClosurePermutation(s);CHKERRQ(ierr);}
+  }
+  PetscFunctionReturn(0);
+}
+
+/*@
   DMComputeExactSolution - Compute the exact solution for a given DM, using the PetscDS information.
 
   Collective on DM
@@ -6735,7 +6782,7 @@ PetscErrorCode DMProjectCoordinates(DM dm, PetscFE disc)
       switch (ct) {
         case DM_POLYTOPE_TRI_PRISM:
         case DM_POLYTOPE_TRI_PRISM_TENSOR:
-          SETERRQ(PETSC_COMM_SELF, PETSC_ERR_SUP, "Cannot autoamtically create coordinate space for prisms");
+          SETERRQ(PETSC_COMM_SELF, PETSC_ERR_SUP, "Cannot automatically create coordinate space for prisms");
         default: break;
       }
       simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct)+1 ? PETSC_TRUE : PETSC_FALSE;

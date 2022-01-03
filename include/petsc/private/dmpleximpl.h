@@ -196,6 +196,10 @@ typedef struct {
   /* Metric */
   DMPlexMetricCtx     *metricCtx;
 
+  /* FEM */
+  PetscBool            useCeed;      /* This should convert to a registration system when there are more FEM backends */
+  PetscBool            useMatClPerm; /* Use the closure permutation when assembling matrices */
+
   /* Debugging */
   PetscBool            printSetValues;
   PetscInt             printFEM;
@@ -242,6 +246,7 @@ PETSC_INTERN PetscErrorCode VecLoad_Plex_HDF5_Internal(Vec, PetscViewer);
 PETSC_INTERN PetscErrorCode VecLoad_Plex_HDF5_Native_Internal(Vec, PetscViewer);
 #endif
 
+PETSC_INTERN PetscErrorCode DMPlexVecGetClosure_Internal(DM, PetscSection, PetscBool, Vec, PetscInt, PetscInt *, PetscScalar *[]);
 PETSC_INTERN PetscErrorCode DMPlexVecGetClosureAtDepth_Internal(DM, PetscSection, Vec, PetscInt, PetscInt, PetscInt *, PetscScalar *[]);
 PETSC_INTERN PetscErrorCode DMPlexClosurePoints_Private(DM,PetscInt,const PetscInt[],IS*);
 PETSC_INTERN PetscErrorCode DMSetFromOptions_NonRefinement_Plex(PetscOptionItems *, DM);
@@ -301,6 +306,8 @@ PETSC_INTERN PetscErrorCode DMPlexCoarsen_Internal(DM, Vec, DMLabel, DMLabel, DM
 PETSC_INTERN PetscErrorCode DMCreateMatrix_Plex(DM, Mat*);
 
 PETSC_INTERN PetscErrorCode DMPlexGetOverlap_Plex(DM, PetscInt *);
+PETSC_INTERN PetscErrorCode DMPlexGetUseCeed_Plex(DM, PetscBool *);
+PETSC_INTERN PetscErrorCode DMPlexSetUseCeed_Plex(DM, PetscBool);
 
 #if 1
 PETSC_STATIC_INLINE PetscInt DihedralInvert(PetscInt N, PetscInt a)
@@ -675,6 +682,7 @@ PETSC_INTERN PetscErrorCode DMPlexGetPointDualSpaceFEM(DM,PetscInt,PetscInt,Pets
 PETSC_INTERN PetscErrorCode DMPlexGetIndicesPoint_Internal(PetscSection,PetscBool,PetscInt,PetscInt,PetscInt *,PetscBool,const PetscInt[],const PetscInt[],PetscInt[]);
 PETSC_INTERN PetscErrorCode DMPlexGetIndicesPointFields_Internal(PetscSection,PetscBool,PetscInt,PetscInt,PetscInt[],PetscBool,const PetscInt***,PetscInt,const PetscInt[],PetscInt[]);
 PETSC_INTERN PetscErrorCode DMPlexGetTransitiveClosure_Internal(DM, PetscInt, PetscInt, PetscBool, PetscInt *, PetscInt *[]);
+PETSC_INTERN PetscErrorCode DMPlexMatSetClosure_Internal(DM, PetscSection, PetscSection, PetscBool, Mat, PetscInt, const PetscScalar[], InsertMode);
 
 PETSC_EXTERN PetscErrorCode DMPlexGetAllCells_Internal(DM, IS *);
 PETSC_EXTERN PetscErrorCode DMSNESGetFEGeom(DMField, IS, PetscQuadrature, PetscBool, PetscFEGeom **);

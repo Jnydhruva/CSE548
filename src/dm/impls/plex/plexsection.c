@@ -610,5 +610,15 @@ PetscErrorCode DMCreateLocalSection_Plex(DM dm)
   ierr = PetscFree3(bcFields,bcPoints,bcComps);CHKERRQ(ierr);
   ierr = PetscFree3(labels,numComp,numDof);CHKERRQ(ierr);
   ierr = PetscFree(isFE);CHKERRQ(ierr);
+  /* Checking for CEED usage */
+  {
+    PetscBool useCeed;
+
+    ierr = DMPlexGetUseCeed(dm, &useCeed);CHKERRQ(ierr);
+    if (useCeed) {
+      ierr = DMPlexSetUseMatClosurePermutation(dm, PETSC_FALSE);CHKERRQ(ierr);
+      ierr = DMUseTensorOrder(dm, PETSC_TRUE);CHKERRQ(ierr);
+    }
+  }
   PetscFunctionReturn(0);
 }

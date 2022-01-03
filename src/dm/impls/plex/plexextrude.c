@@ -50,6 +50,7 @@ PetscErrorCode DMPlexExtrude(DM dm, PetscInt layers, PetscReal thickness, PetscB
   DM              cdm, ecdm;
   const char     *prefix;
   PetscOptions    options;
+  PetscBool       useCeed;
   PetscErrorCode  ierr;
 
   PetscFunctionBegin;
@@ -71,6 +72,8 @@ PetscErrorCode DMPlexExtrude(DM dm, PetscInt layers, PetscReal thickness, PetscB
   ierr = DMPlexTransformSetUp(tr);CHKERRQ(ierr);
   ierr = PetscObjectViewFromOptions((PetscObject) tr, NULL, "-dm_plex_transform_view");CHKERRQ(ierr);
   ierr = DMPlexTransformApply(tr, dm, edm);CHKERRQ(ierr);
+  ierr = DMPlexGetUseCeed(dm, &useCeed);CHKERRQ(ierr);
+  ierr = DMPlexSetUseCeed(*edm, useCeed);CHKERRQ(ierr);
   ierr = DMCopyDisc(dm, *edm);CHKERRQ(ierr);
   ierr = DMGetCoordinateDM(dm, &cdm);CHKERRQ(ierr);
   ierr = DMGetCoordinateDM(*edm, &ecdm);CHKERRQ(ierr);

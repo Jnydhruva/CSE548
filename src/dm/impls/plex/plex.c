@@ -5702,6 +5702,57 @@ PETSC_STATIC_INLINE PetscErrorCode DMPlexVecGetClosure_Fields_Static(DM dm, Pets
   PetscFunctionReturn(0);
 }
 
+PetscErrorCode DMPlexVecGetClosure_Internal(DM dm, PetscSection section, PetscBool useClPerm, Vec v, PetscInt point, PetscInt *csize, PetscScalar *values[])
+{
+  PetscSection       clSection;
+  IS                 clPoints;
+  PetscInt          *points = NULL;
+  const PetscInt    *clp, *perm = NULL;
+  PetscInt           depth, numFields, numPoints, asize;
+  PetscErrorCode     ierr;
+
+  PetscFunctionBeginHot;
+  PetscValidHeaderSpecific(dm, DM_CLASSID, 1);
+  if (!section) {ierr = DMGetLocalSection(dm, &section);CHKERRQ(ierr);}
+  PetscValidHeaderSpecific(section, PETSC_SECTION_CLASSID, 2);
+  PetscValidHeaderSpecific(v, VEC_CLASSID, 3);
+  ierr = DMPlexGetDepth(dm, &depth);CHKERRQ(ierr);
+  ierr = PetscSectionGetNumFields(section, &numFields);CHKERRQ(ierr);
+  if (depth == 1 && numFields < 2) {
+    ierr = DMPlexVecGetClosure_Depth1_Static(dm, section, v, point, csize, values);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+  }
+  /* Get points */
+  ierr = DMPlexGetCompressedClosure(dm,section,point,&numPoints,&points,&clSection,&clPoints,&clp);CHKERRQ(ierr);
+  /* Get sizes */
+  asize = 0;
+  for (PetscInt p = 0; p < numPoints*2; p += 2) {
+    PetscInt dof;
+    ierr = PetscSectionGetDof(section, points[p], &dof);CHKERRQ(ierr);
+    asize += dof;
+  }
+  if (values) {
+    const PetscScalar *vArray;
+    PetscInt          size;
+
+    if (*values) {
+      if (PetscUnlikely(*csize < asize)) SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_ARG_OUTOFRANGE, "Provided array size %D not sufficient to hold closure size %D", *csize, asize);
+    } else {ierr = DMGetWorkArray(dm, asize, MPIU_SCALAR, values);CHKERRQ(ierr);}
+    if (useClPerm) {ierr = PetscSectionGetClosureInversePermutation_Internal(section, (PetscObject) dm, depth, asize, &perm);CHKERRQ(ierr);}
+    ierr = VecGetArrayRead(v, &vArray);CHKERRQ(ierr);
+    /* Get values */
+    if (numFields > 0) {ierr = DMPlexVecGetClosure_Fields_Static(dm, section, numPoints, points, numFields, perm, vArray, &size, *values);CHKERRQ(ierr);}
+    else               {ierr = DMPlexVecGetClosure_Static(dm, section, numPoints, points, perm, vArray, &size, *values);CHKERRQ(ierr);}
+    if (PetscUnlikely(asize != size)) SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_PLIB, "Section size %D does not match Vec closure size %D", asize, size);
+    /* Cleanup array */
+    ierr = VecRestoreArrayRead(v, &vArray);CHKERRQ(ierr);
+  }
+  if (csize) *csize = asize;
+  /* Cleanup points */
+  ierr = DMPlexRestoreCompressedClosure(dm,section,point,&numPoints,&points,&clSection,&clPoints,&clp);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
 /*@C
   DMPlexVecGetClosure - Get an array of the values on the closure of 'point'
 
@@ -5755,52 +5806,10 @@ $  PetscFree(values);
 @*/
 PetscErrorCode DMPlexVecGetClosure(DM dm, PetscSection section, Vec v, PetscInt point, PetscInt *csize, PetscScalar *values[])
 {
-  PetscSection       clSection;
-  IS                 clPoints;
-  PetscInt          *points = NULL;
-  const PetscInt    *clp, *perm;
-  PetscInt           depth, numFields, numPoints, asize;
-  PetscErrorCode     ierr;
+  PetscErrorCode ierr;
 
   PetscFunctionBeginHot;
-  PetscValidHeaderSpecific(dm, DM_CLASSID, 1);
-  if (!section) {ierr = DMGetLocalSection(dm, &section);CHKERRQ(ierr);}
-  PetscValidHeaderSpecific(section, PETSC_SECTION_CLASSID, 2);
-  PetscValidHeaderSpecific(v, VEC_CLASSID, 3);
-  ierr = DMPlexGetDepth(dm, &depth);CHKERRQ(ierr);
-  ierr = PetscSectionGetNumFields(section, &numFields);CHKERRQ(ierr);
-  if (depth == 1 && numFields < 2) {
-    ierr = DMPlexVecGetClosure_Depth1_Static(dm, section, v, point, csize, values);CHKERRQ(ierr);
-    PetscFunctionReturn(0);
-  }
-  /* Get points */
-  ierr = DMPlexGetCompressedClosure(dm,section,point,&numPoints,&points,&clSection,&clPoints,&clp);CHKERRQ(ierr);
-  /* Get sizes */
-  asize = 0;
-  for (PetscInt p = 0; p < numPoints*2; p += 2) {
-    PetscInt dof;
-    ierr = PetscSectionGetDof(section, points[p], &dof);CHKERRQ(ierr);
-    asize += dof;
-  }
-  if (values) {
-    const PetscScalar *vArray;
-    PetscInt          size;
-
-    if (*values) {
-      if (PetscUnlikely(*csize < asize)) SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_ARG_OUTOFRANGE, "Provided array size %D not sufficient to hold closure size %D", *csize, asize);
-    } else {ierr = DMGetWorkArray(dm, asize, MPIU_SCALAR, values);CHKERRQ(ierr);}
-    ierr = PetscSectionGetClosureInversePermutation_Internal(section, (PetscObject) dm, depth, asize, &perm);CHKERRQ(ierr);
-    ierr = VecGetArrayRead(v, &vArray);CHKERRQ(ierr);
-    /* Get values */
-    if (numFields > 0) {ierr = DMPlexVecGetClosure_Fields_Static(dm, section, numPoints, points, numFields, perm, vArray, &size, *values);CHKERRQ(ierr);}
-    else               {ierr = DMPlexVecGetClosure_Static(dm, section, numPoints, points, perm, vArray, &size, *values);CHKERRQ(ierr);}
-    if (PetscUnlikely(asize != size)) SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_PLIB, "Section size %D does not match Vec closure size %D", asize, size);
-    /* Cleanup array */
-    ierr = VecRestoreArrayRead(v, &vArray);CHKERRQ(ierr);
-  }
-  if (csize) *csize = asize;
-  /* Cleanup points */
-  ierr = DMPlexRestoreCompressedClosure(dm,section,point,&numPoints,&points,&clSection,&clPoints,&clp);CHKERRQ(ierr);
+  ierr = DMPlexVecGetClosure_Internal(dm, section, PETSC_TRUE, v, point, csize, values);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -7494,28 +7503,7 @@ PetscErrorCode DMPlexRestoreClosureIndices(DM dm, PetscSection section, PetscSec
   PetscFunctionReturn(0);
 }
 
-/*@C
-  DMPlexMatSetClosure - Set an array of the values on the closure of 'point'
-
-  Not collective
-
-  Input Parameters:
-+ dm - The DM
-. section - The section describing the layout in v, or NULL to use the default section
-. globalSection - The section describing the layout in v, or NULL to use the default global section
-. A - The matrix
-. point - The point in the DM
-. values - The array of values
-- mode - The insert mode, where INSERT_ALL_VALUES and ADD_ALL_VALUES also overwrite boundary conditions
-
-  Fortran Notes:
-  This routine is only available in Fortran 90, and you must include petsc.h90 in your code.
-
-  Level: intermediate
-
-.seealso DMPlexMatSetClosureGeneral(), DMPlexVecGetClosure(), DMPlexVecSetClosure()
-@*/
-PetscErrorCode DMPlexMatSetClosure(DM dm, PetscSection section, PetscSection globalSection, Mat A, PetscInt point, const PetscScalar values[], InsertMode mode)
+PetscErrorCode DMPlexMatSetClosure_Internal(DM dm, PetscSection section, PetscSection globalSection, PetscBool useClPerm, Mat A, PetscInt point, const PetscScalar values[], InsertMode mode)
 {
   DM_Plex           *mesh = (DM_Plex*) dm->data;
   PetscInt          *indices;
@@ -7531,7 +7519,7 @@ PetscErrorCode DMPlexMatSetClosure(DM dm, PetscSection section, PetscSection glo
   PetscValidHeaderSpecific(globalSection, PETSC_SECTION_CLASSID, 3);
   PetscValidHeaderSpecific(A, MAT_CLASSID, 4);
 
-  ierr = DMPlexGetClosureIndices(dm, section, globalSection, point, PETSC_TRUE, &numIndices, &indices, NULL, (PetscScalar **) &values);CHKERRQ(ierr);
+  ierr = DMPlexGetClosureIndices(dm, section, globalSection, point, useClPerm, &numIndices, &indices, NULL, (PetscScalar **) &values);CHKERRQ(ierr);
 
   if (mesh->printSetValues) {ierr = DMPlexPrintMatSetValues(PETSC_VIEWER_STDOUT_SELF, A, point, numIndices, indices, 0, NULL, values);CHKERRQ(ierr);}
   ierr = MatSetValues(A, numIndices, indices, numIndices, indices, values, mode);
@@ -7559,7 +7547,37 @@ PetscErrorCode DMPlexMatSetClosure(DM dm, PetscSection section, PetscSection glo
 }
 
 /*@C
-  DMPlexMatSetClosure - Set an array of the values on the closure of 'point' using a different row and column section
+  DMPlexMatSetClosure - Set an array of the values on the closure of 'point'
+
+  Not collective
+
+  Input Parameters:
++ dm - The DM
+. section - The section describing the layout in v, or NULL to use the default section
+. globalSection - The section describing the layout in v, or NULL to use the default global section
+. A - The matrix
+. point - The point in the DM
+. values - The array of values
+- mode - The insert mode, where INSERT_ALL_VALUES and ADD_ALL_VALUES also overwrite boundary conditions
+
+  Fortran Notes:
+  This routine is only available in Fortran 90, and you must include petsc.h90 in your code.
+
+  Level: intermediate
+
+.seealso DMPlexMatSetClosureGeneral(), DMPlexVecGetClosure(), DMPlexVecSetClosure()
+@*/
+PetscErrorCode DMPlexMatSetClosure(DM dm, PetscSection section, PetscSection globalSection, Mat A, PetscInt point, const PetscScalar values[], InsertMode mode)
+{
+  PetscErrorCode     ierr;
+
+  PetscFunctionBegin;
+  ierr = DMPlexMatSetClosure_Internal(dm, section, globalSection, PETSC_TRUE, A, point, values, mode);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+/*@C
+  DMPlexMatSetClosureGeneral - Set an array of the values on the closure of 'point' using a different row and column section
 
   Not collective
 
@@ -7567,9 +7585,11 @@ PetscErrorCode DMPlexMatSetClosure(DM dm, PetscSection section, PetscSection glo
 + dmRow - The DM for the row fields
 . sectionRow - The section describing the layout, or NULL to use the default section in dmRow
 . globalSectionRow - The section describing the layout, or NULL to use the default global section in dmRow
+. useRowPerm  - Use the closure point permutation if available
 . dmCol - The DM for the column fields
 . sectionCol - The section describing the layout, or NULL to use the default section in dmCol
 . globalSectionCol - The section describing the layout, or NULL to use the default global section in dmCol
+. useColPerm  - Use the closure point permutation if available
 . A - The matrix
 . point - The point in the DMs
 . values - The array of values
@@ -7579,7 +7599,7 @@ PetscErrorCode DMPlexMatSetClosure(DM dm, PetscSection section, PetscSection glo
 
 .seealso DMPlexMatSetClosure(), DMPlexVecGetClosure(), DMPlexVecSetClosure()
 @*/
-PetscErrorCode DMPlexMatSetClosureGeneral(DM dmRow, PetscSection sectionRow, PetscSection globalSectionRow, DM dmCol, PetscSection sectionCol, PetscSection globalSectionCol, Mat A, PetscInt point, const PetscScalar values[], InsertMode mode)
+PetscErrorCode DMPlexMatSetClosureGeneral(DM dmRow, PetscSection sectionRow, PetscSection globalSectionRow, PetscBool useRowPerm, DM dmCol, PetscSection sectionCol, PetscSection globalSectionCol, PetscBool useColPerm, Mat A, PetscInt point, const PetscScalar values[], InsertMode mode)
 {
   DM_Plex           *mesh = (DM_Plex*) dmRow->data;
   PetscInt          *indicesRow, *indicesCol;
@@ -7600,8 +7620,8 @@ PetscErrorCode DMPlexMatSetClosureGeneral(DM dmRow, PetscSection sectionRow, Pet
   PetscValidHeaderSpecific(globalSectionCol, PETSC_SECTION_CLASSID, 6);
   PetscValidHeaderSpecific(A, MAT_CLASSID, 7);
 
-  ierr = DMPlexGetClosureIndices(dmRow, sectionRow, globalSectionRow, point, PETSC_TRUE, &numIndicesRow, &indicesRow, NULL, (PetscScalar **) &values);CHKERRQ(ierr);
-  ierr = DMPlexGetClosureIndices(dmCol, sectionCol, globalSectionCol, point, PETSC_TRUE, &numIndicesCol, &indicesCol, NULL, (PetscScalar **) &values);CHKERRQ(ierr);
+  ierr = DMPlexGetClosureIndices(dmRow, sectionRow, globalSectionRow, point, useRowPerm, &numIndicesRow, &indicesRow, NULL, (PetscScalar **) &values);CHKERRQ(ierr);
+  ierr = DMPlexGetClosureIndices(dmCol, sectionCol, globalSectionCol, point, useColPerm, &numIndicesCol, &indicesCol, NULL, (PetscScalar **) &values);CHKERRQ(ierr);
 
   if (mesh->printSetValues) {ierr = DMPlexPrintMatSetValues(PETSC_VIEWER_STDOUT_SELF, A, point, numIndicesRow, indicesRow, numIndicesCol, indicesCol, values);CHKERRQ(ierr);}
   ierr = MatSetValues(A, numIndicesRow, indicesRow, numIndicesCol, indicesCol, values, mode);
@@ -7612,14 +7632,14 @@ PetscErrorCode DMPlexMatSetClosureGeneral(DM dmRow, PetscSection sectionRow, Pet
     ierr2 = MPI_Comm_rank(PetscObjectComm((PetscObject)A), &rank);CHKERRMPI(ierr2);
     ierr2 = (*PetscErrorPrintf)("[%d]ERROR in DMPlexMatSetClosure\n", rank);CHKERRQ(ierr2);
     ierr2 = DMPlexPrintMatSetValues(PETSC_VIEWER_STDERR_SELF, A, point, numIndicesRow, indicesRow, numIndicesCol, indicesCol, values);CHKERRQ(ierr2);
-    ierr2 = DMPlexRestoreClosureIndices(dmRow, sectionRow, globalSectionRow, point, PETSC_TRUE, &numIndicesRow, &indicesRow, NULL, (PetscScalar **) &values);CHKERRQ(ierr2);
-    ierr2 = DMPlexRestoreClosureIndices(dmCol, sectionCol, globalSectionCol, point, PETSC_TRUE, &numIndicesCol, &indicesRow, NULL, (PetscScalar **) &values);CHKERRQ(ierr2);
+    ierr2 = DMPlexRestoreClosureIndices(dmRow, sectionRow, globalSectionRow, point, useRowPerm, &numIndicesRow, &indicesRow, NULL, (PetscScalar **) &values);CHKERRQ(ierr2);
+    ierr2 = DMPlexRestoreClosureIndices(dmCol, sectionCol, globalSectionCol, point, useColPerm, &numIndicesCol, &indicesRow, NULL, (PetscScalar **) &values);CHKERRQ(ierr2);
     if (values != valuesOrig) {ierr2 = DMRestoreWorkArray(dmRow, 0, MPIU_SCALAR, &values);CHKERRQ(ierr2);}
     CHKERRQ(ierr);
   }
 
-  ierr = DMPlexRestoreClosureIndices(dmRow, sectionRow, globalSectionRow, point, PETSC_TRUE, &numIndicesRow, &indicesRow, NULL, (PetscScalar **) &values);CHKERRQ(ierr);
-  ierr = DMPlexRestoreClosureIndices(dmCol, sectionCol, globalSectionCol, point, PETSC_TRUE, &numIndicesCol, &indicesCol, NULL, (PetscScalar **) &values);CHKERRQ(ierr);
+  ierr = DMPlexRestoreClosureIndices(dmRow, sectionRow, globalSectionRow, point, useRowPerm, &numIndicesRow, &indicesRow, NULL, (PetscScalar **) &values);CHKERRQ(ierr);
+  ierr = DMPlexRestoreClosureIndices(dmCol, sectionCol, globalSectionCol, point, useColPerm, &numIndicesCol, &indicesCol, NULL, (PetscScalar **) &values);CHKERRQ(ierr);
   if (values != valuesOrig) {ierr = DMRestoreWorkArray(dmRow, 0, MPIU_SCALAR, &values);CHKERRQ(ierr);}
   PetscFunctionReturn(0);
 }

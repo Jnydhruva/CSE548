@@ -221,6 +221,7 @@ PETSC_EXTERN PetscErrorCode DMGetLocalSection(DM, PetscSection *);
 PETSC_EXTERN PetscErrorCode DMSetLocalSection(DM, PetscSection);
 PETSC_EXTERN PetscErrorCode DMGetGlobalSection(DM, PetscSection *);
 PETSC_EXTERN PetscErrorCode DMSetGlobalSection(DM, PetscSection);
+PETSC_EXTERN PetscErrorCode DMUseTensorOrder(DM, PetscBool);
 PETSC_STATIC_INLINE PETSC_DEPRECATED_FUNCTION("Use DMGetSection() (since v3.9)") PetscErrorCode DMGetDefaultSection(DM dm, PetscSection *s) {return DMGetSection(dm,s);}
 PETSC_STATIC_INLINE PETSC_DEPRECATED_FUNCTION("Use DMSetSection() (since v3.9)") PetscErrorCode DMSetDefaultSection(DM dm, PetscSection s) {return DMSetSection(dm,s);}
 PETSC_STATIC_INLINE PETSC_DEPRECATED_FUNCTION("Use DMGetGlobalSection() (since v3.9)") PetscErrorCode DMGetDefaultGlobalSection(DM dm, PetscSection *s) {return DMGetGlobalSection(dm,s);}

@@ -4,6 +4,11 @@
 #include <petsc/private/petscimpl.h>
 #include <petsc/private/petscfeimpl.h>
 
+#ifdef PETSC_HAVE_LIBCEED
+#include <petscdmceed.h>
+#include <petscdmplexceed.h>
+#endif
+
 static void pressure_Private(PetscInt dim, PetscInt Nf, PetscInt NfAux,
                              const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
                              const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
@@ -1312,6 +1317,259 @@ PetscErrorCode DMSNESComputeResidual(DM dm, Vec X, Vec F, void *user)
   PetscFunctionReturn(0);
 }
 
+#ifdef PETSC_HAVE_LIBCEED
+CEED_QFUNCTION(Geometry2D)(void *ctx, const CeedInt Q, const CeedScalar *const *in, CeedScalar *const *out)
+{
+  const CeedScalar *x = in[0], *Jac = in[1], *w = in[2];
+  CeedScalar       *qdata = out[0];
+
+  CeedPragmaSIMD
+  for (CeedInt i = 0; i < Q; ++i) {
+    const CeedScalar J[2][2] = {{Jac[i+Q*0], Jac[i+Q*2]},
+                                {Jac[i+Q*1], Jac[i+Q*3]}};
+    const CeedScalar det = J[0][0]*J[1][1] - J[0][1]*J[1][0];
+    qdata[i+Q*0] = det * w[i];
+    qdata[i+Q*1] = x[i+Q*0];
+    qdata[i+Q*2] = x[i+Q*1];
+    qdata[i+Q*3] =  J[1][1] / det;
+    qdata[i+Q*4] = -J[1][0] / det;
+    qdata[i+Q*5] = -J[0][1] / det;
+    qdata[i+Q*6] =  J[0][0] / det;
+#if 0
+    PetscPrintf(PETSC_COMM_SELF, "GEOM q: %D x: %g y: %g det: %g J: [%g %g, %g %g]\n", i, qdata[i+Q*1], qdata[i+Q*2], det, J[0][0], J[0][1], J[1][0], J[1][1]);
+#endif
+  }
+  return CEED_ERROR_SUCCESS;
+}
+
+CEED_QFUNCTION(Geometry3D)(void *ctx, const CeedInt Q, const CeedScalar *const *in, CeedScalar *const *out)
+{
+  const CeedScalar *Jac = in[1], *w = in[2];
+  CeedScalar       *qdata = out[0];
+
+  CeedPragmaSIMD
+  for (CeedInt i = 0; i < Q; ++i) {
+    const CeedScalar J[3][3] = {{Jac[i+Q*0], Jac[i+Q*3], Jac[i+Q*6]},
+                                {Jac[i+Q*1], Jac[i+Q*4], Jac[i+Q*7]},
+                                {Jac[i+Q*2], Jac[i+Q*5], Jac[i+Q*8]}};
+    const CeedScalar det = J[0][0]*(J[1][1]*J[2][2] - J[1][2]*J[2][1]) +
+                           J[0][1]*(J[1][2]*J[2][0] - J[1][0]*J[2][2]) +
+                           J[0][2]*(J[1][0]*J[2][1] - J[1][1]*J[2][0]);
+    qdata[i+Q*0] = det * w[i]; /* det J * weight */
+  }
+  return CEED_ERROR_SUCCESS;
+}
+
+CEED_QFUNCTION(Identity)(void *ctx, const CeedInt Q, const CeedScalar *const *in, CeedScalar *const *out)
+{
+  const CeedScalar *u = in[0], *qdata = in[2];
+  CeedScalar       *v = out[0];
+
+  CeedPragmaSIMD
+  for (CeedInt i = 0; i < Q; ++i)
+    v[i] = qdata[i] * u[i];
+
+  return CEED_ERROR_SUCCESS;
+}
+
+CEED_QFUNCTION(Laplacian2D)(void *ctx, const CeedInt Q, const CeedScalar *const *in, CeedScalar *const *out)
+{
+  const CeedScalar *du = in[1], *qdata = in[2];
+  CeedScalar       *v = out[0], *dv = out[1];
+
+  CeedPragmaSIMD
+  for (CeedInt i = 0; i < Q; ++i) {
+    const CeedScalar invJ[2][2] = {{qdata[i+Q*3], qdata[i+Q*5]},
+                                   {qdata[i+Q*4], qdata[i+Q*6]}};
+    const CeedScalar du_real[2] = {invJ[0][0] * du[i+Q*0] + invJ[1][0] * du[i+Q*1],
+                                   invJ[0][1] * du[i+Q*0] + invJ[1][1] * du[i+Q*1]};
+    dv[i+Q*0] = qdata[i+Q*0] * (invJ[0][0] * du_real[0] + invJ[0][1] * du_real[1]);
+    dv[i+Q*1] = qdata[i+Q*0] * (invJ[1][0] * du_real[0] + invJ[1][1] * du_real[1]);
+    v[i]      = qdata[i+Q*0] * (-4.0*PetscSqr(PETSC_PI)*PetscSinReal(2.0*PETSC_PI*qdata[i+Q*1]) + -4.0*PetscSqr(PETSC_PI)*PetscSinReal(2.0*PETSC_PI*qdata[i+Q*2]));
+#if 0
+    PetscPrintf(PETSC_COMM_SELF, "LAP  q: %D v: %g dv: %g %g x: %g y: %g u: %g u_xref: %g u_yref %g u_x: %g u_y: %g invJ: %g %g %g %g\n", i, v[i], dv[i+Q*0], dv[i+Q*1], qdata[i+Q*1], qdata[i+Q*2], u[i+Q*0], du[i+Q*0], du[i+Q*1], du_real[0], du_real[1], invJ[0][0], invJ[0][1], invJ[1][0], invJ[1][1]);
+#endif
+  }
+  return CEED_ERROR_SUCCESS;
+}
+
+typedef struct _PETSc_PlexCEED *PlexCeed;
+struct _PETSc_PlexCEED {
+  CeedBasis           basis; /* Basis for element function space */
+  CeedElemRestriction er;    /* Map from PETSc local vector to element vectors */
+  CeedQFunction       qf;    /* QFunction expressing the operator action */
+  CeedOperator        op;    /* Operator action for this object */
+  PlexCeed            geom;  /* Operator computing geometric data at quadrature points */
+  CeedElemRestriction erq;   /* Map from PETSc local vector to quadrature points */
+  CeedVector          qd;    /* Geometric data at quadrature points used in calculating the qfunction */
+};
+
+static PetscErrorCode PlexCeedComputeGeometry(DM dm, PlexCeed sd)
+{
+  Ceed           ceed;
+  Vec            coords;
+  CeedVector     ccoords;
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  ierr = DMGetCeed(dm, &ceed);CHKERRQ(ierr);
+  ierr = DMGetCoordinatesLocal(dm, &coords);CHKERRQ(ierr);
+  ierr = VecGetCeedVectorRead(coords, ceed, &ccoords);CHKERRQ(ierr);
+  ierr = CeedOperatorApply(sd->geom->op, ccoords, sd->qd, CEED_REQUEST_IMMEDIATE);CHKERRQ_CEED(ierr);
+  ierr = VecRestoreCeedVectorRead(coords, &ccoords);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode PlexCeedDestroy(PlexCeed *pceed)
+{
+  PlexCeed       p = *pceed;
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  if (!p) PetscFunctionReturn(0);
+  if (p->qd) {ierr = CeedVectorDestroy(&p->qd);CHKERRQ_CEED(ierr);}
+  if (p->op) {ierr = CeedOperatorDestroy(&p->op);CHKERRQ_CEED(ierr);}
+  if (p->qf) {ierr = CeedQFunctionDestroy(&p->qf);CHKERRQ_CEED(ierr);}
+  if (p->erq) {ierr = CeedElemRestrictionDestroy(&p->erq);CHKERRQ_CEED(ierr);}
+  ierr = PlexCeedDestroy(&p->geom);CHKERRQ(ierr);
+  ierr = PetscFree(p);CHKERRQ(ierr);
+  *pceed = NULL;
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode PlexCeedCreate(DM dm, IS cellIS, PetscBool createGeometry, PlexCeed *soldata)
+{
+  DM             cdm;
+  PetscDS        ds;
+  PetscFE        fe;
+  PlexCeed       sd;
+  Ceed           ceed;
+  PetscInt       Nq;
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  ierr = PetscCalloc1(1, &sd);CHKERRQ(ierr);
+  ierr = DMGetCeed(dm, &ceed);CHKERRQ(ierr);
+  ierr = DMGetDS(dm, &ds);CHKERRQ(ierr);
+  ierr = PetscDSGetDiscretization(ds, 0, (PetscObject *) &fe);CHKERRQ(ierr);
+  ierr = PetscFEGetCeedBasis(fe, &sd->basis);CHKERRQ(ierr);
+  ierr = CeedBasisGetNumQuadraturePoints(sd->basis, &Nq);CHKERRQ(ierr);
+  ierr = DMPlexGetCeedRestriction(dm, &sd->er);CHKERRQ(ierr);
+
+  if (createGeometry) {
+    CeedQFunctionUser geom;
+    const char       *geomName;
+    const PetscInt   *cells;
+    PetscInt          dim, cdim, cStart, cEnd, Nc, Nqx, Nqdata;
+
+    ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
+    ierr = DMGetCoordinateDim(dm, &cdim);CHKERRQ(ierr);
+    /* TODO Remove this limitation */
+    if (dim != cdim) SETERRQ2(PetscObjectComm((PetscObject) dm), PETSC_ERR_ARG_INCOMP, "Topological dimension %D != %D embedding dimension", dim, cdim);
+    ierr = DMGetCoordinateDM(dm, &cdm);CHKERRQ(ierr);
+    ierr = PlexCeedCreate(cdm, cellIS, PETSC_FALSE, &sd->geom);CHKERRQ(ierr);
+    ierr = CeedBasisGetNumQuadraturePoints(sd->geom->basis, &Nqx);CHKERRQ_CEED(ierr);
+    if (Nqx != Nq) SETERRQ2(PetscObjectComm((PetscObject) dm), PETSC_ERR_ARG_INCOMP, "Number of qpoints for solution %D != %D Number of qpoints for coordinates", Nq, Nqx);
+
+    ierr = ISGetPointRange(cellIS, &cStart, &cEnd, &cells);CHKERRQ(ierr);
+    Nc   = cEnd - cStart;
+    Nqdata = 1 + cdim + cdim*dim;
+    ierr = CeedElemRestrictionCreateStrided(ceed, Nc, Nq, Nqdata, Nc*Nq*Nqdata, CEED_STRIDES_BACKEND, &sd->erq);CHKERRQ_CEED(ierr);
+    ierr = CeedElemRestrictionCreateVector(sd->erq, &sd->qd, NULL);CHKERRQ_CEED(ierr);
+
+    switch (dim) {
+    case 2:
+      geom     = Geometry2D;
+      geomName = Geometry2D_loc;
+      break;
+    case 3:
+      geom     = Geometry3D;
+      geomName = Geometry3D_loc;
+      break;
+    }
+    ierr = CeedQFunctionCreateInterior(ceed, 1, geom, geomName, &sd->geom->qf);CHKERRQ_CEED(ierr);
+    ierr = CeedQFunctionAddInput(sd->geom->qf,  "x",      cdim,     CEED_EVAL_INTERP);CHKERRQ_CEED(ierr);
+    ierr = CeedQFunctionAddInput(sd->geom->qf,  "dx",     cdim*dim, CEED_EVAL_GRAD);CHKERRQ_CEED(ierr);
+    ierr = CeedQFunctionAddInput(sd->geom->qf,  "weight", 1,        CEED_EVAL_WEIGHT);CHKERRQ_CEED(ierr);
+    ierr = CeedQFunctionAddOutput(sd->geom->qf, "qdata",  Nqdata,   CEED_EVAL_NONE);CHKERRQ_CEED(ierr);
+
+    ierr = CeedOperatorCreate(ceed, sd->geom->qf, CEED_QFUNCTION_NONE, CEED_QFUNCTION_NONE, &sd->geom->op);CHKERRQ_CEED(ierr);
+    ierr = CeedOperatorSetField(sd->geom->op, "x",      sd->geom->er, sd->geom->basis, CEED_VECTOR_ACTIVE);CHKERRQ_CEED(ierr);
+    ierr = CeedOperatorSetField(sd->geom->op, "dx",     sd->geom->er, sd->geom->basis, CEED_VECTOR_ACTIVE);CHKERRQ_CEED(ierr);
+    ierr = CeedOperatorSetField(sd->geom->op, "weight", CEED_ELEMRESTRICTION_NONE, sd->geom->basis, CEED_VECTOR_NONE);CHKERRQ_CEED(ierr);
+    ierr = CeedOperatorSetField(sd->geom->op, "qdata",  sd->erq, CEED_BASIS_COLLOCATED, CEED_VECTOR_ACTIVE);CHKERRQ_CEED(ierr);
+
+    ierr = CeedQFunctionCreateInterior(ceed, 1, Laplacian2D, Laplacian2D_loc, &sd->qf);CHKERRQ(ierr);
+    ierr = CeedQFunctionAddInput(sd->qf,  "u",     1,      CEED_EVAL_INTERP);CHKERRQ(ierr);
+    ierr = CeedQFunctionAddInput(sd->qf,  "du",    1*dim,  CEED_EVAL_GRAD);CHKERRQ_CEED(ierr);
+    ierr = CeedQFunctionAddInput(sd->qf,  "qdata", Nqdata, CEED_EVAL_NONE);CHKERRQ(ierr);
+    ierr = CeedQFunctionAddOutput(sd->qf, "v",     1,      CEED_EVAL_INTERP);CHKERRQ(ierr);
+    ierr = CeedQFunctionAddOutput(sd->qf, "dv",    1*dim,  CEED_EVAL_GRAD);CHKERRQ(ierr);
+
+    ierr = CeedOperatorCreate(ceed, sd->qf, CEED_QFUNCTION_NONE, CEED_QFUNCTION_NONE, &sd->op);CHKERRQ(ierr);
+    ierr = CeedOperatorSetField(sd->op, "u",     sd->er, sd->basis, CEED_VECTOR_ACTIVE);CHKERRQ(ierr);
+    ierr = CeedOperatorSetField(sd->op, "du",    sd->er, sd->basis, CEED_VECTOR_ACTIVE);CHKERRQ(ierr);
+    ierr = CeedOperatorSetField(sd->op, "qdata", sd->erq, CEED_BASIS_COLLOCATED, sd->qd);CHKERRQ(ierr);
+    ierr = CeedOperatorSetField(sd->op, "v",     sd->er, sd->basis, CEED_VECTOR_ACTIVE);CHKERRQ(ierr);
+    ierr = CeedOperatorSetField(sd->op, "dv",    sd->er, sd->basis, CEED_VECTOR_ACTIVE);CHKERRQ(ierr);
+  }
+  *soldata = sd;
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode DMPlexSNESComputeResidualCEED(DM dm, Vec locX, Vec locF, void *user)
+{
+  Ceed           ceed;
+  PlexCeed       sd;
+  CeedVector     clocX, clocF;
+  DM             plex;
+  IS             cellIS;
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  ierr = DMGetCeed(dm, &ceed);CHKERRQ(ierr);
+  ierr = DMSNESConvertPlex(dm, &plex, PETSC_TRUE);CHKERRQ(ierr);
+  ierr = DMPlexGetAllCells_Internal(plex, &cellIS);CHKERRQ(ierr);
+  ierr = PlexCeedCreate(dm, cellIS, PETSC_TRUE, &sd);CHKERRQ(ierr);
+  ierr = PlexCeedComputeGeometry(dm, sd);CHKERRQ(ierr);
+
+  ierr = VecGetCeedVectorRead(locX, ceed, &clocX);CHKERRQ(ierr);
+  ierr = VecGetCeedVector(locF, ceed, &clocF);CHKERRQ(ierr);
+  ierr = CeedOperatorApplyAdd(sd->op, clocX, clocF, CEED_REQUEST_IMMEDIATE);CHKERRQ_CEED(ierr);
+  ierr = VecRestoreCeedVectorRead(locX, &clocX);CHKERRQ(ierr);
+  ierr = VecRestoreCeedVector(locF, &clocF);CHKERRQ(ierr);
+
+  ierr = PlexCeedDestroy(&sd);CHKERRQ(ierr);
+  ierr = ISDestroy(&cellIS);CHKERRQ(ierr);
+  ierr = DMDestroy(&plex);CHKERRQ(ierr);
+
+  {
+    DM_Plex *mesh = (DM_Plex *) dm->data;
+
+    if (mesh->printFEM) {
+      PetscSection section;
+      Vec          locFbc;
+      PetscInt     pStart, pEnd, p, maxDof;
+      PetscScalar *zeroes;
+
+      ierr = DMGetLocalSection(dm, &section);CHKERRQ(ierr);
+      ierr = VecDuplicate(locF, &locFbc);CHKERRQ(ierr);
+      ierr = VecCopy(locF, locFbc);CHKERRQ(ierr);
+      ierr = PetscSectionGetChart(section, &pStart,& pEnd);CHKERRQ(ierr);
+      ierr = PetscSectionGetMaxDof(section, &maxDof);CHKERRQ(ierr);
+      ierr = PetscCalloc1(maxDof, &zeroes);CHKERRQ(ierr);
+      for (p = pStart; p < pEnd; ++p) {
+        ierr = VecSetValuesSection(locFbc, section, p, zeroes, INSERT_BC_VALUES);CHKERRQ(ierr);
+      }
+      ierr = PetscFree(zeroes);CHKERRQ(ierr);
+      ierr = DMPrintLocalVec(dm, "Residual", mesh->printTol, locFbc);CHKERRQ(ierr);
+      ierr = VecDestroy(&locFbc);CHKERRQ(ierr);
+    }
+  }
+  PetscFunctionReturn(0);
+}
+#endif
+
 /*@
   DMPlexSNESComputeBoundaryFEM - Form the boundary values for the local input X
 
@@ -1638,11 +1896,14 @@ static PetscErrorCode MatComputeNeumannOverlap_Plex(Mat J, PetscReal t, Vec X, V
 @*/
 PetscErrorCode DMPlexSetSNESLocalFEM(DM dm, void *boundaryctx, void *residualctx, void *jacobianctx)
 {
+  PetscBool      useCeed;
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
+  ierr = DMPlexGetUseCeed(dm, &useCeed);CHKERRQ(ierr);
   ierr = DMSNESSetBoundaryLocal(dm,DMPlexSNESComputeBoundaryFEM,boundaryctx);CHKERRQ(ierr);
-  ierr = DMSNESSetFunctionLocal(dm,DMPlexSNESComputeResidualFEM,residualctx);CHKERRQ(ierr);
+  if (useCeed) {ierr = DMSNESSetFunctionLocal(dm,DMPlexSNESComputeResidualCEED,residualctx);CHKERRQ(ierr);}
+  else         {ierr = DMSNESSetFunctionLocal(dm,DMPlexSNESComputeResidualFEM,residualctx);CHKERRQ(ierr);}
   ierr = DMSNESSetJacobianLocal(dm,DMPlexSNESComputeJacobianFEM,jacobianctx);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)dm,"MatComputeNeumannOverlap_C",MatComputeNeumannOverlap_Plex);CHKERRQ(ierr);
   PetscFunctionReturn(0);
