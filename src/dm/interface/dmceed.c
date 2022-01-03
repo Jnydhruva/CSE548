@@ -38,4 +38,58 @@ PetscErrorCode DMGetCeed(DM dm, Ceed *ceed)
   PetscFunctionReturn(0);
 }
 
+static CeedMemType PetscMemType2Ceed(PetscMemType mem_type) {
+  return PetscMemTypeDevice(mem_type) ? CEED_MEM_DEVICE : CEED_MEM_HOST;
+}
+
+PetscErrorCode VecGetCeedVector(Vec X, Ceed ceed, CeedVector *cx)
+{
+  PetscMemType   memtype;
+  PetscScalar   *x;
+  PetscInt       n;
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  ierr = VecGetLocalSize(X, &n);CHKERRQ(ierr);
+  ierr = VecGetArrayAndMemType(X, &x, &memtype);CHKERRQ(ierr);
+  ierr = CeedVectorCreate(ceed, n, cx);CHKERRQ_CEED(ierr);
+  ierr = CeedVectorSetArray(*cx, PetscMemType2Ceed(memtype), CEED_USE_POINTER, x);CHKERRQ_CEED(ierr);
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode VecRestoreCeedVector(Vec X, CeedVector *cx)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  ierr = VecRestoreArrayAndMemType(X, NULL);CHKERRQ(ierr);
+  ierr = CeedVectorDestroy(cx);CHKERRQ_CEED(ierr);
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode VecGetCeedVectorRead(Vec X, Ceed ceed, CeedVector *cx)
+{
+  PetscMemType       memtype;
+  const PetscScalar *x;
+  PetscInt           n;
+  PetscErrorCode     ierr;
+
+  PetscFunctionBegin;
+  ierr = VecGetLocalSize(X, &n);CHKERRQ(ierr);
+  ierr = VecGetArrayReadAndMemType(X, &x, &memtype);CHKERRQ(ierr);
+  ierr = CeedVectorCreate(ceed, n, cx);CHKERRQ_CEED(ierr);
+  ierr = CeedVectorSetArray(*cx, PetscMemType2Ceed(memtype), CEED_USE_POINTER, (PetscScalar*)x);CHKERRQ_CEED(ierr);
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode VecRestoreCeedVectorRead(Vec X, CeedVector *cx)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  ierr = VecRestoreArrayReadAndMemType(X, NULL);CHKERRQ(ierr);
+  ierr = CeedVectorDestroy(cx);CHKERRQ_CEED(ierr);
+  PetscFunctionReturn(0);
+}
+
 #endif
