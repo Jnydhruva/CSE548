@@ -2240,7 +2240,17 @@ PetscErrorCode PetscSectionLoad(PetscSection s, PetscViewer viewer)
   } else SETERRQ1(PetscObjectComm((PetscObject) s), PETSC_ERR_SUP, "Viewer type %s not yet supported for PetscSection loading", ((PetscObject)viewer)->type_name);
 }
 
-static PetscErrorCode PetscSectionResetClosurePermutation(PetscSection section)
+/*@
+  PetscSectionResetClosurePermutation - Remove any existing closure permutation
+
+  Input Parameter:
+. section - The Section
+
+  Level: intermediate
+
+.seealso: PetscSectionSetClosurePermutation(), PetscSectionSetClosureIndex(), PetscSectionReset()
+@*/
+PetscErrorCode PetscSectionResetClosurePermutation(PetscSection section)
 {
   PetscErrorCode ierr;
   PetscSectionClosurePermVal clVal;
