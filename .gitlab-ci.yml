@@ -334,7 +334,7 @@ pause-for-approval:
 #
 # The tags variable used in the tests below connects the particular test with the runners
 # listed on the left hand side of https://gitlab.com/petsc/petsc/-/settings/ci_cd.
-# For example the test linux-sycl-double any runner that has the tags 'gce-nfs, linux-fast'
+# For example the test linux-sycl-double any runner that has the tags 'gce-stage3, linux-fast'
 # (in a blue box beneath it)
 #
 
@@ -477,7 +477,7 @@ linux-sycl-double:
     - .stage-3
     - .linux_test_noflags
   tags:
-    - gce-nfs, linux-fast
+    - gce-stage3, linux-fast
   variables:
     TEST_ARCH: arch-ci-linux-sycl-double
     LOAD_MODULES: compiler/latest mpi/latest
@@ -560,7 +560,7 @@ linux-without-fc:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs
+    - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-without-fc
 
@@ -615,7 +615,7 @@ linux-cxx-cmplx-pkgs-64idx:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs
+    - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-cxx-cmplx-pkgs-64idx
     LOAD_MODULES: llvm/9.0.0-7fyffox gcc/8.3.0-fjpc5ys cmake/3.14.2-rl3q676
@@ -626,7 +626,7 @@ linux-pkgs-dbg-ftn-interfaces:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs
+    - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-pkgs-dbg-ftn-interfaces
     LOAD_MODULES: cmake/3.20.5-yjp2hz6
@@ -638,7 +638,7 @@ linux-pkgs-cxx-mlib:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs
+    - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-pkgs-cxx-mlib
     LOAD_MODULES: gcc/11.1.0-5ikoznk cmake/3.20.5-yjp2hz6
@@ -648,7 +648,7 @@ linux-pkgs-valgrind:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs, linux-fast
+    - gce-stage3, linux-fast
   variables:
     TEST_ARCH: arch-ci-linux-pkgs-valgrind
     TIMEOUT: 7200
@@ -659,7 +659,7 @@ linux-pkgs-opt:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs, linux-fast
+    - gce-stage3, linux-fast
   variables:
     TEST_ARCH: arch-ci-linux-pkgs-opt
     LOAD_MODULES: gcc/10.1.0-5hiqhdh
@@ -669,7 +669,7 @@ linux-pkgs-gcov:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs, linux-gcov
+    - gce-stage3, linux-gcov
   variables:
     TEST_ARCH: arch-ci-linux-pkgs-gcov
     RUN_GCOV: 1
@@ -679,7 +679,7 @@ linux-cmplx-gcov:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs, linux-gcov
+    - gce-stage3, linux-gcov
   variables:
     PETSC_OPTIONS:  -vecscatter_mpi1 false -options_left false -checkstack
     TEST_ARCH: arch-ci-linux-cmplx-gcov
@@ -691,7 +691,7 @@ linux-matlab-ilp64-gcov:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs, linux-gcov
+    - gce-stage3, linux-gcov
   variables:
     TEST_ARCH: arch-ci-linux-matlab-ilp64-gcov
     LOAD_MODULES: matlab/R2018a
@@ -703,7 +703,7 @@ linux-gcov:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs, linux-gcov
+    - gce-stage3, linux-gcov
   variables:
     TEST_ARCH: arch-ci-linux-gcov
     RUN_GCOV: 1
@@ -713,7 +713,7 @@ linux-pgi:
     - .stage-3
     - .linux_test_noflags
   tags:
-    - gce-nfs, linux-mcpu
+    - gce-stage3, linux-mcpu
   variables:
     TEST_ARCH: arch-ci-linux-pgi
     LOAD_MODULES: hpc_sdk/20.9
@@ -723,7 +723,7 @@ linux-nagfor:
     - .stage-3
     - .linux_test_nofflags
   tags:
-    - gce-nfs, linux-mcpu
+    - gce-stage3, linux-mcpu
   variables:
     LOAD_MODULES: nag/6.1
     TEST_ARCH: arch-ci-linux-nagfor
@@ -733,7 +733,7 @@ linux-intel-cmplx:
     - .stage-3
     - .linux_test_nofflags
   tags:
-    - gce-nfs
+    - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-intel-cmplx
     LOAD_MODULES: intel-mkl/19.5 intel/19.0-nompilib cmake/3.20.5-yjp2hz6
@@ -744,7 +744,7 @@ linux-xsdk-dbg:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs
+    - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-xsdk-dbg
     LOAD_MODULES: gcc/8.3.0-fjpc5ys
@@ -779,7 +779,7 @@ linux-intel:
     - .stage-3
     - .linux_test_nofflags
   tags:
-    - gce-nfs
+    - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-intel
     LOAD_MODULES: intel-mkl/19.5 intel/19.0-nompilib
@@ -789,7 +789,7 @@ linux-opt-misc:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs, linux-fast
+    - gce-stage3, linux-fast
   variables:
     TEST_ARCH: arch-ci-linux-opt-misc
     LOAD_MODULES: gcc/6.5.0-57usejd
@@ -799,7 +799,7 @@ linux-pkgs-64idx:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs, linux-mcpu
+    - gce-stage3, linux-mcpu
   variables:
     TEST_ARCH: arch-ci-linux-pkgs-64idx
     LOAD_MODULES: cmake/3.20.5-yjp2hz6 intel-mkl/19.5
@@ -809,7 +809,7 @@ linux-64idx-i8:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs
+    - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-64idx-i8
 
@@ -818,7 +818,7 @@ linux-gcc-ifc-cmplx:
     - .stage-3
     - .linux_test_nofflags
   tags:
-    - gce-nfs
+    - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-gcc-ifc-cmplx
     LOAD_MODULES: intel/19.0-nompilib cmake/3.20.0-vov726r
@@ -828,7 +828,7 @@ linux-opt-cxx-quad:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs
+    - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-opt-cxx-quad
 
@@ -837,7 +837,7 @@ linux-ILP64:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs
+    - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-ILP64
     LOAD_MODULES: mpich/2-1.5-gcc750
@@ -847,7 +847,7 @@ linux-64idx-i8-uni:
     - .stage-3
     - .linux_test
   tags:
-    - gce-nfs
+    - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-64idx-i8-uni
 
@@ -949,7 +949,7 @@ analyze-pipeline:
   extends: .test
   stage: .post
   tags:
-    - gce-nfs-short
+    - gce-stage3-short
   dependencies:
     - linux-c-exodus-dbg
     - linux-pkgs-gcov
