@@ -568,3 +568,4 @@ def petsc_configure(configure_options):
 
 if __name__ == '__main__':
   petsc_configure([])
+
