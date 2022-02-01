@@ -618,7 +618,7 @@ linux-cxx-cmplx-pkgs-64idx:
     - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-cxx-cmplx-pkgs-64idx
-    LOAD_MODULES: llvm/9.0.0-7fyffox gcc/8.3.0-fjpc5ys cmake/3.14.2-rl3q676
+    LOAD_MODULES: gcc/8.3.0-fjpc5ys cmake/3.20.5-zyz2eld
 
 # Set env vars for 'Kokkos + OpenMP' tests, so that they won't give warnings
 linux-pkgs-dbg-ftn-interfaces:
@@ -629,7 +629,7 @@ linux-pkgs-dbg-ftn-interfaces:
     - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-pkgs-dbg-ftn-interfaces
-    LOAD_MODULES: cmake/3.20.5-yjp2hz6
+    LOAD_MODULES: cmake/3.20.5-zyz2eld
     OMP_PROC_BIND: "false"
     OMP_NUM_THREADS: 4
 
@@ -641,7 +641,7 @@ linux-pkgs-cxx-mlib:
     - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-pkgs-cxx-mlib
-    LOAD_MODULES: gcc/11.1.0-5ikoznk cmake/3.20.5-yjp2hz6
+    LOAD_MODULES: gcc/11.1.0-5ikoznk cmake/3.20.5-zyz2eld
 
 linux-pkgs-valgrind:
   extends:
@@ -694,7 +694,7 @@ linux-matlab-ilp64-gcov:
     - gce-stage3, linux-gcov
   variables:
     TEST_ARCH: arch-ci-linux-matlab-ilp64-gcov
-    LOAD_MODULES: matlab/R2018a
+    LOAD_MODULES: matlab/R2021a
     RUN_GCOV: 1
   allow_failure: true
 
@@ -736,7 +736,7 @@ linux-intel-cmplx:
     - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-intel-cmplx
-    LOAD_MODULES: intel-mkl/19.5 intel/19.0-nompilib cmake/3.20.5-yjp2hz6
+    LOAD_MODULES: intel-mkl/19.5 intel/19.0-nompilib cmake/3.20.5-zyz2eld
     ENABLE_PETSC4PY_LDPRELOAD: 1
 
 linux-xsdk-dbg:
@@ -802,7 +802,7 @@ linux-pkgs-64idx:
     - gce-stage3, linux-mcpu
   variables:
     TEST_ARCH: arch-ci-linux-pkgs-64idx
-    LOAD_MODULES: cmake/3.20.5-yjp2hz6 intel-mkl/19.5
+    LOAD_MODULES: cmake/3.20.5-zyz2eld intel-mkl/19.5
 
 linux-64idx-i8:
   extends:
@@ -821,7 +821,7 @@ linux-gcc-ifc-cmplx:
     - gce-stage3
   variables:
     TEST_ARCH: arch-ci-linux-gcc-ifc-cmplx
-    LOAD_MODULES: intel/19.0-nompilib cmake/3.20.0-vov726r
+    LOAD_MODULES: intel/19.0-nompilib cmake/3.20.5-zyz2eld
 
 linux-opt-cxx-quad:
   extends:
