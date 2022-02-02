@@ -1902,8 +1902,13 @@ PetscErrorCode DMPlexSetSNESLocalFEM(DM dm, void *boundaryctx, void *residualctx
   PetscFunctionBegin;
   ierr = DMPlexGetUseCeed(dm, &useCeed);CHKERRQ(ierr);
   ierr = DMSNESSetBoundaryLocal(dm,DMPlexSNESComputeBoundaryFEM,boundaryctx);CHKERRQ(ierr);
-  if (useCeed) {ierr = DMSNESSetFunctionLocal(dm,DMPlexSNESComputeResidualCEED,residualctx);CHKERRQ(ierr);}
-  else         {ierr = DMSNESSetFunctionLocal(dm,DMPlexSNESComputeResidualFEM,residualctx);CHKERRQ(ierr);}
+  if (useCeed) {
+#if defined(PETSC_HAVE_LIBCEED)
+    ierr = DMSNESSetFunctionLocal(dm,DMPlexSNESComputeResidualCEED,residualctx);CHKERRQ(ierr);
+#else
+    SETERRQ(PetscObjectComm((PetscObject) dm), PETSC_ERR_SUP, "Cannot use CEED traversals without LibCEED. Rerun configure with --download-ceed");
+#endif
+  } else {ierr = DMSNESSetFunctionLocal(dm,DMPlexSNESComputeResidualFEM,residualctx);CHKERRQ(ierr);}
   ierr = DMSNESSetJacobianLocal(dm,DMPlexSNESComputeJacobianFEM,jacobianctx);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)dm,"MatComputeNeumannOverlap_C",MatComputeNeumannOverlap_Plex);CHKERRQ(ierr);
   PetscFunctionReturn(0);
