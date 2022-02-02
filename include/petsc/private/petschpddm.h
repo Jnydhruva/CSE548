@@ -39,6 +39,7 @@ struct PC_HPDDM {
   PetscBool                   log_separate;                                 /* separate events for each level? */
   PetscBool                   share;                                        /* shared subdomain KSP between SLEPc and PETSc? */
   PetscBool                   deflation;                                    /* aux is the local deflation space? */
+  PCSide                      side;                                         /* TODO FIXME */
   PetscErrorCode (*setup)(Mat, PetscReal, Vec, Vec, PetscReal, IS, void *); /* setup function for the auxiliary matrix */
   void *setup_ctx;                                                          /* context for setup */
 };
