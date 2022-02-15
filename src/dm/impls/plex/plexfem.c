@@ -4857,10 +4857,13 @@ PetscErrorCode DMPlexComputeResidual_Hybrid_Internal(DM dm, PetscFormKey key[], 
   PetscDS          ds         = NULL;
   PetscDS          dsAux[3]   = {NULL, NULL, NULL};
   Vec              locA[3]    = {NULL, NULL, NULL};
+  DM               dmScale[3] = {NULL, NULL, NULL};
+  PetscDS          dsScale[3] = {NULL, NULL, NULL};
+  Vec              locS[3]    = {NULL, NULL, NULL};
   PetscSection     section    = NULL;
   DMField          coordField = NULL;
-  PetscScalar     *u = NULL, *u_t, *a[3];
-  PetscScalar     *elemVec;
+  PetscScalar     *u = NULL, *u_t, *a[3], *s[3];
+  PetscScalar     *elemVecNeg, *elemVecPos, *elemVecCoh;
   IS               chunkIS;
   const PetscInt  *cells;
   PetscInt        *faces;
@@ -4917,6 +4920,15 @@ PetscErrorCode DMPlexComputeResidual_Hybrid_Internal(DM dm, PetscFormKey key[], 
       }
     }
   }
+  /* Handle mass matrix scaling */
+  PetscCall(DMGetAuxiliaryVec(dm, key[2].label, -key[2].value, &locS[2]));
+  if (locS[2]) {
+    PetscCall(VecGetDM(locS[2], &dmScale[2]));
+    PetscCall(DMGetCellDS(dmScale[2], cStart, &dsScale[2]));
+    locS[1] = locS[0] = locS[2];
+    dmScale[1] = dmScale[0] = dmScale[2];
+    dsScale[1] = dsScale[0] = dsScale[2];
+  }
   /* 2: Setup geometric data */
   PetscCall(DMGetCoordinateField(dm, &coordField));
   PetscCall(DMFieldGetDegree(coordField, cellIS, NULL, &maxDegree));
@@ -4941,11 +4953,16 @@ PetscErrorCode DMPlexComputeResidual_Hybrid_Internal(DM dm, PetscFormKey key[], 
   /* NOTE This needs the end cap faces to have identical orientations */
   PetscCall(DMPlexGetCellFields(dm, cellIS, locX, locX_t, locA[2], &u, &u_t, &a[2]));
   PetscCall(DMPlexGetHybridAuxFields(dm, dmAux, dsAux, cellIS, locA, a));
-  PetscCall(DMGetWorkArray(dm, cellChunkSize*totDim, MPIU_SCALAR, &elemVec));
+  PetscCall(DMPlexGetHybridAuxFields(dm, dmScale, dsScale, cellIS, locS, s));
+  PetscCall(DMGetWorkArray(dm, cellChunkSize*totDim, MPIU_SCALAR, &elemVecNeg));
+  PetscCall(DMGetWorkArray(dm, cellChunkSize*totDim, MPIU_SCALAR, &elemVecPos));
+  PetscCall(DMGetWorkArray(dm, cellChunkSize*totDim, MPIU_SCALAR, &elemVecCoh));
   for (chunk = 0; chunk < numChunks; ++chunk) {
     PetscInt cS = cStart+chunk*cellChunkSize, cE = PetscMin(cS+cellChunkSize, cEnd), numCells = cE - cS, c;
 
-    PetscCall(PetscMemzero(elemVec, cellChunkSize*totDim * sizeof(PetscScalar)));
+    PetscCall(PetscMemzero(elemVecNeg, cellChunkSize*totDim * sizeof(PetscScalar)));
+    PetscCall(PetscMemzero(elemVecPos, cellChunkSize*totDim * sizeof(PetscScalar)));
+    PetscCall(PetscMemzero(elemVecCoh, cellChunkSize*totDim * sizeof(PetscScalar)));
     /* Get faces */
     for (c = cS; c < cE; ++c) {
       const PetscInt  cell = cells ? cells[c] : c;
@@ -4992,12 +5009,12 @@ PetscErrorCode DMPlexComputeResidual_Hybrid_Internal(DM dm, PetscFormKey key[], 
       key[0].field = f;
       key[1].field = f;
       key[2].field = f;
-      PetscCall(PetscFEIntegrateHybridResidual(ds, key[0], 0, Ne, chunkGeom, u, u_t, dsAux[0], a[0], t, elemVec));
-      PetscCall(PetscFEIntegrateHybridResidual(ds, key[0], 0, Nr, remGeom,  &u[offset*totDim], u_t ? &u_t[offset*totDim] : NULL, dsAux[0], &a[0][offset*totDimAux[0]], t, &elemVec[offset*totDim]));
-      PetscCall(PetscFEIntegrateHybridResidual(ds, key[1], 1, Ne, chunkGeom, u, u_t, dsAux[1], a[1], t, elemVec));
-      PetscCall(PetscFEIntegrateHybridResidual(ds, key[1], 1, Nr, remGeom,  &u[offset*totDim], u_t ? &u_t[offset*totDim] : NULL, dsAux[1], &a[1][offset*totDimAux[1]], t, &elemVec[offset*totDim]));
-      PetscCall(PetscFEIntegrateHybridResidual(ds, key[2], 2, Ne, chunkGeom, u, u_t, dsAux[2], a[2], t, elemVec));
-      PetscCall(PetscFEIntegrateHybridResidual(ds, key[2], 2, Nr, remGeom,  &u[offset*totDim], u_t ? &u_t[offset*totDim] : NULL, dsAux[2], &a[2][offset*totDimAux[2]], t, &elemVec[offset*totDim]));
+      PetscCall(PetscFEIntegrateHybridResidual(ds, key[0], 0, Ne, chunkGeom, u, u_t, dsAux[0], a[0], t, elemVecNeg));
+      PetscCall(PetscFEIntegrateHybridResidual(ds, key[0], 0, Nr, remGeom,  &u[offset*totDim], u_t ? &u_t[offset*totDim] : NULL, dsAux[0], &a[0][offset*totDimAux[0]], t, &elemVecNeg[offset*totDim]));
+      PetscCall(PetscFEIntegrateHybridResidual(ds, key[1], 1, Ne, chunkGeom, u, u_t, dsAux[1], a[1], t, elemVecPos));
+      PetscCall(PetscFEIntegrateHybridResidual(ds, key[1], 1, Nr, remGeom,  &u[offset*totDim], u_t ? &u_t[offset*totDim] : NULL, dsAux[1], &a[1][offset*totDimAux[1]], t, &elemVecPos[offset*totDim]));
+      PetscCall(PetscFEIntegrateHybridResidual(ds, key[2], 2, Ne, chunkGeom, u, u_t, dsAux[2], a[2], t, elemVecCoh));
+      PetscCall(PetscFEIntegrateHybridResidual(ds, key[2], 2, Nr, remGeom,  &u[offset*totDim], u_t ? &u_t[offset*totDim] : NULL, dsAux[2], &a[2][offset*totDimAux[2]], t, &elemVecCoh[offset*totDim]));
       PetscCall(PetscFEGeomRestoreChunk(geom,offset,numCells,&remGeom));
       PetscCall(PetscFEGeomRestoreChunk(geom,0,offset,&chunkGeom));
     }
@@ -5005,20 +5022,29 @@ PetscErrorCode DMPlexComputeResidual_Hybrid_Internal(DM dm, PetscFormKey key[], 
     for (c = cS; c < cE; ++c) {
       const PetscInt cell = cells ? cells[c] : c;
       const PetscInt cind = c - cStart;
+      PetscInt       i;
 
-      if (mesh->printFEM > 1) PetscCall(DMPrintCellVector(cell, name, totDim, &elemVec[cind*totDim]));
+      /* Scale and element values */
+      if (locS[0]) {
+        for (i = 0; i < cind*totDim; ++i) elemVecCoh[i] += a[0][i]*elemVecNeg[i] + a[1][i]*elemVecPos[i];
+      } else {
+        for (i = 0; i < cind*totDim; ++i) elemVecCoh[i] += elemVecNeg[i] + elemVecPos[i];
+      }
+      if (mesh->printFEM > 1) PetscCall(DMPrintCellVector(cell, name, totDim, &elemVecCoh[cind*totDim]));
       if (ghostLabel) {
         PetscInt ghostVal;
 
         PetscCall(DMLabelGetValue(ghostLabel,cell,&ghostVal));
         if (ghostVal > 0) continue;
       }
-      PetscCall(DMPlexVecSetClosure(dm, section, locF, cell, &elemVec[cind*totDim], ADD_ALL_VALUES));
+      PetscCall(DMPlexVecSetClosure(dm, section, locF, cell, &elemVecCoh[cind*totDim], ADD_ALL_VALUES));
     }
   }
   PetscCall(DMPlexRestoreCellFields(dm, cellIS, locX, locX_t, locA[2], &u, &u_t, &a[2]));
   PetscCall(DMPlexRestoreHybridAuxFields(dmAux, dsAux, cellIS, locA, a));
-  PetscCall(DMRestoreWorkArray(dm, numCells*totDim, MPIU_SCALAR, &elemVec));
+  PetscCall(DMRestoreWorkArray(dm, numCells*totDim, MPIU_SCALAR, &elemVecNeg));
+  PetscCall(DMRestoreWorkArray(dm, numCells*totDim, MPIU_SCALAR, &elemVecPos));
+  PetscCall(DMRestoreWorkArray(dm, numCells*totDim, MPIU_SCALAR, &elemVecCoh));
   PetscCall(PetscFree(faces));
   PetscCall(ISDestroy(&chunkIS));
   PetscCall(ISRestorePointRange(cellIS, &cStart, &cEnd, &cells));
