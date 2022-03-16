@@ -5095,7 +5095,7 @@ PetscErrorCode DMPlexComputeResidual_Hybrid_Internal(DM dm, PetscFormKey key[], 
   }
   PetscCall(DMPlexRestoreCellFields(dm, cellIS, locX, locX_t, locA[2], &u, &u_t, &a[2]));
   PetscCall(DMPlexRestoreHybridAuxFields(dmAux, dsAux, cellIS, locA, a));
-  PetscCall(DMPlexRestoreHybridAuxFields(dm, dmScale, dsScale, cellIS, locS, s));
+  PetscCall(DMPlexRestoreHybridAuxFields(dmScale, dsScale, cellIS, locS, s));
   PetscCall(DMRestoreWorkArray(dm, numCells*totDim, MPIU_SCALAR, &elemVecNeg));
   PetscCall(DMRestoreWorkArray(dm, numCells*totDim, MPIU_SCALAR, &elemVecPos));
   PetscCall(DMRestoreWorkArray(dm, numCells*totDim, MPIU_SCALAR, &elemVecCoh));
