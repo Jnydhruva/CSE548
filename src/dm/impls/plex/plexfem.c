@@ -3436,12 +3436,65 @@ static PetscErrorCode DMPlexGetHybridAuxFields(DM dm, DM dmAux[], PetscDS dsAux[
 
       PetscCall(DMPlexGetSupport(dm, cone[s], &support));
       PetscCall(DMPlexGetSupportSize(dm, cone[s], &ssize));
-      PetscCheck(ssize == 2,PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "Face %" PetscInt_FMT " from cell %" PetscInt_FMT " has support size %" PetscInt_FMT " != 2", cone[s], cell, ssize);
+      PetscCheck(ssize == 2, PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "Face %" PetscInt_FMT " from cell %" PetscInt_FMT " has support size %" PetscInt_FMT " != 2", cone[s], cell, ssize);
       if      (support[0] == cell) scell = support[1];
       else if (support[1] == cell) scell = support[0];
       else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "Face %" PetscInt_FMT " does not have cell %" PetscInt_FMT " in its support", cone[s], cell);
 
       PetscCall(DMGetEnclosurePoint(plexA[s], dm, encAux[s], scell, &subface));
+      PetscCall(DMPlexVecGetClosure(plexA[s], sectionAux[s], locA[s], subface, &Na, &x));
+      for (i = 0; i < Na; ++i) al[cind*tdA+i] = x[i];
+      PetscCall(DMPlexVecRestoreClosure(plexA[s], sectionAux[s], locA[s], subface, &Na, &x));
+    }
+  }
+  for (s = 0; s < 2; ++s) PetscCall(DMDestroy(&plexA[s]));
+  PetscCall(ISRestorePointRange(cellIS, &cStart, &cEnd, &cells));
+  PetscFunctionReturn(0);
+}
+
+/*
+  Get the auxiliary field vectors for the negative face (s = 0) and positive face (s = 1) of the interfaace
+*/
+static PetscErrorCode DMPlexGetHybridScaleFields(DM dm, DM dmAux[], PetscDS dsAux[], IS cellIS, Vec locA[], PetscScalar *a[])
+{
+  DM              plexA[2];
+  DMEnclosureType encAux[2];
+  PetscSection    sectionAux[2];
+  const PetscInt *cells;
+  PetscInt        cStart, cEnd, numCells, c, s, totDimAux[2];
+
+  PetscFunctionBegin;
+  PetscValidPointer(locA, 5);
+  if (!locA[0] || !locA[1]) PetscFunctionReturn(0);
+  PetscValidPointer(dmAux, 2);
+  PetscValidPointer(dsAux, 3);
+  PetscValidPointer(a, 6);
+  PetscCall(ISGetPointRange(cellIS, &cStart, &cEnd, &cells));
+  numCells = cEnd - cStart;
+  for (s = 0; s < 2; ++s) {
+    PetscValidHeaderSpecific(dmAux[s], DM_CLASSID, 2);
+    PetscValidHeaderSpecific(dsAux[s], PETSCDS_CLASSID, 3);
+    PetscValidHeaderSpecific(locA[s], VEC_CLASSID, 5);
+    PetscCall(DMPlexConvertPlex(dmAux[s], &plexA[s], PETSC_FALSE));
+    PetscCall(DMGetEnclosureRelation(dmAux[s], dm, &encAux[s]));
+    PetscCall(DMGetLocalSection(dmAux[s], &sectionAux[s]));
+    PetscCall(PetscDSGetTotalDimension(dsAux[s], &totDimAux[s]));
+    PetscCall(DMGetWorkArray(dmAux[s], numCells*totDimAux[s], MPIU_SCALAR, &a[s]));
+  }
+  for (c = cStart; c < cEnd; ++c) {
+    const PetscInt  cell = cells ? cells[c] : c;
+    const PetscInt  cind = c - cStart;
+    const PetscInt *cone, *ornt;
+
+    PetscCall(DMPlexGetCone(dm, cell, &cone));
+    PetscCall(DMPlexGetConeOrientation(dm, cell, &ornt));
+    PetscCheck(!ornt[0], PETSC_COMM_SELF, PETSC_ERR_SUP, "Face %D in hybrid cell %D has orientation %D != 0", cone[0], cell, ornt[0]);
+    for (s = 0; s < 2; ++s) {
+      PetscScalar    *x = NULL, *al = a[s];
+      const PetscInt  tdA = totDimAux[s];
+      PetscInt        subface, Na, i;
+
+      PetscCall(DMGetEnclosurePoint(plexA[s], dm, encAux[s], cone[s], &subface));
       PetscCall(DMPlexVecGetClosure(plexA[s], sectionAux[s], locA[s], subface, &Na, &x));
       for (i = 0; i < Na; ++i) al[cind*tdA+i] = x[i];
       PetscCall(DMPlexVecRestoreClosure(plexA[s], sectionAux[s], locA[s], subface, &Na, &x));
@@ -4953,7 +5006,7 @@ PetscErrorCode DMPlexComputeResidual_Hybrid_Internal(DM dm, PetscFormKey key[], 
   /* NOTE This needs the end cap faces to have identical orientations */
   PetscCall(DMPlexGetCellFields(dm, cellIS, locX, locX_t, locA[2], &u, &u_t, &a[2]));
   PetscCall(DMPlexGetHybridAuxFields(dm, dmAux, dsAux, cellIS, locA, a));
-  PetscCall(DMPlexGetHybridAuxFields(dm, dmScale, dsScale, cellIS, locS, s));
+  PetscCall(DMPlexGetHybridScaleFields(dm, dmScale, dsScale, cellIS, locS, s));
   PetscCall(DMGetWorkArray(dm, cellChunkSize*totDim, MPIU_SCALAR, &elemVecNeg));
   PetscCall(DMGetWorkArray(dm, cellChunkSize*totDim, MPIU_SCALAR, &elemVecPos));
   PetscCall(DMGetWorkArray(dm, cellChunkSize*totDim, MPIU_SCALAR, &elemVecCoh));
@@ -5042,6 +5095,7 @@ PetscErrorCode DMPlexComputeResidual_Hybrid_Internal(DM dm, PetscFormKey key[], 
   }
   PetscCall(DMPlexRestoreCellFields(dm, cellIS, locX, locX_t, locA[2], &u, &u_t, &a[2]));
   PetscCall(DMPlexRestoreHybridAuxFields(dmAux, dsAux, cellIS, locA, a));
+  PetscCall(DMPlexRestoreHybridAuxFields(dm, dmScale, dsScale, cellIS, locS, s));
   PetscCall(DMRestoreWorkArray(dm, numCells*totDim, MPIU_SCALAR, &elemVecNeg));
   PetscCall(DMRestoreWorkArray(dm, numCells*totDim, MPIU_SCALAR, &elemVecPos));
   PetscCall(DMRestoreWorkArray(dm, numCells*totDim, MPIU_SCALAR, &elemVecCoh));
