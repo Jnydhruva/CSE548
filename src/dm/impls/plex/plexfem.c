@@ -4974,7 +4974,7 @@ PetscErrorCode DMPlexComputeResidual_Hybrid_Internal(DM dm, PetscFormKey key[], 
     }
   }
   /* Handle mass matrix scaling */
-  PetscCall(DMGetAuxiliaryVec(dm, key[2].label, -key[2].value, &locS[2]));
+  PetscCall(DMGetAuxiliaryVec(dm, key[2].label, -key[2].value, key[2].part, &locS[2]));
   if (locS[2]) {
     PetscCall(VecGetDM(locS[2], &dmScale[2]));
     PetscCall(DMGetCellDS(dmScale[2], cStart, &dsScale[2]));
