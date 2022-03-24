@@ -68,6 +68,11 @@ PetscErrorCode VecDuplicate_MPI(Vec win,Vec *v)
     if (vw->localupdate) {
       PetscCall(PetscObjectReference((PetscObject)vw->localupdate));
     }
+
+    vw->ghost = w->ghost;
+    if (vw->ghost) {
+      PetscCall(PetscObjectReference((PetscObject)vw->ghost));
+    }
   }
 
   /* New vector should inherit stashing property of parent */
@@ -397,6 +402,38 @@ static PetscErrorCode VecSetFromOptions_MPI(PetscOptionItems *PetscOptionsObject
   PetscFunctionReturn(0);
 }
 
+static PetscErrorCode VecGetLocalToGlobalMapping_MPI_VecGhost(Vec X, ISLocalToGlobalMapping *ltg)
+{
+  PetscInt               *indices,n,nghost,rstart,i;
+  IS                     ghostis;
+  const PetscInt         *ghostidx;
+  MPI_Comm               comm;
+
+  PetscFunctionBegin;
+  if (X->map->mapping) {
+    *ltg = X->map->mapping;
+    PetscFunctionReturn(0);
+  }
+  PetscCall(VecGhostGetGhostIS(X,&ghostis));
+  PetscCall(ISGetLocalSize(ghostis,&nghost));
+  PetscCall(VecGetLocalSize(X,&n));
+  PetscCall(ISGetIndices(ghostis,&ghostidx));
+  /* set local to global mapping for ghosted vector */
+  PetscCall(PetscMalloc1(n+nghost,&indices));
+  PetscCall(VecGetOwnershipRange(X,&rstart,NULL));
+  for (i=0; i<n; i++) {
+    indices[i] = rstart + i;
+  }
+  for (i=0; i<nghost; i++) {
+    indices[n+i] = ghostidx[i];
+  }
+  PetscCall(ISRestoreIndices(ghostis,&ghostidx));
+  PetscCall(PetscObjectGetComm((PetscObject)X,&comm));
+  PetscCall(ISLocalToGlobalMappingCreate(comm,1,n+nghost,indices,PETSC_OWN_POINTER,&X->map->mapping));
+  *ltg = X->map->mapping;
+  PetscFunctionReturn(0);
+}
+
 static struct _VecOps DvOps = {
   PetscDesignatedInitializer(duplicate,VecDuplicate_MPI), /* 1 */
   PetscDesignatedInitializer(duplicatevecs,VecDuplicateVecs_Default),
@@ -443,6 +480,7 @@ static struct _VecOps DvOps = {
   PetscDesignatedInitializer(reciprocal,VecReciprocal_Default),
   PetscDesignatedInitializer(conjugate,VecConjugate_Seq),
   PetscDesignatedInitializer(setlocaltoglobalmapping,NULL),
+  PetscDesignatedInitializer(getlocaltoglobalmapping,VecGetLocalToGlobalMapping_MPI_VecGhost),
   PetscDesignatedInitializer(setvalueslocal,NULL),
   PetscDesignatedInitializer(resetarray,VecResetArray_MPI),
   PetscDesignatedInitializer(setfromoptions,VecSetFromOptions_MPI),/*set from options */
@@ -505,6 +543,7 @@ PetscErrorCode VecCreate_MPI_Private(Vec v,PetscBool alloc,PetscInt nghost,const
   /* By default parallel vectors do not have local representation */
   s->localrep    = NULL;
   s->localupdate = NULL;
+  s->ghost       = NULL;
 
   v->stash.insertmode = NOT_SET_VALUES;
   v->bstash.insertmode = NOT_SET_VALUES;
@@ -644,8 +683,6 @@ PetscErrorCode  VecCreateGhostWithArray(MPI_Comm comm,PetscInt n,PetscInt N,Pets
   Vec_MPI                *w;
   PetscScalar            *larray;
   IS                     from,to;
-  ISLocalToGlobalMapping ltog;
-  PetscInt               rstart,i,*indices;
 
   PetscFunctionBegin;
   *vv = NULL;
@@ -673,20 +710,37 @@ PetscErrorCode  VecCreateGhostWithArray(MPI_Comm comm,PetscInt n,PetscInt N,Pets
   PetscCall(VecScatterCreate(*vv,from,w->localrep,to,&w->localupdate));
   PetscCall(PetscLogObjectParent((PetscObject)*vv,(PetscObject)w->localupdate));
   PetscCall(ISDestroy(&to));
-  PetscCall(ISDestroy(&from));
 
-  /* set local to global mapping for ghosted vector */
-  PetscCall(PetscMalloc1(n+nghost,&indices));
-  PetscCall(VecGetOwnershipRange(*vv,&rstart,NULL));
-  for (i=0; i<n; i++) {
-    indices[i] = rstart + i;
-  }
-  for (i=0; i<nghost; i++) {
-    indices[n+i] = ghosts[i];
-  }
-  PetscCall(ISLocalToGlobalMappingCreate(comm,1,n+nghost,indices,PETSC_OWN_POINTER,&ltog));
-  PetscCall(VecSetLocalToGlobalMapping(*vv,ltog));
-  PetscCall(ISLocalToGlobalMappingDestroy(&ltog));
+  w->ghost = from;
+  (*vv)->ops->getlocaltoglobalmapping = VecGetLocalToGlobalMapping_MPI_VecGhost;
+  PetscFunctionReturn(0);
+}
+
+/*
+   VecGhostGetGhostIS - Return ghosting indices of a ghost vector
+
+   Input Parameters:
+.  X - ghost vector context
+
+   Output Parameter:
+.  ghost - ghosting indices
+
+  Level: beginner
+
+.seealso: VecCreateGhostWithArray(), VecCreateMPIWithArray()
+*/
+PetscErrorCode VecGhostGetGhostIS(Vec X, IS *ghost)
+{
+  Vec_MPI                *w;
+  PetscBool               flg;
+
+  PetscFunctionBegin;
+  PetscValidType(X,1);
+  PetscValidPointer(ghost,2);
+  PetscCall(PetscObjectTypeCompare((PetscObject)X,VECMPI,&flg));
+  PetscCheckFalse(!flg,PetscObjectComm((PetscObject)X),PETSC_ERR_ARG_WRONGSTATE,"VecGhostGetGhostIS was not supported for vec type %s\n",((PetscObject)X)->type_name);
+  w  = (Vec_MPI*)(X)->data;
+  *ghost = w->ghost;
   PetscFunctionReturn(0);
 }
 
@@ -764,8 +818,6 @@ PetscErrorCode  VecMPISetGhost(Vec vv,PetscInt nghost,const PetscInt ghosts[])
     Vec_MPI                *w;
     PetscScalar            *larray;
     IS                     from,to;
-    ISLocalToGlobalMapping ltog;
-    PetscInt               rstart,i,*indices;
     MPI_Comm               comm;
 
     PetscCall(PetscObjectGetComm((PetscObject)vv,&comm));
@@ -789,18 +841,9 @@ PetscErrorCode  VecMPISetGhost(Vec vv,PetscInt nghost,const PetscInt ghosts[])
     PetscCall(VecScatterCreate(vv,from,w->localrep,to,&w->localupdate));
     PetscCall(PetscLogObjectParent((PetscObject)vv,(PetscObject)w->localupdate));
     PetscCall(ISDestroy(&to));
-    PetscCall(ISDestroy(&from));
 
-    /* set local to global mapping for ghosted vector */
-    PetscCall(PetscMalloc1(n+nghost,&indices));
-    PetscCall(VecGetOwnershipRange(vv,&rstart,NULL));
-
-    for (i=0; i<n; i++)      indices[i]   = rstart + i;
-    for (i=0; i<nghost; i++) indices[n+i] = ghosts[i];
-
-    PetscCall(ISLocalToGlobalMappingCreate(comm,1,n+nghost,indices,PETSC_OWN_POINTER,&ltog));
-    PetscCall(VecSetLocalToGlobalMapping(vv,ltog));
-    PetscCall(ISLocalToGlobalMappingDestroy(&ltog));
+    w->ghost = from;
+    vv->ops->getlocaltoglobalmapping = VecGetLocalToGlobalMapping_MPI_VecGhost;
   } else PetscCheckFalse(vv->ops->create == VecCreate_MPI,PetscObjectComm((PetscObject)vv),PETSC_ERR_ARG_WRONGSTATE,"Must set local or global size before setting ghosting");
   else PetscCheckFalse(!((PetscObject)vv)->type_name,PetscObjectComm((PetscObject)vv),PETSC_ERR_ARG_WRONGSTATE,"Must set type to VECMPI before ghosting");
   PetscFunctionReturn(0);

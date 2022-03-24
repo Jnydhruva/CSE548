@@ -23,11 +23,13 @@ T*/
 
 int main(int argc,char **argv)
 {
-  PetscMPIInt    rank,size;
-  PetscInt       nlocal = 6,nghost = 2,ifrom[2],i,rstart,rend;
-  PetscBool      flg,flg2,flg3;
-  PetscScalar    value,*array,*tarray=0;
-  Vec            lx,gx,gxs;
+  PetscMPIInt            rank,size;
+  PetscInt               nlocal = 6,nghost = 2,ifrom[2],i,rstart,rend;
+  PetscBool              flg,flg2,flg3,flg4,flg5;
+  PetscScalar            value,*array,*tarray=0;
+  Vec                    lx,gx,gxs;
+  IS                     ghost;
+  ISLocalToGlobalMapping mapping;
 
   PetscCall(PetscInitialize(&argc,&argv,(char*)0,help));
   PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD,&rank));
@@ -140,6 +142,17 @@ int main(int argc,char **argv)
     PetscCall(VecGhostRestoreLocalForm(gx,&lx));
   }
 
+  PetscCall(PetscOptionsHasName(NULL,NULL,"-vecghostgetghostis",&flg4));
+  if (flg4) {
+    PetscCall(VecGhostGetGhostIS(gx,&ghost));
+    PetscCall(ISView(ghost,PETSC_VIEWER_STDOUT_WORLD));
+  }
+  PetscCall(PetscOptionsHasName(NULL,NULL,"-getgtlmapping",&flg5));
+  if (flg5) {
+     PetscCall(VecGetLocalToGlobalMapping(gx,&mapping));
+     PetscCall(ISLocalToGlobalMappingView(mapping,NULL));
+  }
+
   PetscCall(VecDestroy(&gx));
 
   if (flg) PetscCall(PetscFree(tarray));
@@ -170,5 +183,15 @@ int main(int argc,char **argv)
        args: -minvalues
        output_file: output/ex9_2.out
        requires: !complex
+
+     test:
+       suffix: 5
+       nsize: 2
+       args: -vecghostgetghostis
+
+     test:
+       suffix: 6
+       nsize: 2
+       args: -getgtlmapping
 
 TEST*/

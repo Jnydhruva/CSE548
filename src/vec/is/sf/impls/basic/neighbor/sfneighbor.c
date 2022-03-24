@@ -3,7 +3,7 @@
 
 /* A convenience temporary type */
 #if defined(PETSC_HAVE_MPI_LARGE_COUNT) && defined(PETSC_USE_64BIT_INDICES)
-  typedef PetscInt     PetscSFCount;
+  typedef MPI_Count    PetscSFCount;
 #else
   typedef PetscMPIInt  PetscSFCount;
 #endif

@@ -764,6 +764,7 @@ static struct _VecOps DvOps = {
   PetscDesignatedInitializer(reciprocal,VecReciprocal_Default),
   PetscDesignatedInitializer(conjugate,VecConjugate_Seq),
   PetscDesignatedInitializer(setlocaltoglobalmapping,NULL),
+  PetscDesignatedInitializer(getlocaltoglobalmapping,NULL),
   PetscDesignatedInitializer(setvalueslocal,NULL),
   PetscDesignatedInitializer(resetarray,VecResetArray_Seq),
   PetscDesignatedInitializer(setfromoptions,NULL),
