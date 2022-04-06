@@ -5079,9 +5079,9 @@ PetscErrorCode DMPlexComputeResidual_Hybrid_Internal(DM dm, PetscFormKey key[], 
 
       /* Scale and element values */
       if (locS[0]) {
-        for (i = 0; i < cind*totDim; ++i) elemVecCoh[i] += a[0][i]*elemVecNeg[i] + a[1][i]*elemVecPos[i];
+        for (i = cind*totDim; i < (cind+1)*totDim; ++i) elemVecCoh[i] += s[0][i]*elemVecNeg[i] + s[1][i]*elemVecPos[i];
       } else {
-        for (i = 0; i < cind*totDim; ++i) elemVecCoh[i] += elemVecNeg[i] + elemVecPos[i];
+        for (i = cind*totDim; i < (cind+1)*totDim; ++i) elemVecCoh[i] += elemVecNeg[i] + elemVecPos[i];
       }
       if (mesh->printFEM > 1) PetscCall(DMPrintCellVector(cell, name, totDim, &elemVecCoh[cind*totDim]));
       if (ghostLabel) {
