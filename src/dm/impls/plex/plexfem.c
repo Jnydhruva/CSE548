@@ -4919,9 +4919,9 @@ PetscErrorCode DMPlexComputeResidual_Hybrid_Internal(DM dm, PetscFormKey key[], 
   PetscScalar     *elemVecNeg, *elemVecPos, *elemVecCoh;
   IS               chunkIS;
   const PetscInt  *cells;
-  PetscInt        *faces;
+  PetscInt        *faces, *scaleMap = NULL;
   PetscInt         cStart, cEnd, numCells;
-  PetscInt         Nf, f, totDim, totDimAux[3], numChunks, cellChunkSize, chunk;
+  PetscInt         Nf, f, totDim, totDimAux[3], totDimScale[3], numChunks, cellChunkSize, chunk;
   PetscInt         maxDegree = PETSC_MAX_INT;
   PetscQuadrature  affineQuad = NULL, *quads = NULL;
   PetscFEGeom     *affineGeom = NULL, **geoms = NULL;
@@ -4976,11 +4976,38 @@ PetscErrorCode DMPlexComputeResidual_Hybrid_Internal(DM dm, PetscFormKey key[], 
   /* Handle mass matrix scaling */
   PetscCall(DMGetAuxiliaryVec(dm, key[2].label, -key[2].value, key[2].part, &locS[2]));
   if (locS[2]) {
+    PetscInt Nfs, fs;
+
     PetscCall(VecGetDM(locS[2], &dmScale[2]));
     PetscCall(DMGetCellDS(dmScale[2], cStart, &dsScale[2]));
     locS[1] = locS[0] = locS[2];
     dmScale[1] = dmScale[0] = dmScale[2];
     dsScale[1] = dsScale[0] = dsScale[2];
+    for (PetscInt s = 0; s < 3; ++s) PetscCall(PetscDSGetTotalDimension(dsScale[s], &totDimScale[s]));
+    /* Match fields */
+    PetscCall(PetscDSGetNumFields(dsScale[2], &Nfs));
+    PetscCall(PetscMalloc1(Nf, &scaleMap));
+    for (f = 0; f < Nf; ++f) scaleMap[f] = -1;
+    for (fs = 0; fs < Nfs; ++fs) {
+      PetscObject obj,   sobj;
+      const char *name, *sname;
+      PetscBool   cohesive, match;
+
+      PetscCall(PetscDSGetDiscretization(dsScale[2], fs, &sobj));
+      PetscCall(PetscObjectGetName(sobj, &sname));
+      // Ignore cohesive fields for now
+      PetscCall(PetscDSGetCohesive(dsScale[2], fs, &cohesive));
+      if (cohesive) continue;
+      for (f = 0; f < Nf; ++f) {
+        PetscCall(PetscDSGetDiscretization(ds, f, &obj));
+        PetscCall(PetscObjectGetName(obj, &name));
+        PetscCall(PetscStrcmp(name, sname, &match));
+        if (match) {
+          scaleMap[f] = fs;
+          break;
+        }
+      }
+    }
   }
   /* 2: Setup geometric data */
   PetscCall(DMGetCoordinateField(dm, &coordField));
@@ -5079,7 +5106,27 @@ PetscErrorCode DMPlexComputeResidual_Hybrid_Internal(DM dm, PetscFormKey key[], 
 
       /* Scale and element values */
       if (locS[0]) {
-        for (i = cind*totDim; i < (cind+1)*totDim; ++i) elemVecCoh[i] += s[0][i]*elemVecNeg[i] + s[1][i]*elemVecPos[i];
+        PetscInt  Nb, off = cind*totDim, soff;
+        PetscBool cohesive;
+
+        for (f = 0; f < Nf; ++f) {
+          PetscCall(PetscDSGetFieldSize(ds, f, &Nb));
+          PetscCall(PetscDSGetCohesive(ds, f, &cohesive));
+          if (scaleMap[f] >= 0) {
+            // Only non-cohesive fields are currently scaled
+            PetscCall(PetscDSGetFieldOffsetCohesive(ds, scaleMap[f], &soff));
+            soff += cind*totDimScale[2];
+            for (i = 0; i < Nb; ++i) elemVecCoh[off+i] += s[0][soff+i]*elemVecNeg[off+i] +              elemVecPos[off+i];
+            off += Nb;
+            for (i = 0; i < Nb; ++i) elemVecCoh[off+i] +=              elemVecNeg[off+i] + s[1][soff+i]*elemVecPos[off+i];
+            off += Nb;
+          } else {
+            const PetscInt N = cohesive ? Nb : Nb*2;
+
+            for (i = 0; i < N; ++i) elemVecCoh[off+i] += elemVecNeg[off+i] + elemVecPos[off+i];
+            off += N;
+          }
+        }
       } else {
         for (i = cind*totDim; i < (cind+1)*totDim; ++i) elemVecCoh[i] += elemVecNeg[i] + elemVecPos[i];
       }
