@@ -42,7 +42,7 @@ PetscErrorCode DMPlexGetLocalOffsets(DM dm, DMLabel domain_label, PetscInt label
     const PetscInt *fields;
     PetscInt        num_fields;
 
-    PetscCall(DMGetRegionDS(dm, domain_label, &field_is, &ds));
+    PetscCall(DMGetRegionDS(dm, domain_label, &field_is, &ds, NULL));
     // Translate dm_field to ds_field
     PetscCall(ISGetIndices(field_is, &fields));
     PetscCall(ISGetSize(field_is, &num_fields));

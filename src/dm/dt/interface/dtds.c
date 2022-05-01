@@ -4023,6 +4023,40 @@ PetscErrorCode PetscDSCopyExactSolutions(PetscDS ds, PetscDS newds)
   PetscFunctionReturn(0);
 }
 
+PetscErrorCode PetscDSCopy(PetscDS ds, DM dmNew, PetscDS dsNew)
+{
+  DSBoundary b;
+  PetscInt   cdim, Nf, f, d;
+  PetscBool  isCohesive;
+  void      *ctx;
+
+  PetscFunctionBegin;
+  PetscCall(PetscDSCopyConstants(ds, dsNew));
+  PetscCall(PetscDSCopyExactSolutions(ds, dsNew));
+  PetscCall(PetscDSSelectDiscretizations(ds, PETSC_DETERMINE, NULL, dsNew));
+  PetscCall(PetscDSCopyEquations(ds, dsNew));
+  PetscCall(PetscDSGetNumFields(ds, &Nf));
+  for (f = 0; f < Nf; ++f) {
+    PetscCall(PetscDSGetContext(ds, f, &ctx));
+    PetscCall(PetscDSSetContext(dsNew, f, ctx));
+    PetscCall(PetscDSGetCohesive(ds, f, &isCohesive));
+    PetscCall(PetscDSSetCohesive(dsNew, f, isCohesive));
+    PetscCall(PetscDSGetJetDegree(ds, f, &d));
+    PetscCall(PetscDSSetJetDegree(dsNew, f, d));
+  }
+  if (Nf) {
+    PetscCall(PetscDSGetCoordinateDimension(ds, &cdim));
+    PetscCall(PetscDSSetCoordinateDimension(dsNew, cdim));
+  }
+  PetscCall(PetscDSCopyBoundary(ds, PETSC_DETERMINE, NULL, dsNew));
+  for (b = dsNew->boundary; b; b = b->next) {
+    PetscCall(DMGetLabel(dmNew, b->lname, &b->label));
+    /* Do not check if label exists here, since p4est calls this for the reference tree which does not have the labels */
+    //PetscCheck(b->label,PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "Label %s missing in new DM", name);
+  }
+  PetscFunctionReturn(0);
+}
+
 PetscErrorCode PetscDSGetHeightSubspace(PetscDS prob, PetscInt height, PetscDS *subprob)
 {
   PetscInt       dim, Nf, f;

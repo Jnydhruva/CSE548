@@ -85,7 +85,7 @@ PetscErrorCode  DMCreate(MPI_Comm comm,DM *dm)
     }
   }
   PetscCall(PetscDSCreate(PETSC_COMM_SELF, &ds));
-  PetscCall(DMSetRegionDS(v, NULL, NULL, ds));
+  PetscCall(DMSetRegionDS(v, NULL, NULL, ds, NULL));
   PetscCall(PetscDSDestroy(&ds));
   PetscCall(PetscHMapAuxCreate(&v->auxData));
   v->dmBC = NULL;
@@ -5274,6 +5274,7 @@ PetscErrorCode DMClearDS(DM dm)
   PetscValidHeaderSpecific(dm, DM_CLASSID, 1);
   for (s = 0; s < dm->Nds; ++s) {
     PetscCall(PetscDSDestroy(&dm->probs[s].ds));
+    PetscCall(PetscDSDestroy(&dm->probs[s].dsIn));
     PetscCall(DMLabelDestroy(&dm->probs[s].label));
     PetscCall(ISDestroy(&dm->probs[s].fields));
   }
@@ -5307,7 +5308,7 @@ PetscErrorCode DMGetDS(DM dm, PetscDS *prob)
     PetscDS ds;
 
     PetscCall(PetscDSCreate(PETSC_COMM_SELF, &ds));
-    PetscCall(DMSetRegionDS(dm, NULL, NULL, ds));
+    PetscCall(DMSetRegionDS(dm, NULL, NULL, ds, NULL));
     PetscCall(PetscDSDestroy(&ds));
   }
   *prob = dm->probs[0].ds;
@@ -5323,33 +5324,40 @@ PetscErrorCode DMGetDS(DM dm, PetscDS *prob)
 + dm    - The DM
 - point - Cell for the DS
 
-  Output Parameter:
-. prob - The PetscDS defined on the given cell
+  Output Parameters:
++ ds   - The PetscDS defined on the given cell
+- dsIn - The PetscDS for input on the given cell, or NULL if the same ds
 
   Level: developer
 
 .seealso: `DMGetDS()`, `DMSetRegionDS()`
 @*/
-PetscErrorCode DMGetCellDS(DM dm, PetscInt point, PetscDS *prob)
+PetscErrorCode DMGetCellDS(DM dm, PetscInt point, PetscDS *ds, PetscDS *dsIn)
 {
-  PetscDS        probDef = NULL;
-  PetscInt       s;
+  PetscDS  dsDef = NULL;
+  PetscInt s;
 
   PetscFunctionBeginHot;
   PetscValidHeaderSpecific(dm, DM_CLASSID, 1);
-  PetscValidPointer(prob, 3);
+  if (ds)   PetscValidPointer(ds, 3);
+  if (dsIn) PetscValidPointer(dsIn, 4);
   PetscCheck(point >= 0,PETSC_COMM_SELF, PETSC_ERR_ARG_OUTOFRANGE, "Mesh point cannot be negative: %" PetscInt_FMT, point);
-  *prob = NULL;
+  if (ds)   *ds   = NULL;
+  if (dsIn) *dsIn = NULL;
   for (s = 0; s < dm->Nds; ++s) {
     PetscInt val;
 
-    if (!dm->probs[s].label) {probDef = dm->probs[s].ds;}
+    if (!dm->probs[s].label) {dsDef = dm->probs[s].ds;}
     else {
       PetscCall(DMLabelGetValue(dm->probs[s].label, point, &val));
-      if (val >= 0) {*prob = dm->probs[s].ds; break;}
+      if (val >= 0) {
+        if (ds)   *ds   = dm->probs[s].ds;
+        if (dsIn) *dsIn = dm->probs[s].dsIn;
+        break;
+      }
     }
   }
-  if (!*prob) *prob = probDef;
+  if (ds && !*ds) *ds = dsDef;
   PetscFunctionReturn(0);
 }
 
@@ -5364,7 +5372,8 @@ PetscErrorCode DMGetCellDS(DM dm, PetscInt point, PetscDS *prob)
 
   Output Parameters:
 + fields - The IS containing the DM field numbers for the fields in this DS, or NULL
-- prob - The PetscDS defined on the given region, or NULL
+. ds     - The PetscDS defined on the given region, or NULL
+- dsIn   - The PetscDS for input in the given region, or NULL
 
   Note:
   If a non-NULL label is given, but there is no PetscDS on that specific label,
@@ -5375,7 +5384,7 @@ PetscErrorCode DMGetCellDS(DM dm, PetscInt point, PetscDS *prob)
 
 .seealso: `DMGetRegionNumDS()`, `DMSetRegionDS()`, `DMGetDS()`, `DMGetCellDS()`
 @*/
-PetscErrorCode DMGetRegionDS(DM dm, DMLabel label, IS *fields, PetscDS *ds)
+PetscErrorCode DMGetRegionDS(DM dm, DMLabel label, IS *fields, PetscDS *ds, PetscDS *dsIn)
 {
   PetscInt Nds = dm->Nds, s;
 
@@ -5384,10 +5393,12 @@ PetscErrorCode DMGetRegionDS(DM dm, DMLabel label, IS *fields, PetscDS *ds)
   if (label) PetscValidHeaderSpecific(label, DMLABEL_CLASSID, 2);
   if (fields) {PetscValidPointer(fields, 3); *fields = NULL;}
   if (ds)     {PetscValidPointer(ds, 4);     *ds     = NULL;}
+  if (dsIn)   {PetscValidPointer(dsIn, 5);   *dsIn   = NULL;}
   for (s = 0; s < Nds; ++s) {
     if (dm->probs[s].label == label || !dm->probs[s].label) {
       if (fields) *fields = dm->probs[s].fields;
       if (ds)     *ds     = dm->probs[s].ds;
+      if (dsIn)   *dsIn   = dm->probs[s].dsIn;
       if (dm->probs[s].label) PetscFunctionReturn(0);
     }
   }
@@ -5403,7 +5414,8 @@ PetscErrorCode DMGetRegionDS(DM dm, DMLabel label, IS *fields, PetscDS *ds)
 + dm     - The DM
 . label  - The DMLabel defining the mesh region, or NULL for the entire mesh
 . fields - The IS containing the DM field numbers for the fields in this DS, or NULL for all fields
-- prob   - The PetscDS defined on the given cell
+. ds     - The PetscDS defined on the given cell
+- dsIn   - The PetscDS for input on the given cell, or NULL if it is the same DS
 
   Note: If the label has a DS defined, it will be replaced. Otherwise, it will be added to the DM. If DS is replaced,
   the fields argument is ignored.
@@ -5412,18 +5424,22 @@ PetscErrorCode DMGetRegionDS(DM dm, DMLabel label, IS *fields, PetscDS *ds)
 
 .seealso: `DMGetRegionDS()`, `DMSetRegionNumDS()`, `DMGetDS()`, `DMGetCellDS()`
 @*/
-PetscErrorCode DMSetRegionDS(DM dm, DMLabel label, IS fields, PetscDS ds)
+PetscErrorCode DMSetRegionDS(DM dm, DMLabel label, IS fields, PetscDS ds, PetscDS dsIn)
 {
   PetscInt       Nds = dm->Nds, s;
 
   PetscFunctionBegin;
   PetscValidHeaderSpecific(dm, DM_CLASSID, 1);
-  if (label) PetscValidHeaderSpecific(label, DMLABEL_CLASSID, 2);
+  if (label)  PetscValidHeaderSpecific(label, DMLABEL_CLASSID, 2);
+  if (fields) PetscValidHeaderSpecific(fields, IS_CLASSID, 3);
   PetscValidHeaderSpecific(ds, PETSCDS_CLASSID, 4);
+  if (dsIn)   PetscValidHeaderSpecific(dsIn, PETSCDS_CLASSID, 5);
   for (s = 0; s < Nds; ++s) {
     if (dm->probs[s].label == label) {
       PetscCall(PetscDSDestroy(&dm->probs[s].ds));
-      dm->probs[s].ds = ds;
+      PetscCall(PetscDSDestroy(&dm->probs[s].dsIn));
+      dm->probs[s].ds   = ds;
+      dm->probs[s].dsIn = dsIn;
       PetscFunctionReturn(0);
     }
   }
@@ -5431,6 +5447,7 @@ PetscErrorCode DMSetRegionDS(DM dm, DMLabel label, IS fields, PetscDS ds)
   PetscCall(PetscObjectReference((PetscObject) label));
   PetscCall(PetscObjectReference((PetscObject) fields));
   PetscCall(PetscObjectReference((PetscObject) ds));
+  PetscCall(PetscObjectReference((PetscObject) dsIn));
   if (!label) {
     /* Put the NULL label at the front, so it is returned as the default */
     for (s = Nds-1; s >=0; --s) dm->probs[s+1] = dm->probs[s];
@@ -5439,6 +5456,7 @@ PetscErrorCode DMSetRegionDS(DM dm, DMLabel label, IS fields, PetscDS ds)
   dm->probs[Nds].label  = label;
   dm->probs[Nds].fields = fields;
   dm->probs[Nds].ds     = ds;
+  dm->probs[Nds].dsIn   = dsIn;
   PetscFunctionReturn(0);
 }
 
@@ -5454,13 +5472,14 @@ PetscErrorCode DMSetRegionDS(DM dm, DMLabel label, IS fields, PetscDS ds)
   Output Parameters:
 + label  - The region label, or NULL
 . fields - The IS containing the DM field numbers for the fields in this DS, or NULL
-- ds     - The PetscDS defined on the given region, or NULL
+. ds     - The PetscDS defined on the given region, or NULL
+- dsIn   - The PetscDS for input in the given region, or NULL
 
   Level: advanced
 
 .seealso: `DMGetRegionDS()`, `DMSetRegionDS()`, `DMGetDS()`, `DMGetCellDS()`
 @*/
-PetscErrorCode DMGetRegionNumDS(DM dm, PetscInt num, DMLabel *label, IS *fields, PetscDS *ds)
+PetscErrorCode DMGetRegionNumDS(DM dm, PetscInt num, DMLabel *label, IS *fields, PetscDS *ds, PetscDS *dsIn)
 {
   PetscInt       Nds;
 
@@ -5480,6 +5499,10 @@ PetscErrorCode DMGetRegionNumDS(DM dm, PetscInt num, DMLabel *label, IS *fields,
     PetscValidPointer(ds, 5);
     *ds = dm->probs[num].ds;
   }
+  if (dsIn) {
+    PetscValidPointer(dsIn, 6);
+    *dsIn = dm->probs[num].dsIn;
+  }
   PetscFunctionReturn(0);
 }
 
@@ -5493,13 +5516,14 @@ PetscErrorCode DMGetRegionNumDS(DM dm, PetscInt num, DMLabel *label, IS *fields,
 . num    - The region number, in [0, Nds)
 . label  - The region label, or NULL
 . fields - The IS containing the DM field numbers for the fields in this DS, or NULL to prevent setting
-- ds     - The PetscDS defined on the given region, or NULL to prevent setting
+. ds     - The PetscDS defined on the given region, or NULL to prevent setting
+- dsIn   - The PetscDS for input on the given cell, or NULL if it is the same DS
 
   Level: advanced
 
 .seealso: `DMGetRegionDS()`, `DMSetRegionDS()`, `DMGetDS()`, `DMGetCellDS()`
 @*/
-PetscErrorCode DMSetRegionNumDS(DM dm, PetscInt num, DMLabel label, IS fields, PetscDS ds)
+PetscErrorCode DMSetRegionNumDS(DM dm, PetscInt num, DMLabel label, IS fields, PetscDS ds, PetscDS dsIn)
 {
   PetscInt       Nds;
 
@@ -5522,6 +5546,12 @@ PetscErrorCode DMSetRegionNumDS(DM dm, PetscInt num, DMLabel label, IS fields, P
     PetscCall(PetscObjectReference((PetscObject) ds));
     PetscCall(PetscDSDestroy(&dm->probs[num].ds));
     dm->probs[num].ds = ds;
+  }
+  if (dsIn) {
+    PetscValidHeaderSpecific(dsIn, PETSCDS_CLASSID, 6);
+    PetscCall(PetscObjectReference((PetscObject) dsIn));
+    PetscCall(PetscDSDestroy(&dm->probs[num].dsIn));
+    dm->probs[num].dsIn = dsIn;
   }
   PetscFunctionReturn(0);
 }
@@ -5653,7 +5683,7 @@ PetscErrorCode DMCreateDS(DM dm)
     labelSet[Nl++] = label;
   }
   /* Create default DS if there are no labels to intersect with */
-  PetscCall(DMGetRegionDS(dm, NULL, NULL, &dsDef));
+  PetscCall(DMGetRegionDS(dm, NULL, NULL, &dsDef, NULL));
   if (!dsDef && Ndef && !Nl) {
     IS        fields;
     PetscInt *fld, nf;
@@ -5668,11 +5698,11 @@ PetscErrorCode DMCreateDS(DM dm)
     PetscCall(ISGeneralSetIndices(fields, nf, fld, PETSC_OWN_POINTER));
 
     PetscCall(PetscDSCreate(PETSC_COMM_SELF, &dsDef));
-    PetscCall(DMSetRegionDS(dm, NULL, fields, dsDef));
+    PetscCall(DMSetRegionDS(dm, NULL, fields, dsDef, NULL));
     PetscCall(PetscDSDestroy(&dsDef));
     PetscCall(ISDestroy(&fields));
   }
-  PetscCall(DMGetRegionDS(dm, NULL, NULL, &dsDef));
+  PetscCall(DMGetRegionDS(dm, NULL, NULL, &dsDef, NULL));
   if (dsDef) PetscCall(PetscDSSetCoordinateDimension(dsDef, dE));
   /* Intersect labels with default fields */
   if (Ndef && Nl) {
@@ -5715,7 +5745,7 @@ PetscErrorCode DMCreateDS(DM dm)
     PetscCall(ISGeneralSetIndices(fieldIS, nf, fields, PETSC_OWN_POINTER));
 
     PetscCall(PetscDSCreate(PETSC_COMM_SELF, &dsDef));
-    PetscCall(DMSetRegionDS(dm, cellLabel, fieldIS, dsDef));
+    PetscCall(DMSetRegionDS(dm, cellLabel, fieldIS, dsDef, NULL));
     PetscCall(PetscDSSetCoordinateDimension(dsDef, dE));
     PetscCall(DMLabelDestroy(&cellLabel));
     PetscCall(PetscDSDestroy(&dsDef));
@@ -5728,7 +5758,7 @@ PetscErrorCode DMCreateDS(DM dm)
   /* TODO Should check that labels are disjoint */
   for (l = 0; l < Nl; ++l) {
     DMLabel   label = labelSet[l];
-    PetscDS   ds;
+    PetscDS   ds, dsIn = NULL;
     IS        fields;
     PetscInt *fld, nf;
 
@@ -5740,8 +5770,6 @@ PetscErrorCode DMCreateDS(DM dm)
     PetscCall(PetscObjectSetOptionsPrefix((PetscObject) fields, "dm_fields_"));
     PetscCall(ISSetType(fields, ISGENERAL));
     PetscCall(ISGeneralSetIndices(fields, nf, fld, PETSC_OWN_POINTER));
-    PetscCall(DMSetRegionDS(dm, label, fields, ds));
-    PetscCall(ISDestroy(&fields));
     PetscCall(PetscDSSetCoordinateDimension(ds, dE));
     {
       DMPolytopeType ct;
@@ -5761,22 +5789,34 @@ PetscErrorCode DMCreateDS(DM dm)
         }
       }
       PetscCallMPI(MPI_Allreduce(&isCohesiveLocal, &isCohesive, 1, MPIU_BOOL, MPI_LOR, comm));
+      if (isCohesive) {
+        PetscCall(PetscDSCreate(PETSC_COMM_SELF, &dsIn));
+        PetscCall(PetscDSSetCoordinateDimension(dsIn, dE));
+      }
       for (f = 0, nf  = 0; f < Nf; ++f) {
         if (label == dm->fields[f].label || !dm->fields[f].label) {
           if (label == dm->fields[f].label) {
             PetscCall(PetscDSSetDiscretization(ds, nf, NULL));
             PetscCall(PetscDSSetCohesive(ds, nf, isCohesive));
+            if (dsIn) {
+              PetscCall(PetscDSSetDiscretization(dsIn, nf, NULL));
+              PetscCall(PetscDSSetCohesive(dsIn, nf, isCohesive));
+            }
           }
           ++nf;
         }
       }
     }
+    PetscCall(DMSetRegionDS(dm, label, fields, ds, dsIn));
+    PetscCall(ISDestroy(&fields));
     PetscCall(PetscDSDestroy(&ds));
+    PetscCall(PetscDSDestroy(&dsIn));
   }
   PetscCall(PetscFree(labelSet));
   /* Set fields in DSes */
   for (s = 0; s < dm->Nds; ++s) {
     PetscDS         ds     = dm->probs[s].ds;
+    PetscDS         dsIn   = dm->probs[s].dsIn;
     IS              fields = dm->probs[s].fields;
     const PetscInt *fld;
     PetscInt        nf, dsnf;
@@ -5787,15 +5827,27 @@ PetscErrorCode DMCreateDS(DM dm)
     PetscCall(ISGetLocalSize(fields, &nf));
     PetscCall(ISGetIndices(fields, &fld));
     for (f = 0; f < nf; ++f) {
-      PetscObject  disc  = dm->fields[fld[f]].disc;
+      PetscObject  disc = dm->fields[fld[f]].disc;
       PetscBool    isCohesiveField;
       PetscClassId id;
 
       /* Handle DS with no fields */
       if (dsnf) PetscCall(PetscDSGetCohesive(ds, f, &isCohesiveField));
       /* If this is a cohesive cell, then regular fields need the lower dimensional discretization */
-      if (isCohesive && !isCohesiveField) PetscCall(PetscFEGetHeightSubspace((PetscFE) disc, 1, (PetscFE *) &disc));
-      PetscCall(PetscDSSetDiscretization(ds, f, disc));
+      if (isCohesive) {
+        if (!isCohesiveField) {
+          PetscObject bdDisc;
+
+          PetscCall(PetscFEGetHeightSubspace((PetscFE) disc, 1, (PetscFE *) &bdDisc));
+          PetscCall(PetscDSSetDiscretization(ds, f, bdDisc));
+          PetscCall(PetscDSSetDiscretization(dsIn, f, disc));
+        } else {
+          PetscCall(PetscDSSetDiscretization(ds, f, disc));
+          PetscCall(PetscDSSetDiscretization(dsIn, f, disc));
+        }
+      } else {
+        PetscCall(PetscDSSetDiscretization(ds, f, disc));
+      }
       /* We allow people to have placeholder fields and construct the Section by hand */
       PetscCall(PetscObjectGetClassId(disc, &id));
       if ((id != PETSCFE_CLASSID) && (id != PETSCFV_CLASSID)) doSetup = PETSC_FALSE;
@@ -5806,16 +5858,23 @@ PetscErrorCode DMCreateDS(DM dm)
   PetscCall(PetscOptionsGetInt(NULL, ((PetscObject) dm)->prefix, "-dm_ds_jet_degree", &k, &flg));
   if (flg) {
     for (s = 0; s < dm->Nds; ++s) {
-      PetscDS  ds = dm->probs[s].ds;
+      PetscDS  ds   = dm->probs[s].ds;
+      PetscDS  dsIn = dm->probs[s].dsIn;
       PetscInt Nf, f;
 
       PetscCall(PetscDSGetNumFields(ds, &Nf));
-      for (f = 0; f < Nf; ++f) PetscCall(PetscDSSetJetDegree(ds, f, k));
+      for (f = 0; f < Nf; ++f) {
+        PetscCall(PetscDSSetJetDegree(ds, f, k));
+        if (dsIn) PetscCall(PetscDSSetJetDegree(dsIn, f, k));
+      }
     }
   }
   /* Setup DSes */
   if (doSetup) {
-    for (s = 0; s < dm->Nds; ++s) PetscCall(PetscDSSetUp(dm->probs[s].ds));
+    for (s = 0; s < dm->Nds; ++s) {
+      PetscCall(PetscDSSetUp(dm->probs[s].ds));
+      if (dm->probs[s].dsIn) PetscCall(PetscDSSetUp(dm->probs[s].dsIn));
+    }
   }
   PetscFunctionReturn(0);
 }
@@ -5859,7 +5918,7 @@ PetscErrorCode DMComputeExactSolution(DM dm, PetscReal time, Vec u, Vec u_t)
     const PetscInt *fields, id = 1;
     PetscInt        dsNf, f;
 
-    PetscCall(DMGetRegionNumDS(dm, s, &label, &fieldIS, &ds));
+    PetscCall(DMGetRegionNumDS(dm, s, &label, &fieldIS, &ds, NULL));
     PetscCall(PetscDSGetNumFields(ds, &dsNf));
     PetscCall(ISGetIndices(fieldIS, &fields));
     PetscCall(PetscArrayzero(exacts, Nf));
@@ -5903,42 +5962,20 @@ PetscErrorCode DMComputeExactSolution(DM dm, PetscReal time, Vec u, Vec u_t)
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode DMTransferDS_Internal(DM dm, DMLabel label, IS fields, PetscDS ds)
+static PetscErrorCode DMTransferDS_Internal(DM dm, DMLabel label, IS fields, PetscDS ds, PetscDS dsIn)
 {
-  PetscDS        dsNew;
-  DSBoundary     b;
-  PetscInt       cdim, Nf, f, d;
-  PetscBool      isCohesive;
-  void          *ctx;
+  PetscDS dsNew, dsInNew = NULL;
 
   PetscFunctionBegin;
   PetscCall(PetscDSCreate(PetscObjectComm((PetscObject) ds), &dsNew));
-  PetscCall(PetscDSCopyConstants(ds, dsNew));
-  PetscCall(PetscDSCopyExactSolutions(ds, dsNew));
-  PetscCall(PetscDSSelectDiscretizations(ds, PETSC_DETERMINE, NULL, dsNew));
-  PetscCall(PetscDSCopyEquations(ds, dsNew));
-  PetscCall(PetscDSGetNumFields(ds, &Nf));
-  for (f = 0; f < Nf; ++f) {
-    PetscCall(PetscDSGetContext(ds, f, &ctx));
-    PetscCall(PetscDSSetContext(dsNew, f, ctx));
-    PetscCall(PetscDSGetCohesive(ds, f, &isCohesive));
-    PetscCall(PetscDSSetCohesive(dsNew, f, isCohesive));
-    PetscCall(PetscDSGetJetDegree(ds, f, &d));
-    PetscCall(PetscDSSetJetDegree(dsNew, f, d));
+  PetscCall(PetscDSCopy(ds, dm, dsNew));
+  if (dsIn) {
+    PetscCall(PetscDSCreate(PetscObjectComm((PetscObject) dsIn), &dsInNew));
+    PetscCall(PetscDSCopy(dsIn, dm, dsInNew));
   }
-  if (Nf) {
-    PetscCall(PetscDSGetCoordinateDimension(ds, &cdim));
-    PetscCall(PetscDSSetCoordinateDimension(dsNew, cdim));
-  }
-  PetscCall(PetscDSCopyBoundary(ds, PETSC_DETERMINE, NULL, dsNew));
-  for (b = dsNew->boundary; b; b = b->next) {
-    PetscCall(DMGetLabel(dm, b->lname, &b->label));
-    /* Do not check if label exists here, since p4est calls this for the reference tree which does not have the labels */
-    //PetscCheck(b->label,PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "Label %s missing in new DM", name);
-  }
-
-  PetscCall(DMSetRegionDS(dm, label, fields, dsNew));
+  PetscCall(DMSetRegionDS(dm, label, fields, dsNew, dsInNew));
   PetscCall(PetscDSDestroy(&dsNew));
+  PetscCall(PetscDSDestroy(&dsInNew));
   PetscFunctionReturn(0);
 }
 
@@ -5968,14 +6005,14 @@ PetscErrorCode DMCopyDS(DM dm, DM newdm)
   for (s = 0; s < Nds; ++s) {
     DMLabel  label;
     IS       fields;
-    PetscDS  ds, newds;
+    PetscDS  ds, dsIn, newds;
     PetscInt Nbd, bd;
 
-    PetscCall(DMGetRegionNumDS(dm, s, &label, &fields, &ds));
+    PetscCall(DMGetRegionNumDS(dm, s, &label, &fields, &ds, &dsIn));
     /* TODO: We need to change all keys from labels in the old DM to labels in the new DM */
-    PetscCall(DMTransferDS_Internal(newdm, label, fields, ds));
+    PetscCall(DMTransferDS_Internal(newdm, label, fields, ds, dsIn));
     /* Commplete new labels in the new DS */
-    PetscCall(DMGetRegionDS(newdm, label, NULL, &newds));
+    PetscCall(DMGetRegionDS(newdm, label, NULL, &newds, NULL));
     PetscCall(PetscDSGetNumBoundary(newds, &Nbd));
     for (bd = 0; bd < Nbd; ++bd) {
       PetscWeakForm wf;
@@ -6116,7 +6153,7 @@ PetscErrorCode DMSetDimension(DM dm, PetscInt dim)
   if (dm->dim >= 0) {
     PetscCall(DMGetNumDS(dm, &Nds));
     for (n = 0; n < Nds; ++n) {
-      PetscCall(DMGetRegionNumDS(dm, n, NULL, NULL, &ds));
+      PetscCall(DMGetRegionNumDS(dm, n, NULL, NULL, &ds, NULL));
       if (ds->dimEmbed < 0) PetscCall(PetscDSSetCoordinateDimension(ds, dim));
     }
   }
@@ -6565,7 +6602,7 @@ PetscErrorCode DMSetCoordinateDim(DM dm, PetscInt dim)
   if (dm->dim >= 0) {
     PetscCall(DMGetNumDS(dm, &Nds));
     for (n = 0; n < Nds; ++n) {
-      PetscCall(DMGetRegionNumDS(dm, n, NULL, NULL, &ds));
+      PetscCall(DMGetRegionNumDS(dm, n, NULL, NULL, &ds, NULL));
       PetscCall(PetscDSSetCoordinateDimension(ds, dim));
     }
   }
@@ -9636,7 +9673,7 @@ PetscErrorCode DMComputeError(DM dm, Vec sol, PetscReal errors[], Vec *errorVec)
     const PetscInt *fields;
     PetscInt        dsNf;
 
-    PetscCall(DMGetRegionNumDS(dm, s, &label, &fieldIS, &ds));
+    PetscCall(DMGetRegionNumDS(dm, s, &label, &fieldIS, &ds, NULL));
     PetscCall(PetscDSGetNumFields(ds, &dsNf));
     if (fieldIS) PetscCall(ISGetIndices(fieldIS, &fields));
     for (f = 0; f < dsNf; ++f) {

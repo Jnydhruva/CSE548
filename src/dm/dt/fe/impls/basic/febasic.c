@@ -558,7 +558,7 @@ PetscErrorCode PetscFEIntegrateBdResidual_Basic(PetscDS ds, PetscWeakForm wf, Pe
     2) We need to assume that the orientation is 0 for both
     3) TODO We need to use a non-square Jacobian for the derivative maps, meaning the embedding dimension has to go to EvaluateFieldJets() and UpdateElementVec()
 */
-static PetscErrorCode PetscFEIntegrateHybridResidual_Basic(PetscDS ds, PetscFormKey key, PetscInt s, PetscInt Ne, PetscFEGeom *fgeom,
+static PetscErrorCode PetscFEIntegrateHybridResidual_Basic(PetscDS ds, PetscDS dsIn, PetscFormKey key, PetscInt s, PetscInt Ne, PetscFEGeom *fgeom,
                                                            const PetscScalar coefficients[], const PetscScalar coefficients_t[], PetscDS dsAux, const PetscScalar coefficientsAux[], PetscReal t, PetscScalar elemVec[])
 {
   const PetscInt     debug = 0;
@@ -568,12 +568,12 @@ static PetscErrorCode PetscFEIntegrateHybridResidual_Basic(PetscDS ds, PetscForm
   PetscInt           n0,      n1, i;
   PetscBdPointFunc  *f0_func, *f1_func;
   PetscQuadrature    quad;
-  PetscTabulation   *Tf, *TfAux = NULL;
+  PetscTabulation   *Tf, *TfIn, *TfAux = NULL;
   PetscScalar       *f0, *f1, *u, *u_t = NULL, *u_x, *a, *a_x, *basisReal, *basisDerReal;
   const PetscScalar *constants;
   PetscReal         *x;
   PetscInt          *uOff, *uOff_x, *aOff = NULL, *aOff_x = NULL;
-  PetscInt           dim, dimAux, numConstants, Nf, NfAux = 0, totDim, totDimAux = 0, cOffset = 0, cOffsetAux = 0, fOffset, e, NcI, NcS;
+  PetscInt           dim, dimAux, numConstants, Nf, NfAux = 0, totDim, totDimIn, totDimAux = 0, cOffset = 0, cOffsetAux = 0, fOffset, e, NcI, NcS;
   PetscBool          isCohesiveField, auxOnBd = PETSC_FALSE;
   const PetscReal   *quadPoints, *quadWeights;
   PetscInt           qdim, qNc, Nq, q, dE;
@@ -585,6 +585,7 @@ static PetscErrorCode PetscFEIntegrateHybridResidual_Basic(PetscDS ds, PetscForm
   PetscCall(PetscFEGetQuadrature(fe, &quad));
   PetscCall(PetscDSGetNumFields(ds, &Nf));
   PetscCall(PetscDSGetTotalDimension(ds, &totDim));
+  PetscCall(PetscDSGetTotalDimension(dsIn, &totDimIn));
   PetscCall(PetscDSGetComponentOffsetsCohesive(ds, s, &uOff));
   PetscCall(PetscDSGetComponentDerivativeOffsetsCohesive(ds, s, &uOff_x));
   PetscCall(PetscDSGetFieldOffsetCohesive(ds, field, &fOffset));
@@ -596,6 +597,7 @@ static PetscErrorCode PetscFEIntegrateHybridResidual_Basic(PetscDS ds, PetscForm
   PetscCall(PetscDSGetWeakFormArrays(ds, &f0, &f1, NULL, NULL, NULL, NULL));
   /* NOTE This is a bulk tabulation because the DS is a face discretization */
   PetscCall(PetscDSGetTabulation(ds, &Tf));
+  PetscCall(PetscDSGetTabulation(dsIn, &TfIn));
   PetscCall(PetscDSGetConstants(ds, &numConstants, &constants));
   if (dsAux) {
     PetscCall(PetscDSGetSpatialDimension(dsAux, &dimAux));
@@ -637,7 +639,7 @@ static PetscErrorCode PetscFEIntegrateHybridResidual_Basic(PetscDS ds, PetscForm
       }
       if (debug) PetscCall(PetscPrintf(PETSC_COMM_SELF, "  quad point %" PetscInt_FMT " weight %g detJ %g\n", q, (double) quadWeights[q], (double) fegeom.detJ[0]));
       /* TODO Is this cell or face quadrature, meaning should we use 'q' or 'face*Nq+q' */
-      PetscCall(PetscFEEvaluateFieldJets_Hybrid_Internal(ds, Nf, 0, q, Tf, &fegeom, &coefficients[cOffset], &coefficients_t[cOffset], u, u_x, u_t));
+      PetscCall(PetscFEEvaluateFieldJets_Hybrid_Internal(ds, Nf, 0, q, TfIn, &fegeom, &coefficients[cOffset], &coefficients_t[cOffset], u, u_x, u_t));
       if (dsAux) PetscCall(PetscFEEvaluateFieldJets_Internal(dsAux, NfAux, 0, auxOnBd ? q : face*Nq+q, TfAux, &fegeom, &coefficientsAux[cOffsetAux], NULL, a, a_x, NULL));
       for (i = 0; i < n0; ++i) f0_func[i](dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, NULL, a_x, t, fegeom.v, fegeom.n, numConstants, constants, &f0[q*NcS]);
       for (c = 0; c < NcS; ++c) f0[q*NcS+c] *= w;

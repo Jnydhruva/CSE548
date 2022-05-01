@@ -1470,7 +1470,8 @@ PetscErrorCode PetscFEIntegrateBdResidual(PetscDS ds, PetscWeakForm wf, PetscFor
   Not collective
 
   Input Parameters:
-+ prob         - The PetscDS specifying the discretizations and continuum functions
++ ds           - The PetscDS specifying the discretizations and continuum functions
+. dsIn         - The PetscDS specifying the discretizations and continuum functions for input
 . key          - The (label+value, field) being integrated
 . s            - The side of the cell being integrated, 0 for negative and 1 for positive
 . Ne           - The number of elements in the chunk
@@ -1488,15 +1489,16 @@ PetscErrorCode PetscFEIntegrateBdResidual(PetscDS ds, PetscWeakForm wf, PetscFor
 
 .seealso: `PetscFEIntegrateResidual()`
 @*/
-PetscErrorCode PetscFEIntegrateHybridResidual(PetscDS prob, PetscFormKey key, PetscInt s, PetscInt Ne, PetscFEGeom *fgeom,
+PetscErrorCode PetscFEIntegrateHybridResidual(PetscDS ds, PetscDS dsIn, PetscFormKey key, PetscInt s, PetscInt Ne, PetscFEGeom *fgeom,
                                               const PetscScalar coefficients[], const PetscScalar coefficients_t[], PetscDS probAux, const PetscScalar coefficientsAux[], PetscReal t, PetscScalar elemVec[])
 {
-  PetscFE        fe;
+  PetscFE fe;
 
   PetscFunctionBegin;
-  PetscValidHeaderSpecific(prob, PETSCDS_CLASSID, 1);
-  PetscCall(PetscDSGetDiscretization(prob, key.field, (PetscObject *) &fe));
-  if (fe->ops->integratehybridresidual) PetscCall((*fe->ops->integratehybridresidual)(prob, key, s, Ne, fgeom, coefficients, coefficients_t, probAux, coefficientsAux, t, elemVec));
+  PetscValidHeaderSpecific(ds, PETSCDS_CLASSID, 1);
+  PetscValidHeaderSpecific(dsIn, PETSCDS_CLASSID, 2);
+  PetscCall(PetscDSGetDiscretization(ds, key.field, (PetscObject *) &fe));
+  if (fe->ops->integratehybridresidual) PetscCall((*fe->ops->integratehybridresidual)(ds, dsIn, key, s, Ne, fgeom, coefficients, coefficients_t, probAux, coefficientsAux, t, elemVec));
   PetscFunctionReturn(0);
 }
 
@@ -2139,7 +2141,7 @@ PetscErrorCode PetscFEEvaluateFieldJets_Internal(PetscDS ds, PetscInt Nf, PetscI
 
 PetscErrorCode PetscFEEvaluateFieldJets_Hybrid_Internal(PetscDS ds, PetscInt Nf, PetscInt r, PetscInt q, PetscTabulation T[], PetscFEGeom *fegeom, const PetscScalar coefficients[], const PetscScalar coefficients_t[], PetscScalar u[], PetscScalar u_x[], PetscScalar u_t[])
 {
-  PetscInt       dOffset = 0, fOffset = 0, f, g;
+  PetscInt dOffset = 0, fOffset = 0, f, g;
 
   /* f is the field number in the DS, g is the field number in u[] */
   for (f = 0, g = 0; f < Nf; ++f) {

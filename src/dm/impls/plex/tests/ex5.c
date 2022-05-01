@@ -1185,7 +1185,7 @@ static PetscErrorCode TestAssembly(DM dm, AppCtx *user)
   PetscCall(DMProjectFunctionLabelLocal(dm, 0.0, fault, 1, &id, PETSC_DETERMINE, NULL, initialGuess, NULL, INSERT_VALUES, locX));
   PetscCall(VecViewFromOptions(locX, NULL, "-local_solution_view"));
 
-  PetscCall(DMGetCellDS(dm, cMax, &probh));
+  PetscCall(DMGetCellDS(dm, cMax, &probh, NULL));
   PetscCall(PetscDSGetWeakForm(probh, &wf));
   PetscCall(PetscDSGetNumFields(probh, &Nf));
   PetscCall(PetscWeakFormSetIndexBdResidual(wf, material, 1, 0, 0, 0, f0_bd_u, 0, NULL));
