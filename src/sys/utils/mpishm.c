@@ -528,6 +528,25 @@ PetscErrorCode PetscOmpCtrlGetOmpComms(PetscOmpCtrl ctrl, MPI_Comm *omp_comm, MP
 }
 
 /*@C
+    PetscOmpCtrlSetNumThreads - Set the number of threads to use in a PETSc OMP controller
+
+    Input Parameters:
++   ctrl - a PETSc OMP controller
+-   nthreads - the number of threads
+@*/
+PetscErrorCode PetscOmpCtrlSetNumThreads(PetscOmpCtrl ctrl, PetscMPIInt nthreads)
+{
+  PetscMPIInt size;
+
+  PetscFunctionBegin;
+  PetscCheck(ctrl->omp_comm, PETSC_COMM_SELF, PETSC_ERR_ORDER, "You must call PetscOmpCtrlCreate() before PetscOmpCtrlSetNumThreads()");
+  PetscCallMPI(MPI_Comm_size(ctrl->omp_comm, &size));
+  PetscCheck(0 < nthreads && nthreads <= size, PETSC_COMM_SELF, PETSC_ERR_ARG_OUTOFRANGE, "nthreads (%d) must lie in (0;%d]", nthreads, size);
+  ctrl->omp_comm_size = nthreads;
+  PetscFunctionReturn(0);
+}
+
+/*@C
     PetscOmpCtrlBarrier - Do barrier on MPI ranks in omp_comm contained by the PETSc OMP controller (to let slave ranks free their CPU)
 
     Input Parameter:

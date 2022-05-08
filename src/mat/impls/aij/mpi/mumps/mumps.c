@@ -1749,7 +1749,6 @@ PetscErrorCode MatSetFromOptions_MUMPS(Mat F, Mat A)
   PetscFunctionBegin;
   PetscOptionsBegin(PetscObjectComm((PetscObject)F), ((PetscObject)F)->prefix, "MUMPS Options", "Mat");
   if (mumps->id.job == JOB_NULL) { /* MatSetFromOptions_MUMPS() has never been called before */
-    PetscInt nthreads   = 0;
     PetscInt nCNTL_pre  = mumps->CNTL_pre ? mumps->CNTL_pre[0] : 0;
     PetscInt nICNTL_pre = mumps->ICNTL_pre ? mumps->ICNTL_pre[0] : 0;
 
@@ -1758,16 +1757,17 @@ PetscErrorCode MatSetFromOptions_MUMPS(Mat F, Mat A)
     PetscCallMPI(MPI_Comm_rank(mumps->petsc_comm, &mumps->myid)); /* "if (!myid)" still works even if mumps_comm is different */
 
     PetscCall(PetscOptionsName("-mat_mumps_use_omp_threads", "Convert MPI processes into OpenMP threads", "None", &mumps->use_petsc_omp_support));
-    if (mumps->use_petsc_omp_support) nthreads = -1; /* -1 will let PetscOmpCtrlCreate() guess a proper value when user did not supply one */
-    /* do not use PetscOptionsInt() so that the option -mat_mumps_use_omp_threads is not displayed twice in the help */
-    PetscCall(PetscOptionsGetInt(NULL, ((PetscObject)F)->prefix, "-mat_mumps_use_omp_threads", &nthreads, NULL));
     if (mumps->use_petsc_omp_support) {
       PetscCheck(PetscDefined(HAVE_OPENMP_SUPPORT), PETSC_COMM_SELF, PETSC_ERR_SUP_SYS, "The system does not have PETSc OpenMP support but you added the -%smat_mumps_use_omp_threads option. Configure PETSc with --with-openmp --download-hwloc (or --with-hwloc) to enable it, see more in MATSOLVERMUMPS manual",
                  ((PetscObject)F)->prefix ? ((PetscObject)F)->prefix : "");
       PetscCheck(!schur, PETSC_COMM_SELF, PETSC_ERR_SUP, "Cannot use -%smat_mumps_use_omp_threads with the Schur complement feature", ((PetscObject)F)->prefix ? ((PetscObject)F)->prefix : "");
 #if defined(PETSC_HAVE_OPENMP_SUPPORT)
-      PetscCall(PetscOmpCtrlCreate(mumps->petsc_comm, nthreads, &mumps->omp_ctrl));
+      PetscInt nthreads = -1; /* -1 will let PetscOmpCtrlCreate() guess a proper value when user did not supply one */
+      /* do not use PetscOptionsInt() so that the option -mat_mumps_use_omp_threads is not displayed twice in the help */
+      PetscCall(PetscOptionsGetInt(NULL, ((PetscObject)F)->prefix, "-mat_mumps_use_omp_threads", &nthreads, NULL));
+      PetscCall(PetscOmpCtrlCreate(mumps->petsc_comm, PetscMax(nthreads, -1), &mumps->omp_ctrl));
       PetscCall(PetscOmpCtrlGetOmpComms(mumps->omp_ctrl, &mumps->omp_comm, &mumps->mumps_comm, &mumps->is_omp_master));
+      if (nthreads < -1) PetscCall(PetscOmpCtrlSetNumThreads(mumps->omp_ctrl, -nthreads));
 #endif
     } else {
       mumps->omp_comm      = PETSC_COMM_SELF;

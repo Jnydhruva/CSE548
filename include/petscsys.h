@@ -2220,6 +2220,7 @@ PETSC_EXTERN PetscErrorCode PetscOmpCtrlDestroy(PetscOmpCtrl *);
 PETSC_EXTERN PetscErrorCode PetscOmpCtrlBarrier(PetscOmpCtrl);
 PETSC_EXTERN PetscErrorCode PetscOmpCtrlOmpRegionOnMasterBegin(PetscOmpCtrl);
 PETSC_EXTERN PetscErrorCode PetscOmpCtrlOmpRegionOnMasterEnd(PetscOmpCtrl);
+PETSC_EXTERN PetscErrorCode PetscOmpCtrlSetNumThreads(PetscOmpCtrl, PetscMPIInt);
 
 PETSC_EXTERN PetscErrorCode PetscSegBufferCreate(size_t, size_t, PetscSegBuffer *);
 PETSC_EXTERN PetscErrorCode PetscSegBufferDestroy(PetscSegBuffer *);
