@@ -573,7 +573,7 @@ static PetscErrorCode PetscFEIntegrateHybridResidual_Basic(PetscDS ds, PetscDS d
   const PetscScalar *constants;
   PetscReal         *x;
   PetscInt          *uOff, *uOff_x, *aOff = NULL, *aOff_x = NULL;
-  PetscInt           dim, dimAux, numConstants, Nf, NfAux = 0, totDim, totDimIn, totDimAux = 0, cOffset = 0, cOffsetAux = 0, fOffset, e, NcI, NcS;
+  PetscInt           dim, dimAux, numConstants, Nf, NfAux = 0, totDim, totDimIn, totDimAux = 0, cOffset = 0, cOffsetIn = 0, cOffsetAux = 0, fOffset, e, NcI, NcS;
   PetscBool          isCohesiveField, auxOnBd = PETSC_FALSE;
   const PetscReal   *quadPoints, *quadWeights;
   PetscInt           qdim, qNc, Nq, q, dE;
@@ -586,8 +586,8 @@ static PetscErrorCode PetscFEIntegrateHybridResidual_Basic(PetscDS ds, PetscDS d
   PetscCall(PetscDSGetNumFields(ds, &Nf));
   PetscCall(PetscDSGetTotalDimension(ds, &totDim));
   PetscCall(PetscDSGetTotalDimension(dsIn, &totDimIn));
-  PetscCall(PetscDSGetComponentOffsetsCohesive(ds, s, &uOff));
-  PetscCall(PetscDSGetComponentDerivativeOffsetsCohesive(ds, s, &uOff_x));
+  PetscCall(PetscDSGetComponentOffsetsCohesive(dsIn, s, &uOff));
+  PetscCall(PetscDSGetComponentDerivativeOffsetsCohesive(dsIn, s, &uOff_x));
   PetscCall(PetscDSGetFieldOffsetCohesive(ds, field, &fOffset));
   PetscCall(PetscDSGetWeakForm(ds, &wf));
   PetscCall(PetscWeakFormGetBdResidual(wf, key.label, key.value, key.field, key.part, &n0, &f0_func, &n1, &f1_func));
@@ -639,7 +639,7 @@ static PetscErrorCode PetscFEIntegrateHybridResidual_Basic(PetscDS ds, PetscDS d
       }
       if (debug) PetscCall(PetscPrintf(PETSC_COMM_SELF, "  quad point %" PetscInt_FMT " weight %g detJ %g\n", q, (double) quadWeights[q], (double) fegeom.detJ[0]));
       /* TODO Is this cell or face quadrature, meaning should we use 'q' or 'face*Nq+q' */
-      PetscCall(PetscFEEvaluateFieldJets_Hybrid_Internal(ds, Nf, 0, q, TfIn, &fegeom, &coefficients[cOffset], &coefficients_t[cOffset], u, u_x, u_t));
+      PetscCall(PetscFEEvaluateFieldJets_Hybrid_Internal(ds, Nf, 0, q, TfIn, &fegeom, &coefficients[cOffsetIn], &coefficients_t[cOffsetIn], u, u_x, u_t));
       if (dsAux) PetscCall(PetscFEEvaluateFieldJets_Internal(dsAux, NfAux, 0, auxOnBd ? q : face*Nq+q, TfAux, &fegeom, &coefficientsAux[cOffsetAux], NULL, a, a_x, NULL));
       for (i = 0; i < n0; ++i) f0_func[i](dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, NULL, a_x, t, fegeom.v, fegeom.n, numConstants, constants, &f0[q*NcS]);
       for (c = 0; c < NcS; ++c) f0[q*NcS+c] *= w;
@@ -649,6 +649,7 @@ static PetscErrorCode PetscFEIntegrateHybridResidual_Basic(PetscDS ds, PetscDS d
     if (isCohesiveField) {PetscFEUpdateElementVec_Internal(fe, Tf[field], 0, basisReal, basisDerReal, e, fgeom, f0, f1, &elemVec[cOffset+fOffset]);}
     else                 {PetscFEUpdateElementVec_Hybrid_Internal(fe, Tf[field], 0, s, basisReal, basisDerReal, fgeom, f0, f1, &elemVec[cOffset+fOffset]);}
     cOffset    += totDim;
+    cOffsetIn  += totDimIn;
     cOffsetAux += totDimAux;
   }
   PetscFunctionReturn(0);

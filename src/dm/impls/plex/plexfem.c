@@ -3477,7 +3477,7 @@ PetscErrorCode DMPlexGetHybridCellFields(DM dm, IS cellIS, Vec locX, Vec locX_t,
         if (cohesive) continue;
         PetscCall(PetscDSGetFieldSize(dsIn, f, &fdofIn));
         PetscCall(PetscDSGetFieldOffsetCohesive(dsIn, f, &foffIn));
-        for (PetscInt i = 0; i < fdofIn; ++i) ul[cind*totDim+foffIn+s*fdofIn+i] = xc[foffIn+i];
+        for (PetscInt i = 0; i < fdofIn; ++i) ul[foffIn+s*fdofIn+i] = xc[foffIn+i];
         Nx += fdofIn;
       }
       PetscCall(DMPlexVecRestoreClosure(plex, section, locX, ncell, &Nxc, &xc));
