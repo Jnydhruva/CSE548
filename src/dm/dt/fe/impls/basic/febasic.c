@@ -619,8 +619,8 @@ static PetscErrorCode PetscFEIntegrateHybridResidual_Basic(PetscDS ds, PetscDS d
   dE = fgeom->dimEmbed;
   PetscCheck(fgeom->dim == qdim,PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "FEGeom dim %" PetscInt_FMT " != %" PetscInt_FMT " quadrature dim", fgeom->dim, qdim);
   for (e = 0; e < Ne; ++e) {
-    PetscFEGeom     fegeom;
-    const PetscInt *face = fgeom->face[e];
+    PetscFEGeom    fegeom;
+    const PetscInt face[2] = {fgeom->face[e][0], fgeom->face[Ne+e][1]};
 
     fegeom.v = x; /* Workspace */
     PetscCall(PetscArrayzero(f0, Nq*NcS));

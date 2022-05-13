@@ -5098,8 +5098,8 @@ PetscErrorCode DMPlexComputeResidual_Hybrid_Internal(DM dm, PetscFormKey key[], 
   /* Loop over chunks */
   cellChunkSize = numCells;
   numChunks     = !numCells ? 0 : PetscCeilReal(((PetscReal) numCells)/cellChunkSize);
-  PetscCall(PetscCalloc1(1*cellChunkSize, &faces));
-  PetscCall(ISCreateGeneral(PETSC_COMM_SELF, 1*cellChunkSize, faces, PETSC_USE_POINTER, &chunkIS));
+  PetscCall(PetscCalloc1(2*cellChunkSize, &faces));
+  PetscCall(ISCreateGeneral(PETSC_COMM_SELF, 2*cellChunkSize, faces, PETSC_USE_POINTER, &chunkIS));
   /* Extract field coefficients */
   /* NOTE This needs the end cap faces to have identical orientations */
   PetscCall(DMPlexGetHybridCellFields(dm, cellIS, locX, locX_t, locA[2], &u, &u_t, &a[2]));
@@ -5120,9 +5120,9 @@ PetscErrorCode DMPlexComputeResidual_Hybrid_Internal(DM dm, PetscFormKey key[], 
       const PetscInt *cone;
       PetscCall(DMPlexGetCone(dm, cell, &cone));
       faces[0*cellChunkSize+(c-cS)] = cone[0];
-      /*faces[1*cellChunkSize+(c-cS)] = cone[1];*/
+      faces[1*cellChunkSize+(c-cS)] = cone[1];
     }
-    PetscCall(ISGeneralSetIndices(chunkIS, 1*cellChunkSize, faces, PETSC_USE_POINTER));
+    PetscCall(ISGeneralSetIndices(chunkIS, 2*cellChunkSize, faces, PETSC_USE_POINTER));
     /* Get geometric data */
     if (maxDegree <= 1) {
       if (!affineQuad) PetscCall(DMFieldCreateDefaultQuadrature(coordField, chunkIS, &affineQuad));
