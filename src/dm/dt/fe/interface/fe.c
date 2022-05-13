@@ -2140,54 +2140,60 @@ PetscErrorCode PetscFEEvaluateFieldJets_Internal(PetscDS ds, PetscInt Nf, PetscI
   return 0;
 }
 
-PetscErrorCode PetscFEEvaluateFieldJets_Hybrid_Internal(PetscDS ds, PetscInt Nf, PetscInt r, PetscInt q, PetscTabulation T[], PetscFEGeom *fegeom, const PetscScalar coefficients[], const PetscScalar coefficients_t[], PetscScalar u[], PetscScalar u_x[], PetscScalar u_t[])
+PetscErrorCode PetscFEEvaluateFieldJets_Hybrid_Internal(PetscDS ds, PetscInt Nf, PetscInt rc, PetscInt qc, PetscTabulation Tab[], const PetscInt rf[], const PetscInt qf[], PetscTabulation Tabf[], PetscFEGeom *fegeom, const PetscScalar coefficients[], const PetscScalar coefficients_t[], PetscScalar u[], PetscScalar u_x[], PetscScalar u_t[])
 {
   PetscInt dOffset = 0, fOffset = 0, f, g;
 
   /* f is the field number in the DS, g is the field number in u[] */
   for (f = 0, g = 0; f < Nf; ++f) {
-    PetscFE          fe   = (PetscFE) ds->disc[f];
-    const PetscInt   dEt  = T[f]->cdim;
-    const PetscInt   dE   = fegeom->dimEmbed;
-    const PetscInt   Nq   = T[f]->Np;
-    const PetscInt   Nbf  = T[f]->Nb;
-    const PetscInt   Ncf  = T[f]->Nc;
-    const PetscReal *Bq   = &T[f]->T[0][(r*Nq+q)*Nbf*Ncf];
-    const PetscReal *Dq   = &T[f]->T[1][(r*Nq+q)*Nbf*Ncf*dEt];
     PetscBool        isCohesive;
     PetscInt         Ns, s;
 
-    if (!T[f]) continue;
+    if (!Tab[f]) continue;
     PetscCall(PetscDSGetCohesive(ds, f, &isCohesive));
-    Ns   = isCohesive ? 1 : 2;
-    for (s = 0; s < Ns; ++s, ++g) {
-      PetscInt b, c, d;
+    Ns = isCohesive ? 1 : 2;
+    {
+      PetscTabulation  T   = isCohesive ? Tab[f] : Tabf[f];
+      PetscFE          fe  = (PetscFE) ds->disc[f];
+      const PetscInt   dEt = T->cdim;
+      const PetscInt   dE  = fegeom->dimEmbed;
+      const PetscInt   Nq  = T->Np;
+      const PetscInt   Nbf = T->Nb;
+      const PetscInt   Ncf = T->Nc;
 
-      for (c = 0; c < Ncf; ++c)    u[fOffset+c]      = 0.0;
-      for (d = 0; d < dE*Ncf; ++d) u_x[fOffset*dE+d] = 0.0;
-      for (b = 0; b < Nbf; ++b) {
-        for (c = 0; c < Ncf; ++c) {
-          const PetscInt cidx = b*Ncf+c;
+      for (s = 0; s < Ns; ++s, ++g) {
+        const PetscInt   r  = isCohesive ? rc : rf[s];
+        const PetscInt   q  = isCohesive ? qc : qf[s];
+        const PetscReal *Bq = &T->T[0][(r*Nq+q)*Nbf*Ncf];
+        const PetscReal *Dq = &T->T[1][(r*Nq+q)*Nbf*Ncf*dEt];
+        PetscInt         b, c, d;
 
-          u[fOffset+c] += Bq[cidx]*coefficients[dOffset+b];
-          for (d = 0; d < dEt; ++d) u_x[(fOffset+c)*dE+d] += Dq[cidx*dEt+d]*coefficients[dOffset+b];
-        }
-      }
-      PetscCall(PetscFEPushforward(fe, fegeom, 1, &u[fOffset]));
-      PetscCall(PetscFEPushforwardGradient(fe, fegeom, 1, &u_x[fOffset*dE]));
-      if (u_t) {
-        for (c = 0; c < Ncf; ++c) u_t[fOffset+c] = 0.0;
+        for (c = 0; c < Ncf; ++c)    u[fOffset+c]      = 0.0;
+        for (d = 0; d < dE*Ncf; ++d) u_x[fOffset*dE+d] = 0.0;
         for (b = 0; b < Nbf; ++b) {
           for (c = 0; c < Ncf; ++c) {
             const PetscInt cidx = b*Ncf+c;
 
-            u_t[fOffset+c] += Bq[cidx]*coefficients_t[dOffset+b];
+            u[fOffset+c] += Bq[cidx]*coefficients[dOffset+b];
+            for (d = 0; d < dEt; ++d) u_x[(fOffset+c)*dE+d] += Dq[cidx*dEt+d]*coefficients[dOffset+b];
           }
         }
-        PetscCall(PetscFEPushforward(fe, fegeom, 1, &u_t[fOffset]));
+        PetscCall(PetscFEPushforward(fe, fegeom, 1, &u[fOffset]));
+        PetscCall(PetscFEPushforwardGradient(fe, fegeom, 1, &u_x[fOffset*dE]));
+        if (u_t) {
+          for (c = 0; c < Ncf; ++c) u_t[fOffset+c] = 0.0;
+          for (b = 0; b < Nbf; ++b) {
+            for (c = 0; c < Ncf; ++c) {
+              const PetscInt cidx = b*Ncf+c;
+
+              u_t[fOffset+c] += Bq[cidx]*coefficients_t[dOffset+b];
+            }
+          }
+          PetscCall(PetscFEPushforward(fe, fegeom, 1, &u_t[fOffset]));
+        }
+        fOffset += Ncf;
+        dOffset += Nbf;
       }
-      fOffset += Ncf;
-      dOffset += Nbf;
     }
   }
   return 0;

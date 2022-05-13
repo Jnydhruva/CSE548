@@ -597,7 +597,7 @@ static PetscErrorCode PetscFEIntegrateHybridResidual_Basic(PetscDS ds, PetscDS d
   PetscCall(PetscDSGetWeakFormArrays(ds, &f0, &f1, NULL, NULL, NULL, NULL));
   /* NOTE This is a bulk tabulation because the DS is a face discretization */
   PetscCall(PetscDSGetTabulation(ds, &Tf));
-  PetscCall(PetscDSGetTabulation(dsIn, &TfIn));
+  PetscCall(PetscDSGetFaceTabulation(dsIn, &TfIn));
   PetscCall(PetscDSGetConstants(ds, &numConstants, &constants));
   if (dsAux) {
     PetscCall(PetscDSGetSpatialDimension(dsAux, &dimAux));
@@ -619,13 +619,14 @@ static PetscErrorCode PetscFEIntegrateHybridResidual_Basic(PetscDS ds, PetscDS d
   dE = fgeom->dimEmbed;
   PetscCheck(fgeom->dim == qdim,PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "FEGeom dim %" PetscInt_FMT " != %" PetscInt_FMT " quadrature dim", fgeom->dim, qdim);
   for (e = 0; e < Ne; ++e) {
-    PetscFEGeom    fegeom;
-    const PetscInt face = fgeom->face[e][0];
+    PetscFEGeom     fegeom;
+    const PetscInt *face = fgeom->face[e];
 
     fegeom.v = x; /* Workspace */
     PetscCall(PetscArrayzero(f0, Nq*NcS));
     PetscCall(PetscArrayzero(f1, Nq*NcS*dE));
     for (q = 0; q < Nq; ++q) {
+      const PetscInt qpt[2] = {face[0]*Nq+q, face[1]*Nq+q};
       PetscReal w;
       PetscInt  c, d;
 
@@ -639,8 +640,8 @@ static PetscErrorCode PetscFEIntegrateHybridResidual_Basic(PetscDS ds, PetscDS d
       }
       if (debug) PetscCall(PetscPrintf(PETSC_COMM_SELF, "  quad point %" PetscInt_FMT " weight %g detJ %g\n", q, (double) quadWeights[q], (double) fegeom.detJ[0]));
       /* TODO Is this cell or face quadrature, meaning should we use 'q' or 'face*Nq+q' */
-      PetscCall(PetscFEEvaluateFieldJets_Hybrid_Internal(ds, Nf, 0, q, TfIn, &fegeom, &coefficients[cOffsetIn], &coefficients_t[cOffsetIn], u, u_x, u_t));
-      if (dsAux) PetscCall(PetscFEEvaluateFieldJets_Internal(dsAux, NfAux, 0, auxOnBd ? q : face*Nq+q, TfAux, &fegeom, &coefficientsAux[cOffsetAux], NULL, a, a_x, NULL));
+      PetscCall(PetscFEEvaluateFieldJets_Hybrid_Internal(ds, Nf, 0, q, Tf, face, qpt, TfIn, &fegeom, &coefficients[cOffsetIn], &coefficients_t[cOffsetIn], u, u_x, u_t));
+      if (dsAux) PetscCall(PetscFEEvaluateFieldJets_Internal(dsAux, NfAux, 0, auxOnBd ? q : face[0]*Nq+q, TfAux, &fegeom, &coefficientsAux[cOffsetAux], NULL, a, a_x, NULL));
       for (i = 0; i < n0; ++i) f0_func[i](dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, NULL, a_x, t, fegeom.v, fegeom.n, numConstants, constants, &f0[q*NcS]);
       for (c = 0; c < NcS; ++c) f0[q*NcS+c] *= w;
       for (i = 0; i < n1; ++i) f1_func[i](dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, NULL, a_x, t, fegeom.v, fegeom.n, numConstants, constants, &f1[q*NcS*dE]);
@@ -970,7 +971,7 @@ PetscErrorCode PetscFEIntegrateHybridJacobian_Basic(PetscDS ds, PetscDS dsIn, Pe
   PetscInt           offsetI    = 0; /* Offset into an element vector for fieldI */
   PetscInt           offsetJ    = 0; /* Offset into an element vector for fieldJ */
   PetscQuadrature    quad;
-  PetscTabulation   *T, *TAux = NULL;
+  PetscTabulation   *T, *TfIn, *TAux = NULL;
   PetscScalar       *g0, *g1, *g2, *g3, *u, *u_t = NULL, *u_x, *a, *a_x, *basisReal, *basisDerReal, *testReal, *testDerReal;
   const PetscScalar *constants;
   PetscReal         *x;
@@ -1004,6 +1005,7 @@ PetscErrorCode PetscFEIntegrateHybridJacobian_Basic(PetscDS ds, PetscDS dsIn, Pe
   PetscCall(PetscDSGetWorkspace(ds, &x, &basisReal, &basisDerReal, &testReal, &testDerReal));
   PetscCall(PetscDSGetWeakFormArrays(ds, NULL, NULL, &g0, &g1, &g2, &g3));
   PetscCall(PetscDSGetTabulation(ds, &T));
+  PetscCall(PetscDSGetFaceTabulation(dsIn, &TfIn));
   PetscCall(PetscDSGetFieldOffsetCohesive(ds, fieldI, &offsetI));
   PetscCall(PetscDSGetFieldOffsetCohesive(ds, fieldJ, &offsetJ));
   PetscCall(PetscDSGetConstants(ds, &numConstants, &constants));
@@ -1035,8 +1037,8 @@ PetscErrorCode PetscFEIntegrateHybridJacobian_Basic(PetscDS ds, PetscDS dsIn, Pe
   PetscCall(PetscQuadratureGetData(quad, NULL, &qNc, &Nq, &quadPoints, &quadWeights));
   PetscCheck(qNc == 1,PETSC_COMM_SELF, PETSC_ERR_SUP, "Only supports scalar quadrature, not %" PetscInt_FMT " components", qNc);
   for (e = 0; e < Ne; ++e) {
-    PetscFEGeom    fegeom;
-    const PetscInt face = fgeom->face[e][0];
+    PetscFEGeom     fegeom;
+    const PetscInt *face = fgeom->face[e];
 
     fegeom.dim      = fgeom->dim;
     fegeom.dimEmbed = fgeom->dimEmbed;
@@ -1049,6 +1051,7 @@ PetscErrorCode PetscFEIntegrateHybridJacobian_Basic(PetscDS ds, PetscDS dsIn, Pe
       fegeom.n    = &fgeom->n[e*dE*Np];
     }
     for (q = 0; q < Nq; ++q) {
+      const PetscInt qpt[2] = {face[0]*Nq+q, face[1]*Nq+q};
       PetscReal w;
       PetscInt  c;
 
@@ -1070,8 +1073,8 @@ PetscErrorCode PetscFEIntegrateHybridJacobian_Basic(PetscDS ds, PetscDS dsIn, Pe
 #endif
       }
       if (debug) PetscCall(PetscPrintf(PETSC_COMM_SELF, "  quad point %" PetscInt_FMT "\n", q));
-      if (coefficients) PetscCall(PetscFEEvaluateFieldJets_Hybrid_Internal(ds, Nf, 0, q, T, &fegeom, &coefficients[cOffset], &coefficients_t[cOffset], u, u_x, u_t));
-      if (dsAux) PetscCall(PetscFEEvaluateFieldJets_Internal(dsAux, NfAux, 0, auxOnBd ? q : face*Nq+q, TAux, &fegeom, &coefficientsAux[cOffsetAux], NULL, a, a_x, NULL));
+      if (coefficients) PetscCall(PetscFEEvaluateFieldJets_Hybrid_Internal(ds, Nf, 0, q, T, face, qpt, TfIn, &fegeom, &coefficients[cOffset], &coefficients_t[cOffset], u, u_x, u_t));
+      if (dsAux) PetscCall(PetscFEEvaluateFieldJets_Internal(dsAux, NfAux, 0, auxOnBd ? q : face[0]*Nq+q, TAux, &fegeom, &coefficientsAux[cOffsetAux], NULL, a, a_x, NULL));
       if (n0) {
         PetscCall(PetscArrayzero(g0, NcS*NcT));
         for (i = 0; i < n0; ++i) g0_func[i](dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, NULL, a_x, t, u_tshift, fegeom.v, fegeom.n, numConstants, constants, g0);
