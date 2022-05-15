@@ -511,41 +511,41 @@ linux-cuda-double-64idx:
     - .stage-3
     - .linux_test
   tags:
-    - gpu:nvidia, os:linux, name:p1
+    - cuda-stage3
   variables:
     TEST_ARCH: arch-ci-linux-cuda-double-64idx
-    TEST_OPTS: -j1 query=requires queryval=cuda
+    TEST_OPTS: -j15 query=requires queryval=cuda
 
 linux-cuda-single-cxx:
   extends:
     - .stage-3
     - .linux_test
   tags:
-    - gpu:nvidia, os:linux
+    - cuda-stage3
   variables:
     TEST_ARCH: arch-ci-linux-cuda-single-cxx
-    TEST_OPTS: -j1 query=requires queryval=cuda
+    TEST_OPTS: -j15 query=requires queryval=cuda
 
 linux-cuda-uni-pkgs:
   extends:
     - .stage-3
     - .linux_test
   tags:
-    - gpu:nvidia, os:linux
+    - cuda-stage3
   variables:
     TEST_ARCH: arch-ci-linux-cuda-uni-pkgs
-    TEST_OPTS: -j4 query=requires queryval=cuda
+    TEST_OPTS: -j20 query=requires queryval=cuda
 
 linux-viennacl:
   extends:
     - .stage-3
     - .linux_test
   tags:
-    - gpu:nvidia, os:linux
+    - cuda-stage3
   variables:
     TEST_ARCH: arch-ci-linux-viennacl
     MAKE_CXXFLAGS: -Werror -Wno-ignored-attributes
-    TEST_OPTS: -j1 query=requires queryval=viennacl
+    TEST_OPTS: -j20 query=requires queryval=viennacl
 
 linux-without-fc:
   extends:
