@@ -486,15 +486,16 @@ linux-cuda-pkgs:
     TEST_ARCH: arch-ci-linux-cuda-pkgs
     LOAD_MODULES: openmpi/4.1.3-gcc-11.3.0-cuda-11.7.0
 
-linux-cuda11-double:
+linux-cuda112-gcov:
   extends:
     - .stage-3
     - .linux_test
   tags:
-    - gpu:nvidia, os:linux, name:frog
+    - cuda-stage3
   variables:
-    TEST_ARCH: arch-ci-linux-cuda11-double
-    TEST_OPTS: -j1 query=requires queryval=cuda
+    TEST_ARCH: arch-ci-linux-cuda112-gcov
+    LOAD_MODULES: cuda/11.2.2 gcc/9.4.0
+    RUN_GCOV: 1
 
 linux-cuda-cmplx:
   extends:
@@ -957,6 +958,7 @@ analyze-pipeline:
   tags:
     - gce-nfs-short
   dependencies:
+    - linux-cuda112-gcov
     - linux-pkgs-gcov
     - linux-cmplx-gcov
     - linux-matlab-ilp64-gcov
