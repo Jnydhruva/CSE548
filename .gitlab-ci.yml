@@ -496,15 +496,14 @@ linux-cuda11-double:
     TEST_ARCH: arch-ci-linux-cuda11-double
     TEST_OPTS: -j1 query=requires queryval=cuda
 
-linux-cuda11-complex:
+linux-cuda-cmplx:
   extends:
     - .stage-3
     - .linux_test
   tags:
-    - gpu:nvidia, os:linux, name:frog
+    - cuda-stage3
   variables:
-    TEST_ARCH: arch-ci-linux-cuda11-complex
-    TEST_OPTS: -j1 query=requires queryval=cuda
+    TEST_ARCH: arch-ci-linux-cuda-cmplx
 
 linux-cuda-double-64idx:
   extends:
