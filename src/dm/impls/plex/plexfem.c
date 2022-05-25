@@ -5069,7 +5069,7 @@ PetscErrorCode DMPlexComputeResidual_Hybrid_Internal(DM dm, PetscFormKey key[], 
     PetscInt Nb, Nbs;
 
     PetscCall(VecGetDM(locS[2], &dmScale[2]));
-    PetscCall(DMGetCellDS(dmScale[2], cStart, &dsScale[2], NULL));
+    PetscCall(DMGetCellDS(dmScale[2], cells ? cells[cStart] : cStart, &dsScale[2], NULL));
     locS[1] = locS[0] = locS[2];
     dmScale[1] = dmScale[0] = dmScale[2];
     dsScale[1] = dsScale[0] = dsScale[2];
@@ -5727,7 +5727,7 @@ PetscErrorCode DMPlexComputeJacobian_Hybrid_Internal(DM dm, PetscFormKey key[], 
     PetscInt Nb, Nbs;
 
     PetscCall(VecGetDM(locS[2], &dmScale[2]));
-    PetscCall(DMGetCellDS(dmScale[2], cStart, &dsScale[2], NULL));
+    PetscCall(DMGetCellDS(dmScale[2], cells ? cells[cStart] : cStart, &dsScale[2], NULL));
     locS[1] = locS[0] = locS[2];
     dmScale[1] = dmScale[0] = dmScale[2];
     dsScale[1] = dsScale[0] = dsScale[2];
