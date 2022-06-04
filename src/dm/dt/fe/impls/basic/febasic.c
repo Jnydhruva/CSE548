@@ -626,7 +626,7 @@ static PetscErrorCode PetscFEIntegrateHybridResidual_Basic(PetscDS ds, PetscDS d
     PetscCall(PetscArrayzero(f0, Nq*NcS));
     PetscCall(PetscArrayzero(f1, Nq*NcS*dE));
     for (q = 0; q < Nq; ++q) {
-      const PetscInt qpt[2] = {q, q};
+      const PetscInt qpt[2] = {q, Nq - q - 1};
       PetscReal w;
       PetscInt  c, d;
 
