@@ -84,7 +84,7 @@ info:
              printf  "mpicc -show: %b\n" "${MPICC_SHOW}";\
           fi; \
         printf  "C compiler version: %b\n" "${C_VERSION}"; \
-        if [ "${CXX}" != "" ]; then \
+        if [ "${CXX_LINKER}" != "" ]; then \
         echo "Using C++ compile: ${PETSC_CXXCOMPILE_SINGLE}";\
         if [ "${MPICXX_SHOW}" != "" ]; then \
                printf "mpicxx -show: %b\n" "${MPICXX_SHOW}"; \
