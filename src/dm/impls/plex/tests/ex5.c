@@ -1221,6 +1221,21 @@ static PetscErrorCode TestAssembly(DM dm, AppCtx *user)
   PetscCall(DMRestoreLocalVector(dm, &locF));
   PetscCall(MatDestroy(&J));
   PetscCall(ISDestroy(&cohesiveCells));
+
+  {
+    DMPolytopeType  ct;
+    PetscFE         fe;
+    PetscQuadrature quad;
+    IS             *perm;
+    PetscInt        Na, a;
+
+    PetscCall(DMPlexGetCellType(dm, cMax, &ct));
+    PetscCall(DMGetField(dm, 0, NULL, (PetscObject *) &fe));
+    PetscCall(PetscFEGetQuadrature(fe, &quad));
+    PetscCall(PetscDTComputeFaceQuadPermutation(ct, quad, &Na, &perm));
+    for (a = 0; a < Na; ++a) PetscCall(ISDestroy(&perm[a]));
+    PetscCall(PetscFree(perm));
+  }
   PetscFunctionReturn(0);
 }
 

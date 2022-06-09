@@ -2877,3 +2877,55 @@ PetscErrorCode PetscDTBaryToIndex(PetscInt len, PetscInt sum, const PetscInt coo
   *index = i;
   PetscFunctionReturn(0);
 }
+
+/*
+1) For each face type:
+     For each transformation from outward to inward normal:
+         Compute the permutation of quadrature points:
+            Compute the quad point coordinates from each side and compare
+*/
+PetscErrorCode PetscDTComputeFaceQuadPermutation(DMPolytopeType ct, PetscQuadrature quad, PetscInt *Np, IS *perm[])
+{
+  const PetscReal *xq, *wq;
+  PetscInt         dim, qdim, d, e, Na, o, Nq, q, qp;
+
+  PetscFunctionBegin;
+  dim = DMPolytopeTypeGetDim(ct);
+  Na  = DMPolytopeTypeGetNumArrangments(ct);
+  Na /= 2;
+  PetscCall(PetscQuadratureGetData(quad, &qdim, NULL, &Nq, &xq, &wq));
+  PetscCheck(dim >= 0 && dim < 3, PETSC_COMM_SELF, PETSC_ERR_ARG_OUTOFRANGE, "Cannot compute quadrature permutation for cell type %s", DMPolytopeTypes[ct]);
+  PetscCheck(dim == qdim, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "Celltype %s dimension %" PetscInt_FMT " != %" PetscInt_FMT " quad dimension", DMPolytopeTypes[ct], dim, qdim);
+  *Np = Na;
+  PetscCall(PetscMalloc1(Na, perm));
+  for (o = -1; o > -(Na+1); --o) {
+    DM        refdm;
+    PetscInt *idx;
+    PetscReal v0[3], J[9], detJ, txq[3];
+    PetscBool flg;
+
+    PetscCall(DMPlexCreateReferenceCell(PETSC_COMM_SELF, ct, &refdm));
+    PetscCall(DMPlexOrientPoint(refdm, 0, o));
+    PetscCall(DMPlexComputeCellGeometryFEM(refdm, 0, NULL, v0, J, NULL, &detJ));
+    PetscCall(PetscMalloc1(Nq, &idx));
+    for (q = 0; q < Nq; ++q) {
+      for (d = 0; d < dim; ++d) {
+        txq[d] = 0.;
+        for (e = 0; e < dim; ++e) txq[d] += J[d*dim+e]*xq[q*dim+e];
+      }
+      for (qp = 0; qp < Nq; ++qp) {
+        PetscReal diff = 0.;
+
+        for (d = 0; d < dim; ++d) diff += PetscAbsReal(txq[d] - xq[qp*dim+d]);
+        if (diff < PETSC_SMALL) break;
+      }
+      PetscCheck(qp < Nq, PETSC_COMM_SELF, PETSC_ERR_PLIB, "Transformed quad point %" PetscInt_FMT " does not match another quad point", q);
+      idx[q] = qp;
+    }
+    PetscCall(ISCreateGeneral(PETSC_COMM_SELF, Nq, idx, PETSC_OWN_POINTER, &(*perm)[-(o+1)]));
+    PetscCall(ISGetInfo((*perm)[-(o+1)], IS_PERMUTATION, IS_LOCAL, PETSC_TRUE, &flg));
+    PetscCall(DMDestroy(&refdm));
+    PetscCheck(flg, PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "Ordering for orientation %" PetscInt_FMT "was not a permutation", o);
+  }
+  PetscFunctionReturn(0);
+}

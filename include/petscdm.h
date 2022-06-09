@@ -8,6 +8,7 @@
 #include <petscfetypes.h>
 #include <petscdstypes.h>
 #include <petscdmlabel.h>
+#include <petscdt.h>
 
 /* SUBMANSEC = DM */
 
@@ -1056,5 +1057,7 @@ PETSC_EXTERN PetscErrorCode DMPolytopeMatchVertexOrientation(DMPolytopeType, con
 PETSC_EXTERN PetscErrorCode DMPolytopeGetOrientation(DMPolytopeType, const PetscInt[], const PetscInt[], PetscInt *);
 PETSC_EXTERN PetscErrorCode DMPolytopeGetVertexOrientation(DMPolytopeType, const PetscInt[], const PetscInt[], PetscInt *);
 PETSC_EXTERN PetscErrorCode DMPolytopeInCellTest(DMPolytopeType, const PetscReal[], PetscBool *);
+
+PETSC_EXTERN PetscErrorCode PetscDTComputeFaceQuadPermutation(DMPolytopeType, PetscQuadrature, PetscInt *, IS *[]);
 
 #endif
