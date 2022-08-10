@@ -3,7 +3,7 @@ import config.package
 class Configure(config.package.Package):
   def __init__(self, framework):
     config.package.Package.__init__(self, framework)
-    self.gitcommit              = '0ba3c7aea9f14e872352d54423fa6bcb76c8ba74' # main jul-21-2022
+    self.gitcommit              = '066f2cd393187a60b8caad1d15ccbb526eacd1b0' # jose/install-lib aug-10-2022
     self.download               = ['git://https://gitlab.com/slepc/slepc.git','https://gitlab.com/slepc/slepc/-/archive/'+self.gitcommit+'/slepc-'+self.gitcommit+'.tar.gz']
     self.functions              = []
     self.includes               = []
@@ -79,13 +79,23 @@ class Configure(config.package.Package):
              echo "Error installing SLEPc." && \\\n\
              echo "********************************************************************" && \\\n\
              exit 1)'])
+    self.addMakeRule('slepcinstall-lib','', \
+                       ['@echo "*** Installing SLEPc ***"',\
+                          '@(cd '+self.packageDir+' && \\\n\
+           '+barg+'${OMAKE} install-lib '+barg+')  || \\\n\
+             (echo "**************************ERROR*************************************" && \\\n\
+             echo "Error installing SLEPc." && \\\n\
+             echo "********************************************************************" && \\\n\
+             exit 1)'])
     if self.argDB['prefix'] and not 'package-prefix-hash' in self.argDB:
       self.addMakeRule('slepc-build','')
       # the build must be done at install time because PETSc shared libraries must be in final location before building slepc
       self.addMakeRule('slepc-install','slepcbuild slepcinstall')
+      self.addMakeRule('slepc-install-lib','slepcbuild slepcinstall-lib')
     else:
       self.addMakeRule('slepc-build','slepcbuild slepcinstall')
       self.addMakeRule('slepc-install','')
+      self.addMakeRule('slepc-install-lib','')
 
     if self.argDB['prefix'] and not 'package-prefix-hash' in self.argDB:
       self.logPrintBox('SLEPc examples are available at '+os.path.join('${PETSC_DIR}',self.arch,'externalpackages','git.slepc')+'\nexport SLEPC_DIR='+prefix)
