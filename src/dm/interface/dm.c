@@ -6703,8 +6703,11 @@ PetscErrorCode DMGetStratumIS(DM dm, const char name[], PetscInt value, IS *poin
   PetscValidPointer(points, 4);
   PetscCall(DMGetLabel(dm, name, &label));
   *points = NULL;
-  if (!label) PetscFunctionReturn(0);
-  PetscCall(DMLabelGetStratumIS(label, value, points));
+  if (label) {
+    PetscCall(DMLabelGetStratumIS(label, value, points));
+  } else {
+    PetscCall(ISCreateGeneral(PETSC_COMM_SELF,0,NULL,PETSC_USE_POINTER,points));
+  }
   PetscFunctionReturn(0);
 }
 
