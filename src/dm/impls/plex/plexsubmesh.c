@@ -3202,13 +3202,14 @@ static inline PetscInt DMPlexFilterPointPerm_Internal(PetscInt point, PetscInt f
 static PetscErrorCode DMPlexFilterLabels_Internal(DM dm, const PetscInt numSubPoints[], const PetscInt *subpoints[], const PetscInt firstSubPoint[], DM subdm)
 {
   DMLabel  depthLabel;
-  PetscInt Nl, l, d;
+  PetscInt Nl, l, d, subd;
 
   PetscFunctionBegin;
   // Reset depth label for fast lookup
   PetscCall(DMPlexGetDepthLabel(dm, &depthLabel));
   PetscCall(DMLabelMakeAllInvalid_Internal(depthLabel));
   PetscCall(DMGetNumLabels(dm, &Nl));
+  PetscCall(DMPlexGetDepth(subdm, &subd));
   for (l = 0; l < Nl; ++l) {
     DMLabel         label, newlabel;
     const char     *lname;
@@ -3244,6 +3245,7 @@ static PetscErrorCode DMPlexFilterLabels_Internal(DM dm, const PetscInt numSubPo
         PetscInt       subp;
 
         PetscCall(DMPlexGetPointDepth(dm, point, &d));
+        if (d > subd) continue;
         subp = DMPlexFilterPoint_Internal(point, firstSubPoint[d], numSubPoints[d], subpoints[d]);
         if (subp >= 0) PetscCall(DMLabelSetValue(newlabel, subp, values[v]));
       }
@@ -3609,14 +3611,8 @@ static PetscErrorCode DMPlexCreateSubmeshGeneric_Interpolated(DM dm, DMLabel lab
   PetscInt         totSubPoints = 0, dim, sdim, d;
 
   PetscFunctionBegin;
-  PetscCall(DMPlexGetSubpointMap(subdm, &subpointMap));
   /* Setup chart */
   PetscCall(DMGetDimension(dm, &dim));
-  PetscCall(PetscMalloc4(dim + 1, &numSubPoints, dim + 1, &firstSubPoint, dim + 1, &subpointIS, dim + 1, &subpoints));
-  for (d = 0; d <= dim; ++d) {
-    PetscCall(DMLabelGetStratumSize(subpointMap, d, &numSubPoints[d]));
-    totSubPoints += numSubPoints[d];
-  }
   // Determine submesh dimension
   PetscCall(DMGetDimension(subdm, &sdim));
   if (sdim > 0) {
@@ -3627,16 +3623,21 @@ static PetscErrorCode DMPlexCreateSubmeshGeneric_Interpolated(DM dm, DMLabel lab
     PetscCall(DMPlexSubmeshGetDimension_Static(dm, subdm, &sdim));
     PetscCall(DMSetDimension(subdm, sdim));
   }
+  PetscCall(PetscMalloc4(sdim + 1, &numSubPoints, sdim + 1, &firstSubPoint, sdim + 1, &subpointIS, sdim + 1, &subpoints));
+  PetscCall(DMPlexGetSubpointMap(subdm, &subpointMap));
+  for (d = 0; d <= sdim; ++d) {
+    PetscCall(DMLabelGetStratumSize(subpointMap, d, &numSubPoints[d]));
+    PetscCall(DMLabelGetStratumIS(subpointMap, d, &subpointIS[d]));
+    if (subpointIS[d]) PetscCall(ISGetIndices(subpointIS[d], &subpoints[d]));
+    totSubPoints += numSubPoints[d];
+  }
   PetscCall(DMPlexSetChart(subdm, 0, totSubPoints));
   /* Set cone sizes */
   firstSubPoint[sdim] = 0;
-  firstSubPoint[0]    = firstSubPoint[sdim] + numSubPoints[sdim];
+  if (sdim > 0) firstSubPoint[0] = firstSubPoint[sdim] + numSubPoints[sdim];
   if (sdim > 1) firstSubPoint[sdim - 1] = firstSubPoint[0] + numSubPoints[0];
   if (sdim > 2) firstSubPoint[sdim - 2] = firstSubPoint[sdim - 1] + numSubPoints[sdim - 1];
-  for (d = 0; d <= sdim; ++d) {
-    PetscCall(DMLabelGetStratumIS(subpointMap, d, &subpointIS[d]));
-    if (subpointIS[d]) PetscCall(ISGetIndices(subpointIS[d], &subpoints[d]));
-  }
+  PetscCheck(sdim < 4, PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "Only coded for max 3 dimensional DMs");
   PetscCall(DMPlexSubmeshSetTopology_Static(dm, subdm, numSubPoints, firstSubPoint, subpoints));
   PetscCall(DMPlexSubmeshSetCoordinates_Static(dm, subdm, numSubPoints, firstSubPoint, subpoints));
   PetscCall(DMPlexSubmeshSetSubpointSF_Static(dm, subdm, ownershipTransferSF));
@@ -3993,7 +3994,7 @@ PetscErrorCode DMPlexCreateCohesiveSubmesh(DM dm, PetscBool hasLagrange, const c
 PetscErrorCode DMPlexFilter(DM dm, DMLabel cellLabel, PetscInt value, DM *subdm)
 {
   DMLabel  subpointMap;
-  PetscInt dim, overlap;
+  PetscInt dim, subdim, overlap;
 
   PetscFunctionBegin;
   PetscValidHeaderSpecific(dm, DM_CLASSID, 1);
@@ -4001,14 +4002,20 @@ PetscErrorCode DMPlexFilter(DM dm, DMLabel cellLabel, PetscInt value, DM *subdm)
   PetscCall(DMGetDimension(dm, &dim));
   PetscCall(DMCreate(PetscObjectComm((PetscObject)dm), subdm));
   PetscCall(DMSetType(*subdm, DMPLEX));
-  PetscCall(DMPlexSetVTKCellHeight(*subdm, 0));
   /* Create subpointMap which marks the submesh */
   PetscCall(DMLabelCreate(PETSC_COMM_SELF, "subpoint_map", &subpointMap));
   PetscCall(DMPlexSetSubpointMap(*subdm, subpointMap));
   PetscCall(DMPlexMarkSubpointMap_Closure_Static(dm, cellLabel, value, subpointMap));
   PetscCall(DMLabelDestroy(&subpointMap));
+  PetscCall(DMPlexSubmeshGetDimension_Static(dm, *subdm, &subdim));
+  /* Return if subpointMap was empty */
+  if (subdim < 0) {
+    PetscCall(DMLabelDestroy(&subpointMap));
+    PetscFunctionReturn(PETSC_SUCCESS);
+  }
+  PetscCall(DMPlexSetVTKCellHeight(*subdm, 0));
   /* Extract submesh in place, could be empty on some procs, could have inconsistency if procs do not both extract a shared cell */
-  PetscCall(DMPlexCreateSubmeshGeneric_Interpolated(dm, cellLabel, value, PETSC_FALSE, NULL, *subdm));
+  PetscCall(DMPlexCreateSubmeshGeneric_Interpolated(dm, filter, value, PETSC_FALSE, NULL, *subdm));
   PetscCall(DMPlexCopy_Internal(dm, PETSC_TRUE, PETSC_TRUE, *subdm));
   // It is possible to obtain a surface mesh where some faces are in SF
   //   We should either mark the mesh as having an overlap, or delete these from the SF
@@ -4152,7 +4159,7 @@ static PetscErrorCode DMPlexCreateSubpointIS_Internal(DM dm, IS *subpointIS)
   Output Parameter:
 . subpointIS - The IS of all the points from the original mesh in this submesh, or NULL if this is not a submesh
 
-  Note: This IS is guaranteed to be sorted by the construction of the submesh
+  Note: This IS is guaranteed to be sorted by the construction of the submesh if the submesh dimension equals to the parent mesh dimension
 
   Level: developer
 
