@@ -749,6 +749,22 @@ cdef class DMPlex(DM):
         PetscCLEAR(self.obj); self.dm = dmGhosted
         return toInt(numGhostCells)
 
+    # Submesh
+
+    def filter(self, DMLabel flter, flterValue, ignoreLabelHalo=True, addOverlap=True):
+        cdef PetscInt cflterValue = asInt(flterValue)
+        cdef PetscBool cignoreLabelHalo = asBool(ignoreLabelHalo)
+        cdef PetscBool caddOverlap = asBool(addOverlap)
+        cdef DMPlex subdm = DMPlex()
+        CHKERR( DMPlexFilter(self.dm, flter.dmlabel, cflterValue, cignoreLabelHalo, caddOverlap, &subdm.dm) )
+        return subdm
+
+    def getSubpointIS(self):
+        cdef IS iset = IS()
+        CHKERR( DMPlexGetSubpointIS(self.dm, &iset.iset) )
+        PetscINCREF(iset.obj)
+        return iset
+
     # Metric
 
     def metricSetFromOptions(self):
