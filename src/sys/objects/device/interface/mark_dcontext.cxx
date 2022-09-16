@@ -432,7 +432,7 @@ static PetscErrorCode PetscDeviceContextMarkIntentFromID_Private(PetscDeviceCont
       PetscCall(DEBUG_INFO("found old self as dependency, updating\n"));
       PetscAssert(CxxDataCast(dctx)->deps.find(id) != CxxDataCast(dctx)->deps.end(), PETSC_COMM_SELF, PETSC_ERR_PLIB, "PetscDeviceContext %" PetscInt64_FMT " listed as dependency for object %" PetscInt64_FMT " (%s), but does not have the object in private dependency list!", dctx_id, id, name);
 
-      it->frame() = std::move(frame);
+      std::swap(it->frame(), frame);
       PetscCall(PetscDeviceContextRecordEvent_Private(dctx, it->event()));
       PetscFunctionReturn(0);
     }
