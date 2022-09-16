@@ -528,9 +528,7 @@ static PetscErrorCode MatSeqAIJKokkosReduce(Mat A, MatReuse reuse, PetscBool loc
 
     for (i = 0; i < nrows; i++) {
       r = rows[i]; /* local row id of i-th received row */
-#if defined(PETSC_USE_DEBUG)
-      PetscCheck(r >= 0 && r < Cm, PETSC_COMM_SELF, PETSC_ERR_PLIB, "local row id (%" PetscInt_FMT ") is out of range [0,%" PetscInt_FMT ")", r, Cm);
-#endif
+      PetscAssert(r >= 0 && r < Cm, PETSC_COMM_SELF, PETSC_ERR_PLIB, "local row id (%" PetscInt_FMT ") is out of range [0,%" PetscInt_FMT ")", r, Cm);
       Ci_ptr[r + 1] += rrowlens[i]; /* add to length of row r in C */
     }
     for (i = 0; i < Cm; i++) Ci_ptr[i + 1] += Ci_ptr[i]; /* to CSR format */
@@ -563,20 +561,27 @@ static PetscErrorCode MatSeqAIJKokkosReduce(Mat A, MatReuse reuse, PetscBool loc
     PetscCallMPI(MPI_Waitall(niranks + nranks, reqs, MPI_STATUSES_IGNORE));
 
     /* Nonzeros in abuf/jbuf are roots and those in A are leaves */
-    PetscInt     nroots2 = Cnnz, nleaves2 = Annz;
+    PetscInt     cnt, nroots2 = Cnnz, nleaves2 = 0, *ilocal;
     PetscSFNode *iremote;
-    PetscCall(PetscMalloc1(nleaves2, &iremote)); /* no free, since memory will be given to reduceSF */
+
+    for (i = 0; i < nranks; i++) nleaves2 += Ai[roffset[i + 1]] - Ai[roffset[i]];
+
+    PetscCall(PetscMalloc1(nleaves2, &ilocal)); // do not free ilocal/iremote, ownership will be given to reduceSF
+    PetscCall(PetscMalloc1(nleaves2, &iremote));
+    cnt = 0;
     for (i = 0; i < nranks; i++) {
       PetscInt rootbase = rdisp[i];                      /* root offset at this root rank */
       PetscInt leafbase = Ai[roffset[i]];                /* leaf base */
       PetscInt nz       = Ai[roffset[i + 1]] - leafbase; /* I will send nz nonzeros to this root rank */
-      for (PetscInt k = 0; k < nz; k++) {
-        iremote[leafbase + k].rank  = ranks[i];
-        iremote[leafbase + k].index = rootbase + k;
+      for (PetscInt k = 0; k < nz; k++, cnt++) {
+        iremote[cnt].rank  = ranks[i];
+        iremote[cnt].index = rootbase + k;
+        ilocal[cnt]        = leafbase + k;
       }
     }
+
     PetscCall(PetscSFCreate(comm, &reduceSF));
-    PetscCall(PetscSFSetGraph(reduceSF, nroots2, nleaves2, NULL, PETSC_OWN_POINTER, iremote, PETSC_OWN_POINTER));
+    PetscCall(PetscSFSetGraph(reduceSF, nroots2, nleaves2, ilocal, PETSC_OWN_POINTER, iremote, PETSC_OWN_POINTER));
     PetscCall(PetscFree2(sdisp, rdisp));
 
     /* Reduce Aa, Ajg to abuf and jbuf */
@@ -592,8 +597,9 @@ static PetscErrorCode MatSeqAIJKokkosReduce(Mat A, MatReuse reuse, PetscBool loc
       Ajg = akok->j_dual.view_device(); /* no data copy, just take a reference */
     }
 
-    MatColIdxKokkosView jbuf("jbuf", Cnnz);
-    abuf = MatScalarKokkosView("abuf", Cnnz);
+    MatColIdxKokkosView jbuf;
+    PetscCallCXX(jbuf = MatColIdxKokkosView("jbuf", Cnnz));
+    PetscCallCXX(abuf = MatScalarKokkosView("abuf", Cnnz));
     PetscCallMPI(PetscSFReduceBegin(reduceSF, MPIU_INT, Ajg.data(), jbuf.data(), MPI_REPLACE));
     PetscCallMPI(PetscSFReduceEnd(reduceSF, MPIU_INT, Ajg.data(), jbuf.data(), MPI_REPLACE));
     PetscCallMPI(PetscSFReduceBegin(reduceSF, MPIU_SCALAR, akok->a_device_data(), abuf.data(), MPI_REPLACE));
