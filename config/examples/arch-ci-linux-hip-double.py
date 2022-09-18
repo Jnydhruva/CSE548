@@ -3,25 +3,14 @@
 import os
 petsc_hash_pkgs=os.path.join(os.getenv('HOME'),'petsc-hash-pkgs')
 
-import platform
-if platform.node() == 'instinct':
-  opts = [
-    '--with-mpi-dir=/home/users/balay/soft/mpich-4.0',
-    '--with-blaslapack-dir=/home/users/balay/soft/fblaslapack',
-    '--with-make-np=24',
-    '--with-make-test-np=8',
-    '--with-hipc=/opt/rocm-5.1.0/bin/hipcc',
-    '--with-hip-dir=/opt/rocm-5.1.0',
-  ]
-else:
-  opts = [
-    'LDFLAGS=-L/opt/rh/devtoolset-7/root/usr/lib/gcc/x86_64-redhat-linux/7/lib -lquadmath',
-    '--with-mpi-dir=/scratch/soft/mpich',
-    '--download-fblaslapack',
-    '--download-hypre',
-    '--with-hipc=/opt/rocm/bin/hipcc',
-    '--with-hip-dir=/opt/rocm',
-  ]
+opts = [
+  'LDFLAGS=-L/opt/rh/devtoolset-7/root/usr/lib/gcc/x86_64-redhat-linux/7/lib -lquadmath',
+   '--with-mpi-dir=/scratch/soft/mpich',
+   '--download-fblaslapack',
+   '--download-hypre',
+   '--with-hipc=/opt/rocm/bin/hipcc',
+   '--with-hip-dir=/opt/rocm',
+]
 
 if __name__ == '__main__':
   import sys
