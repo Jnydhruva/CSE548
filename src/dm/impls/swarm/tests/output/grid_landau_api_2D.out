@@ -1,0 +1,3 @@
+Radial psi_0 = 1. for radial proc 0
+[0] CreateParticles: npart(24): r=6, theta=4, phi=1. n proc: r=1, theta=1, phi=1. r0 = 0. dr = 1. dx = 0.198166
+	[0] CreateParticles done: npart = 24

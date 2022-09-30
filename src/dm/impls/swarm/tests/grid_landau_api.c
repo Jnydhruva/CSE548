@@ -95,6 +95,7 @@ typedef struct {
   PetscInt np_radius;
   PetscInt np_theta;
   PetscInt np_phi; /* toroidal direction */
+  PetscInt n_local_cell_phi; /* number of local cells in phi direction */
   /* torus geometry  */
   PetscReal  R;
   PetscReal  r;
@@ -123,7 +124,6 @@ static PetscErrorCode OriginShift2D(MPI_Comm comm, DM dm, PartDDCtx *ctx)
   }
   PetscCall(VecRestoreArrayWrite(coordinates, &coords));
   PetscCall(DMSetCoordinatesLocal(dm, coordinates));
-  PetscCall(DMViewFromOptions(dm, NULL, "-dm_view"));
   PetscFunctionReturn(0);
 }
 
@@ -155,7 +155,7 @@ static PetscErrorCode ExtrudeTorus(MPI_Comm comm, DM *dm, PartDDCtx *ctx)
   //
   L = ctx->torus_section_rad*ctx->R;
   // we could create a box mesh here but Plex starts with a 2x2 so we can just dm_refine from there, for now
-  PetscCall(DMPlexExtrude(*dm, ctx->np_phi, L, PETSC_FALSE, PETSC_FALSE, NULL, NULL, &dmtorus));
+  PetscCall(DMPlexExtrude(*dm, ctx->np_phi*ctx->n_local_cell_phi, L, PETSC_FALSE, PETSC_FALSE, NULL, NULL, &dmtorus));
   PetscCall(DMDestroy(dm));
   *dm = dmtorus;
   PetscCall(DMGetDimension(*dm, &dim));
@@ -168,10 +168,10 @@ static PetscErrorCode ExtrudeTorus(MPI_Comm comm, DM *dm, PartDDCtx *ctx)
   for (int ii=0;ii<N;ii+=3) {
     PetscScalar *v = &coords[ii], theta, psi, R;
     CartTocyl2D(R_0, R, v, psi, theta);
-    PetscReal X = R_0 + psi*PetscCosReal(theta), Z = v[2], phi = Z/R_0;
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\t\t[%d] ExtrudeTorus %d) psi=%12.4e theta=%12.4e phi=%12.4e. R=%12.4e Cart=%12.4e,%12.4e,%12.4e. X=%12.4e Z=%12.4e ",ctx->rank, ii/3,  psi, theta, phi, R, v[0], v[1], v[2], X, Z));
+    PetscReal Z = v[2], phi = Z/R_0;
+    PetscCall(PetscPrintf(PetscObjectComm((PetscObject)*dm), "\t\t[%d] ExtrudeTorus %d) psi=%12.4e theta=%12.4e phi=%12.4e. Cart=%12.4e,%12.4e,%12.4e",ctx->rank, ii/3,  psi, theta, phi, v[0], v[1], v[2]));
     cylToCart( R_0, psi, theta, phi, v);
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "--> X = %12.4e,%12.4e,%12.4e \n", v[0], v[1], v[2]));
+    PetscCall(PetscPrintf(PetscObjectComm((PetscObject)*dm), "--> X = %12.4e,%12.4e,%12.4e \n", v[0], v[1], v[2]));
   }
   PetscCall(VecRestoreArrayWrite(coordinates, &coords));
   PetscCall(DMViewFromOptions(*dm, NULL, "-dm_view_orig"));
@@ -194,25 +194,27 @@ static PetscErrorCode ProcessOptions(MPI_Comm comm, PartDDCtx *ctx)
   ctx->r = 1.;
   ctx->r_inflate = 1.1;
   ctx->np_phi  = 1;
+  ctx->n_local_cell_phi  = 1;
   ctx->np_radius = 1;
   ctx->np_theta  = 1;
   PetscCallMPI(MPI_Comm_rank(comm, &ctx->rank));
   PetscCallMPI(MPI_Comm_size(comm, &ctx->npe));
 
   PetscOptionsBegin(comm, "", "grid-based Landau particle interface", "DMPLEX");
-  PetscCall(PetscOptionsInt("-dim", "parameter", "ex99.c", ctx->dim, &ctx->dim, PETSC_NULL));
-  if (ctx->dim==3) PetscCall(PetscOptionsReal("-torus_section_degree_todo", "360 for entire torus", "ex99.c", ctx->torus_section_rad, &ctx->torus_section_rad, PETSC_NULL));
+  PetscCall(PetscOptionsInt("-dim", "parameter", "grid_landau_api.c", ctx->dim, &ctx->dim, PETSC_NULL));
+  if (ctx->dim==3) PetscCall(PetscOptionsReal("-torus_section_degree_todo", "360 for entire torus", "grid_landau_api.c", ctx->torus_section_rad, &ctx->torus_section_rad, PETSC_NULL));
   else ctx->torus_section_rad = 0;
   ctx->torus_section_rad *= PETSC_PI/180.; // get into radians
   PetscCheck(ctx->dim==2 || ctx->dim==3, comm,PETSC_ERR_ARG_WRONG,"dim (%d) != 2 or 3",(int)ctx->dim);
   if (ctx->dim==3) {
     ctx->np_phi = 4;
-    PetscCall(PetscOptionsInt("-np_phi", "Number of planes for particle mesh", "ex99.c", ctx->np_phi, &ctx->np_phi, &phiFlag));
+    PetscCall(PetscOptionsInt("-np_phi", "Number of planes for particle mesh", "grid_landau_api.c", ctx->np_phi, &ctx->np_phi, &phiFlag));
+    PetscCall(PetscOptionsInt("-n_local_cell_phi", "number of local cells in phi direction", "grid_landau_api.c", ctx->n_local_cell_phi, &ctx->n_local_cell_phi, PETSC_NULL));
+    PetscCheck(ctx->np_phi*ctx->n_local_cell_phi > 2, comm,PETSC_ERR_ARG_WRONG,"num particle planes 'np_phi' (%d) > 2 in 3D",(int)ctx->np_phi);
   }
   else { ctx->np_phi = 1; phiFlag = PETSC_TRUE;} // == 1
-  PetscCheck(ctx->dim==2 || ctx->np_phi > 2, comm,PETSC_ERR_ARG_WRONG,"num particle planes 'np_phi' (%d) > 2 in 3D",(int)ctx->np_phi);
-  PetscCall(PetscOptionsInt("-np_radius", "Number of radial cells for particle mesh", "ex99.c", ctx->np_radius, &ctx->np_radius, &radFlag));
-  PetscCall(PetscOptionsInt("-np_theta", "Number of theta cells for particle mesh", "ex99.c", ctx->np_theta, &ctx->np_theta, &thetaFlag));
+  PetscCall(PetscOptionsInt("-np_radius", "Number of radial cells for particle mesh", "grid_landau_api.c", ctx->np_radius, &ctx->np_radius, &radFlag));
+  PetscCall(PetscOptionsInt("-np_theta", "Number of theta cells for particle mesh", "grid_landau_api.c", ctx->np_theta, &ctx->np_theta, &thetaFlag));
   /* particle grids: <= npe, <= num solver planes */
   PetscCheck(ctx->npe >= ctx->np_phi, comm,PETSC_ERR_ARG_WRONG,"num particle planes np_phi (%d) > npe (%d)",(int)ctx->np_phi,ctx->npe);
 
@@ -234,14 +236,14 @@ static PetscErrorCode ProcessOptions(MPI_Comm comm, PartDDCtx *ctx)
     }
   }
   PetscCheck(ctx->np_phi*ctx->np_radius*ctx->np_theta==ctx->npe,comm,PETSC_ERR_USER,"failed to recover npe=%d != %d",(int)ctx->npe,(int)ctx->np_phi*ctx->np_radius*ctx->np_theta);
-  PetscCall(PetscOptionsInt("-particles_per_point", "Number of particles per spatial cell", "ex99.c", ctx->particles_per_point, &ctx->particles_per_point, NULL));
-  PetscCall(PetscOptionsInt("-n_plane_points_proc", "parameter", "ex99.c", ctx->n_plane_points_proc, &ctx->n_plane_points_proc, PETSC_NULL));
-  PetscCall(PetscOptionsInt("-steps", "Steps to take", "ex99.c", ctx->steps, &ctx->steps, PETSC_NULL));
-  PetscCall(PetscOptionsReal("-dt", "dt", "ex99.c", ctx->stepSize, &ctx->stepSize, PETSC_NULL));
+  PetscCall(PetscOptionsInt("-particles_per_point", "Number of particles per spatial cell", "grid_landau_api.c", ctx->particles_per_point, &ctx->particles_per_point, NULL));
+  PetscCall(PetscOptionsInt("-n_plane_points_proc", "parameter", "grid_landau_api.c", ctx->n_plane_points_proc, &ctx->n_plane_points_proc, PETSC_NULL));
+  PetscCall(PetscOptionsInt("-steps", "Steps to take", "grid_landau_api.c", ctx->steps, &ctx->steps, PETSC_NULL));
+  PetscCall(PetscOptionsReal("-dt", "dt", "grid_landau_api.c", ctx->stepSize, &ctx->stepSize, PETSC_NULL));
   /* Domain and mesh definition */
-  PetscCall(PetscOptionsReal("-radius_minor", "Minor radius of torus", "ex99.c", ctx->r, &ctx->r, NULL));
-  PetscCall(PetscOptionsReal("-radius_major", "Major radius of torus", "ex99.c", ctx->R, &ctx->R, NULL));
-  PetscCall(PetscOptionsReal("-radius_inflation", "inflate domain factor from minor radius", "ex99.c", ctx->r_inflate, &ctx->r_inflate, NULL));
+  PetscCall(PetscOptionsReal("-radius_minor", "Minor radius of torus", "grid_landau_api.c", ctx->r, &ctx->r, NULL));
+  PetscCall(PetscOptionsReal("-radius_major", "Major radius of torus", "grid_landau_api.c", ctx->R, &ctx->R, NULL));
+  PetscCall(PetscOptionsReal("-radius_inflation", "inflate domain factor from minor radius", "grid_landau_api.c", ctx->r_inflate, &ctx->r_inflate, NULL));
 
   PetscOptionsEnd();
   /* derived */
@@ -277,7 +279,7 @@ static PetscErrorCode CreateParticles(DM dm, DM sw, PartDDCtx *ctx)
     PetscReal tdr = PetscSqrtReal(rmin*rmin/(PetscReal)ctx->np_radius + psi*psi) - psi;
     if (irs==ii) { dr = tdr; r0 = psi; }
     psi += tdr;
-    PetscCall(PetscPrintf(PetscObjectComm((PetscObject)dm), "[%d) psi=%g\n",ii,psi));
+    PetscCall(PetscPrintf(PetscObjectComm((PetscObject)dm), "Radial psi_0 = %g for radial proc %d\n",psi,ii));
   }
   /* ~length of a particle */
   const PetscReal n_points_global =  (dim==3) ? (PetscReal)(ctx->npe)*PetscPowReal((PetscReal)(ctx->n_plane_points_proc),1.5) : ctx->n_plane_points_proc;
@@ -286,10 +288,11 @@ static PetscErrorCode CreateParticles(DM dm, DM sw, PartDDCtx *ctx)
   } else {
     const PetscReal dx = (dim==3) ? PetscPowReal((PETSC_PI*rmin*rmin/4.0) * rmaj*2.0*PETSC_PI / n_points_global, 0.333) : PetscPowReal((PETSC_PI*rmin*rmin/4.0) / n_points_global, 0.5);
     const PetscInt  npart_r = (PetscInt)(dr/dx + PETSC_SQRT_MACHINE_EPSILON) + 1, npart_theta = ctx->n_plane_points_proc / npart_r + 1, npart_phi = (dim==3) ? npart_r : 1;
-    const PetscInt  npart = npart_r*npart_theta*npart_phi*ctx->particles_per_point;
-    const PetscReal dphi = 2.0*PETSC_PI/(PetscReal)ctx->np_phi; /* rmin for particles < rmin */
-    const PetscReal phi0 = (PetscReal)ctx->ParticlePlaneIdx*dphi;
-    PetscCall(PetscPrintf(PETSC_COMM_SELF, "[%d] CreateParticles: npart(%d): r=%d, theta=%d, phi=%d. n proc: r=%d, theta=%d, phi=%d. r0 = %g dr = %g dx = %g\n",ctx->rank,npart,npart_r,npart_theta,npart_phi,ctx->np_radius,ctx->np_theta,ctx->np_phi,r0,dr,dx));
+    const PetscInt  npart = npart_r*npart_theta*npart_phi*ctx->particles_per_point*ctx->n_local_cell_phi;
+    const PetscReal dphi_proc = 2.0*PETSC_PI/(PetscReal)ctx->np_phi;
+    const PetscReal dphi_local= dphi_proc/(PetscReal)ctx->n_local_cell_phi;
+    const PetscReal phi0 = (PetscReal)ctx->ParticlePlaneIdx*dphi_proc;
+    PetscCall(PetscPrintf(PetscObjectComm((PetscObject)dm), "[%d] CreateParticles: npart(%d): r=%d, theta=%d, phi=%d. n proc: r=%d, theta=%d, phi=%d. r0 = %g dr = %g dx = %g\n",ctx->rank,npart,npart_r,npart_theta,npart_phi,ctx->np_radius,ctx->np_theta,ctx->np_phi,r0,dr,dx));
     PetscCall(DMSwarmSetLocalSizes(sw, npart, npart/10 + 2));
     PetscCall(DMSetFromOptions(sw));
     PetscCall(DMViewFromOptions(sw, NULL, "-sw_view_orig"));
@@ -303,24 +306,27 @@ static PetscErrorCode CreateParticles(DM dm, DM sw, PartDDCtx *ctx)
     const PetscReal dth2 = dth/(PetscReal)npart_theta - PETSC_SQRT_MACHINE_EPSILON*dth;
     psi = r0 + dr2/2;
     for (int ic, ir = 0, ip = 0; ir < npart_r; ir++, psi += dr2) {
-      PetscScalar value,theta,cartx[3];
+      PetscScalar value, theta, cartx[3];
       for (ic = 0, theta = th0 + dth2/2.0; ic < npart_theta; ic++, theta += dth2) {
-        for (int iphi = 0; iphi < npart_phi; iphi++) {
-          PetscCall(PetscRandomGetValue(rnd, &value));
-          const PetscReal phi = phi0 + ((dim==3) ? value*dphi : 0.0); // random phi in processes interval, 0 for 2D
-          const PetscReal qsaf = qsafty(psi/rmin);
-          PetscReal thetap = theta + qsaf*phi; /* push forward to follow field-lines */
-          while (thetap >= 2.*PETSC_PI) thetap -= 2.*PETSC_PI;
-          while (thetap < 0.0)          thetap += 2.*PETSC_PI;
-          cylToCart(((dim==3) ? rmaj : 0), psi, thetap,  phi, cartx); // store Cartesian for plotting
-          for (int iv=0;iv<ctx->particles_per_point;iv++, ip++) {
-            cellid[ip] = 0; // do in migrate
-            vpar[ip] = (PetscReal)(-ctx->particles_per_point/2 + iv + 1)/(PetscReal)ctx->particles_per_point; // arbitrary velocity distribution function
-            coords[ip*dim + 0] = cartx[0];
-            coords[ip*dim + 1] = cartx[1];
-            if (dim==3) coords[ip*dim + 2] = cartx[2];
-            //PetscCall(PetscPrintf(PETSC_COMM_SELF, "\t\t[%d] cid=%d X = %12.4e,%12.4e,%12.4e  cyl: %12.4e,%12.4e,**%12.4e**\n",ctx->rank, gid, cartx[0], cartx[1], cartx[2], psi, thetap,  phi));
-            weights[ip] = ++gid;
+        PetscScalar phi0_cell = phi0;
+        for (int iphi_loc = 0; iphi_loc < ctx->n_local_cell_phi ; iphi_loc++, phi0_cell += dphi_local) {
+          for (int iphi = 0; iphi < npart_phi; iphi++) {
+            PetscCall(PetscRandomGetValue(rnd, &value));
+            const PetscReal phi = phi0_cell + ((dim==3) ? value*dphi_local : 0.0); // random phi in processes interval, 0 for 2D
+            const PetscReal qsaf = qsafty(psi/rmin);
+            PetscReal thetap = theta + qsaf*phi; /* push forward to follow field-lines */
+            while (thetap >= 2.*PETSC_PI) thetap -= 2.*PETSC_PI;
+            while (thetap < 0.0)          thetap += 2.*PETSC_PI;
+            cylToCart(((dim==3) ? rmaj : 0), psi, thetap,  phi, cartx); // store Cartesian for plotting
+            for (int iv=0;iv<ctx->particles_per_point;iv++, ip++) {
+              cellid[ip] = 0; // do in migrate
+              vpar[ip] = (PetscReal)(-ctx->particles_per_point/2 + iv + 1)/(PetscReal)ctx->particles_per_point; // arbitrary velocity distribution function
+              coords[ip*dim + 0] = cartx[0];
+              coords[ip*dim + 1] = cartx[1];
+              if (dim==3) coords[ip*dim + 2] = cartx[2];
+              //PetscCall(PetscPrintf(PETSC_COMM_SELF, "\t\t[%d] cid=%d X = %12.4e,%12.4e,%12.4e  cyl: %12.4e,%12.4e,**%12.4e**\n",ctx->rank, gid, cartx[0], cartx[1], cartx[2], psi, thetap,  phi));
+              weights[ip] = ++gid;
+            }
           }
         }
       }
@@ -334,7 +340,7 @@ static PetscErrorCode CreateParticles(DM dm, DM sw, PartDDCtx *ctx)
   // migration
   PetscCall(DMSwarmMigrate(sw, PETSC_TRUE));
   PetscCall(DMSwarmGetLocalSize(sw, &gid));
-  PetscCall(PetscPrintf(PETSC_COMM_SELF, "\t[%d] CreateParticles done: npart = %d\n",ctx->rank,gid));
+  PetscCall(PetscPrintf(PetscObjectComm((PetscObject)dm), "\t[%d] CreateParticles done: npart = %d\n",ctx->rank,gid));
 
   PetscCall(PetscRandomDestroy(&rnd));
   PetscCall(DMLocalizeCoordinates(sw));
@@ -369,7 +375,7 @@ static PetscErrorCode processParticles(DM dm, DM sw, PetscReal dt, PartDDCtx *ct
     cylToCart( rmaj, psi, theta, phi, cartx); // store Cartesian for plotting
     //PetscCall(PetscPrintf(PETSC_COMM_SELF, "\t[%d] push: %3d) qsaf=%12.4e phi=%12.4e, theta=%12.4e dphi=%g\n",ctx->rank,ip,qsaf,phi,theta,dphi));
     //PetscCall(PetscPrintf(PETSC_COMM_SELF, "\t[%d] push: %3d) Cart %12.4e,%12.4e,%12.4e --> %12.4e,%12.4e,%12.4e R=%12.4e, cyl: %12.4e,%12.4e,%12.4e\n",ctx->rank,ip,crd[0],crd[1],crd[2],cartx[0],cartx[1],cartx[2],R,psi, theta, phi));
-    PetscCall(PetscPrintf(PETSC_COMM_SELF, "\t[%d] push: %3d) Cart %12.4e,%12.4e --> %12.4e,%12.4e R=%12.4e, cyl: %12.4e,%12.4e\n",ctx->rank,(int)weights[ip],crd[0],crd[1],cartx[0],cartx[1],R,psi, theta));
+    //PetscCall(PetscPrintf(PETSC_COMM_SELF, "\t[%d] push: %3d) Cart %12.4e,%12.4e --> %12.4e,%12.4e R=%12.4e, cyl: %12.4e,%12.4e\n",ctx->rank,(int)weights[ip],crd[0],crd[1],cartx[0],cartx[1],R,psi, theta));
     for (int i=0;i<dim;i++) crd[i] = cartx[i];
   }
   PetscCall(DMSwarmRestoreField(sw, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
@@ -406,7 +412,7 @@ int main(int argc, char **argv)
     PetscCall(DMSwarmMigrate(sw, PETSC_TRUE));
     PetscCall(DMViewFromOptions(sw, NULL, "-sw_view"));
     PetscCall(DMSwarmGetLocalSize(sw, &n));
-    PetscCall(PetscPrintf(PETSC_COMM_SELF, "\t[%d] step %d) npart = %d\n",ctx->rank,step,n));
+    PetscCall(PetscPrintf(PetscObjectComm((PetscObject)dm), "\t[%d] step %d) npart = %d\n",ctx->rank,step+1,n));
   }
   PetscCall(DMDestroy(&sw));
   PetscCall(DMDestroy(&dm));
@@ -416,20 +422,27 @@ int main(int argc, char **argv)
 
 /*TEST
 
-   build:
-     requires: !complex p4est hdf5
    testset:
-     args: -dm_plex_dim 2 -dm_plex_simplex 0 -radius_inflation 1.1 -steps 1 -dt 8 -sw_view hdf5:f.h5::append -dm_view hdf5:f.h5
-   test:
-     suffix: 2D
-     args: -dim 2 -n_plane_points_proc 20
-   test:
-     suffix: 2D_4
-     nsize: 4
-     args: -dim 2 -n_plane_points_proc 10
-   test:
-     suffix: 3D
-     nsize: 4
-     args: -dim 3 -n_plane_points_proc 20 -np_phi 4
+     args: -dm_plex_simplex 0 -dm_view hdf5:f.h5 -sw_view hdf5:f.h5::append -radius_inflation 1.1 -dm_plex_dim 2
+     requires: !complex p4est hdf5
+
+     test:
+       suffix: 2D
+       args: -dim 2 -n_plane_points_proc 20 -steps 0
+
+     test:
+       suffix: 2D_4
+       nsize: 4
+       args: -n_plane_points_proc 10 -steps 1 -dt 8
+
+     test:
+       suffix: 3D
+       nsize: 1
+       args: -dim 3 -n_plane_points_proc 40 -np_phi 1 -n_local_cell_phi 4 -steps 0
+
+     test:
+       suffix: 3D_4
+       nsize: 4
+       args: -dim 3 -n_plane_points_proc 10 -np_phi 4 -steps 0
 
 TEST*/
