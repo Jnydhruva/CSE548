@@ -22,7 +22,7 @@ Input Parameters:
  +   x - Vector to data to
 
  */
-PetscErrorCode landau_field_print_access_callback(DM dm, Vec x, PetscInt local_field, PetscInt grid, PetscInt b_id, void *vctx)
+static PetscErrorCode landau_field_print_access_callback(DM dm, Vec x, PetscInt local_field, PetscInt grid, PetscInt b_id, void *vctx)
 {
   ex1Ctx    *user = (ex1Ctx *)vctx;
   LandauCtx *ctx;
@@ -52,10 +52,6 @@ int main(int argc, char **argv)
   PetscInt       dim = 2;
   TS             ts;
   Mat            J;
-  SNES           snes;
-  KSP            ksp;
-  PC             pc;
-  SNESLineSearch linesearch;
   PetscReal      time;
 
   PetscFunctionBeginUser;
@@ -71,14 +67,9 @@ int main(int argc, char **argv)
   /* Create timestepping solver context */
   PetscCall(TSCreate(PETSC_COMM_SELF, &ts));
   PetscCall(TSSetDM(ts, pack));
-  PetscCall(TSGetSNES(ts, &snes));
-  PetscCall(SNESGetLineSearch(snes, &linesearch));
-  PetscCall(SNESLineSearchSetType(linesearch, SNESLINESEARCHBASIC));
   PetscCall(TSSetIFunction(ts, NULL, DMPlexLandauIFunction, NULL));
   PetscCall(TSSetIJacobian(ts, J, J, DMPlexLandauIJacobian, NULL));
   PetscCall(TSSetExactFinalTime(ts, TS_EXACTFINALTIME_STEPOVER));
-  PetscCall(SNESGetKSP(snes, &ksp));
-  PetscCall(KSPGetPC(ksp, &pc));
   PetscCall(TSSetFromOptions(ts));
   PetscCall(TSSetSolution(ts, X));
   PetscCall(TSSolve(ts, X));
