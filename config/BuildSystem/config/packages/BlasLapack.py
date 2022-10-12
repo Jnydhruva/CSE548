@@ -173,7 +173,7 @@ class Configure(config.package.Package):
       self.f2c = 0
       # TODO: use self.fblaslapack.libDir directly
       libDir = os.path.join(self.fblaslapack.directory,'lib')
-      yield ('fblaslapack', os.path.join(libDir,'libfblas.a'), os.path.join(libDir,'libflapack.a'), '32','no')
+      yield ('fblaslapack', os.path.join(libDir,'libblas.a'), os.path.join(libDir,'liblapack.a'), '32','no')
       raise RuntimeError('--download-fblaslapack libraries cannot be used')
     if self.blis.found:
       self.f2c = 0
