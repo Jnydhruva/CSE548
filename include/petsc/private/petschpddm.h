@@ -56,6 +56,7 @@ typedef struct _n_Harmonic *Harmonic;
 struct _n_Harmonic {
   KSP ksp;
   Mat S, A12;
+  Vec v;
   IS  is[2];
 };
 

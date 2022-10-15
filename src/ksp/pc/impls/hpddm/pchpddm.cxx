@@ -1351,14 +1351,16 @@ static PetscErrorCode PCSetUp_HPDDM(PC pc)
         if (data->Neumann) sub = &data->aux;
         else {
           if (overlap != -1) {
+            KSP                  *subksp;
             Harmonic              h;
             Mat                  *a, *s, Pmat;
             IS                    ov[4], rows[5], cols[5];
             const PetscInt       *idx, bs = PetscAbs(P->cmap->bs);
             PetscInt              n0, n1, n2, ni;
             std::vector<PetscInt> o0, o1, o2, i;
-            PetscBool             set, symm;
+            PetscBool             set, symm, no_schur = PETSC_FALSE;
 
+            PetscCall(PetscOptionsGetBool(NULL, pcpre, "-pc_hpddm_harmonic_overlap_no_schur", &no_schur, NULL));
             PetscCall(ISDuplicate(data->is, ov));
             if (overlap > 3) PetscCall(MatIncreaseOverlap(P, 1, ov, overlap - 3));
             for (n = 0; n < 2; ++n) {
@@ -1429,16 +1431,15 @@ static PetscErrorCode PCSetUp_HPDDM(PC pc)
             PetscCall(ISDestroy(rows));
             if (uaux) PetscCall(MatConvert(s[3], MATSEQSBAIJ, MAT_INPLACE_MATRIX, s + 3));
             PetscCall(ISEmbed(loc, data->is, PETSC_TRUE, h->is + 1));
-            PetscCall(MatCreateSchurComplement(s[0], s[0], s[1], s[2], s[3], &h->S));
-            PetscCall(MatIsSymmetricKnown(P, &set, &symm));
-            if (set && symm) PetscCall(MatSetOption(h->S, MAT_SYMMETRIC, PETSC_TRUE));
-            PetscCall(PetscSNPrintf(prefix, sizeof(prefix), "%spc_hpddm_levels_1_%s", pcpre ? pcpre : "", overlap == 3 && subdomains ? "" : "sub_harmonic_"));
+            h->A12 = s[4];
+            PetscCall(PetscObjectReference((PetscObject)s[4]));
+            PetscCall(KSPCreate(PETSC_COMM_SELF, &h->ksp));
             if (overlap == 3 && subdomains) {
-              KSP *subksp;
               PetscCall(PetscMalloc1(1, &sub));
               *sub = *s;
               if (!data->levels[0]->pc) {
                 PetscCall(PCCreate(PetscObjectComm((PetscObject)pc), &data->levels[0]->pc));
+                PetscCall(PetscSNPrintf(prefix, sizeof(prefix), "%spc_hpddm_levels_1_", pcpre ? pcpre : ""));
                 PetscCall(PCSetOptionsPrefix(data->levels[0]->pc, prefix));
                 PetscCall(PCSetOperators(data->levels[0]->pc, A, P));
               }
@@ -1450,25 +1451,44 @@ static PetscErrorCode PCSetUp_HPDDM(PC pc)
               PetscCheck(n == 1, PETSC_COMM_SELF, PETSC_ERR_PLIB, "Number of subdomain solver %" PetscInt_FMT " != 1", n);
               PetscCall(ISDestroy(ov + 3));
               PetscCall(PetscObjectReference((PetscObject)sub[0]));
-              PetscCall(MatSchurComplementSetKSP(h->S, subksp[0]));
-              PetscCall(PetscSNPrintf(prefix, sizeof(prefix), "%spc_hpddm_levels_1_sub_", pcpre ? pcpre : ""));
+            } else PetscCall(PetscSNPrintf(prefix, sizeof(prefix), "%spc_hpddm_levels_1_sub_harmonic_", pcpre ? pcpre : ""));
+            if (!no_schur) {
+              PetscCall(MatCreateSchurComplement(s[0], s[0], s[1], s[2], s[3], &h->S));
+              PetscCall(MatIsSymmetricKnown(P, &set, &symm));
+              if (set && symm) PetscCall(MatSetOption(h->S, MAT_SYMMETRIC, PETSC_TRUE));
+              if (overlap == 3 && subdomains) {
+                PetscCall(MatSchurComplementSetKSP(h->S, subksp[0]));
+                PetscCall(PetscSNPrintf(prefix, sizeof(prefix), "%spc_hpddm_levels_1_sub_", pcpre ? pcpre : ""));
+              } else {
+                KSP ksp;
+                PetscCall(MatSchurComplementGetKSP(h->S, &ksp));
+                PetscCall(KSPSetOptionsPrefix(ksp, prefix));
+              }
+              PetscCall(MatSetOptionsPrefix(h->S, prefix));
+              PetscCall(MatSetFromOptions(h->S));
+              PetscCall(MatSchurComplementGetPmat(h->S, MAT_INITIAL_MATRIX, &Pmat));
+              PetscCall(KSPSetOperators(h->ksp, h->S, Pmat));
+              PetscCall(PetscSNPrintf(prefix, sizeof(prefix), "%spc_hpddm_levels_1_sub_schur_", pcpre ? pcpre : ""));
+              PetscCall(KSPSetOptionsPrefix(h->ksp, prefix));
+              h->v = NULL;
             } else {
-              KSP ksp;
-              PetscCall(MatSchurComplementGetKSP(h->S, &ksp));
-              PetscCall(KSPSetOptionsPrefix(ksp, prefix));
+              PetscCall(MatCreateNest(PETSC_COMM_SELF, 2, NULL, 2, NULL, s, &Pmat));
+              PetscCall(MatNestSetVecType(Pmat, VECNEST));
+              PetscCall(MatCreateVecs(Pmat, &h->v, NULL));
+              PetscCall(MatConvert(Pmat, MATSEQAIJ, MAT_INPLACE_MATRIX, &Pmat));
+              PetscCall(MatIsSymmetricKnown(P, &set, &symm));
+              if (set && symm) PetscCall(MatSetOption(Pmat, MAT_SYMMETRIC, PETSC_TRUE));
+              if (bs > 1) {
+                PetscCall(MatSetBlockSize(Pmat, bs));
+                PetscCall(MatConvert(Pmat, set && symm ? MATSEQSBAIJ : MATSEQBAIJ, MAT_INPLACE_MATRIX, &Pmat));
+              } else if (set && symm) PetscCall(MatConvert(Pmat, MATSEQSBAIJ, MAT_INPLACE_MATRIX, &Pmat));
+              PetscCall(KSPSetOperators(h->ksp, Pmat, Pmat));
+              PetscCall(KSPSetOptionsPrefix(h->ksp, prefix));
+              h->S = NULL;
             }
-            PetscCall(MatSetOptionsPrefix(h->S, prefix));
-            PetscCall(MatSetFromOptions(h->S));
-            h->A12 = s[4];
-            PetscCall(PetscObjectReference((PetscObject)s[4]));
-            PetscCall(MatCreateShell(PETSC_COMM_SELF, P->rmap->n, bs * o2.size(), P->rmap->n, bs * o2.size(), h, &data->aux));
-            PetscCall(KSPCreate(PETSC_COMM_SELF, &h->ksp));
-            PetscCall(MatSchurComplementGetPmat(h->S, MAT_INITIAL_MATRIX, &Pmat));
-            PetscCall(KSPSetOperators(h->ksp, h->S, Pmat));
             PetscCall(MatDestroy(&Pmat));
+            PetscCall(MatCreateShell(PETSC_COMM_SELF, P->rmap->n, bs * o2.size(), P->rmap->n, bs * o2.size(), h, &data->aux));
             PetscCall(MatDestroySubMatrices(5, &s));
-            PetscCall(PetscSNPrintf(prefix, sizeof(prefix), "%spc_hpddm_levels_1_sub_schur_", pcpre ? pcpre : ""));
-            PetscCall(KSPSetOptionsPrefix(h->ksp, prefix));
             PetscCall(KSPSetFromOptions(h->ksp));
             PetscCall(MatShellSetOperation(data->aux, MATOP_MULT, (void (*)(void))MatMult_Harmonic));
             PetscCall(MatShellSetOperation(data->aux, MATOP_MULT_TRANSPOSE, (void (*)(void))MatMultTranspose_Harmonic));
@@ -2036,19 +2056,30 @@ static PetscErrorCode MatMult_Harmonic(Mat A, Vec x, Vec y)
   KSP      ksp;  /* [ A_10  A_11    A_12 ]                      [ A_ovl,loc  A_ovl,ovl ]               [ A_ovl,1 ] */
   Mat      A01;  /* y = A x = R_loc A_00^-1 A_01 S^-1 A_12 x                                   R_loc = [  I_loc  ] */
   Vec      z, w; /* S = A_11 - A_10 A_00^-1 A_01                                                       [         ] */
-
+  Vec      view; /* y = A x = R_loc R_0 [ A_00  A_01 ]^-1                                                          */
+                 /*                     [ A_10  A_11 ]    R_1^T A_12 x                                             */
   PetscFunctionBegin;
   PetscCall(MatShellGetContext(A, &h));
+  PetscCheck(h->S || h->v, PETSC_COMM_SELF, PETSC_ERR_PLIB, "No attached object");
   PetscCall(MatCreateVecs(h->A12, NULL, &z));
-  PetscCall(MatSchurComplementGetKSP(h->S, &ksp));
-  PetscCall(MatSchurComplementGetSubMatrices(h->S, NULL, NULL, &A01, NULL, NULL));
-  PetscCall(MatCreateVecs(A01, NULL, &w));
   PetscCall(MatMult(h->A12, x, z));
-  PetscCall(KSPSolve(h->ksp, z, z));
-  PetscCall(MatMult(A01, z, w));
-  PetscCall(KSPSolve(ksp, w, w));
-  PetscCall(VecISCopy(w, h->is[0], SCATTER_REVERSE, y));
-  PetscCall(VecDestroy(&w));
+  if (h->S) {
+    PetscCall(MatSchurComplementGetKSP(h->S, &ksp));
+    PetscCall(MatSchurComplementGetSubMatrices(h->S, NULL, NULL, &A01, NULL, NULL));
+    PetscCall(MatCreateVecs(A01, NULL, &w));
+    PetscCall(KSPSolve(h->ksp, z, z));
+    PetscCall(MatMult(A01, z, w));
+    PetscCall(KSPSolve(ksp, w, w));
+    PetscCall(VecISCopy(w, h->is[0], SCATTER_REVERSE, y));
+    PetscCall(VecDestroy(&w));
+  } else {
+    PetscCall(VecSet(h->v, 0.0));
+    PetscCall(VecNestGetSubVec(h->v, 1, &view));
+    PetscCall(VecCopy(z, view));
+    PetscCall(KSPSolve(h->ksp, h->v, h->v));
+    PetscCall(VecNestGetSubVec(h->v, 0, &view));
+    PetscCall(VecISCopy(view, h->is[0], SCATTER_REVERSE, y));
+  }
   PetscCall(VecDestroy(&z));
   PetscFunctionReturn(0);
 }
@@ -2059,20 +2090,31 @@ static PetscErrorCode MatMultTranspose_Harmonic(Mat A, Vec y, Vec x)
   KSP      ksp;
   Mat      A01;
   Vec      z, w; /* x = A^T y = A_12^T S^-T A_01^T A_00^-T R_loc^T y */
-
+  Vec      view; /* x = A^T y =            [ A_00  A_01 ]^-T R_0^T R_loc^T y */
+                 /*             A_12^T R_1 [ A_10  A_11 ]                    */
   PetscFunctionBegin;
   PetscCall(MatShellGetContext(A, &h));
+  PetscCheck(h->S || h->v, PETSC_COMM_SELF, PETSC_ERR_PLIB, "No attached object");
   PetscCall(MatCreateVecs(h->A12, NULL, &z));
-  PetscCall(MatSchurComplementGetKSP(h->S, &ksp));
-  PetscCall(MatSchurComplementGetSubMatrices(h->S, NULL, NULL, &A01, NULL, NULL));
-  PetscCall(MatCreateVecs(A01, NULL, &w));
-  PetscCall(VecSet(w, 0.0));
-  PetscCall(VecISCopy(w, h->is[0], SCATTER_FORWARD, y));
-  PetscCall(KSPSolveTranspose(ksp, w, w));
-  PetscCall(MatMultTranspose(A01, w, z));
-  PetscCall(KSPSolveTranspose(h->ksp, z, z));
-  PetscCall(MatMultTranspose(h->A12, z, x));
-  PetscCall(VecDestroy(&w));
+  if (h->S) {
+    PetscCall(MatSchurComplementGetKSP(h->S, &ksp));
+    PetscCall(MatSchurComplementGetSubMatrices(h->S, NULL, NULL, &A01, NULL, NULL));
+    PetscCall(MatCreateVecs(A01, NULL, &w));
+    PetscCall(VecSet(w, 0.0));
+    PetscCall(VecISCopy(w, h->is[0], SCATTER_FORWARD, y));
+    PetscCall(KSPSolveTranspose(ksp, w, w));
+    PetscCall(MatMultTranspose(A01, w, z));
+    PetscCall(KSPSolveTranspose(h->ksp, z, z));
+    PetscCall(MatMultTranspose(h->A12, z, x));
+    PetscCall(VecDestroy(&w));
+  } else {
+    PetscCall(VecSet(h->v, 0.0));
+    PetscCall(VecNestGetSubVec(h->v, 0, &view));
+    PetscCall(VecISCopy(view, h->is[0], SCATTER_FORWARD, y));
+    PetscCall(KSPSolveTranspose(h->ksp, h->v, h->v));
+    PetscCall(VecNestGetSubVec(h->v, 1, &view));
+    PetscCall(MatMultTranspose(h->A12, view, x));
+  }
   PetscCall(VecDestroy(&z));
   PetscFunctionReturn(0);
 }
@@ -2087,6 +2129,7 @@ static PetscErrorCode MatProduct_AB_Harmonic(Mat A, Mat X, Mat Y, void *ctx)
 
   PetscFunctionBegin;
   PetscCall(MatShellGetContext(A, &h));
+  PetscCheck(h->S, PetscObjectComm((PetscObject)A), PETSC_ERR_SUP, "Not implemented");
   PetscCall(MatSchurComplementGetKSP(h->S, &ksp));
   PetscCall(MatSchurComplementGetSubMatrices(h->S, NULL, NULL, &A01, NULL, NULL));
   PetscCall(MatMatMult(h->A12, X, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Z));
@@ -2120,6 +2163,7 @@ static PetscErrorCode MatProduct_AtB_Harmonic(Mat A, Mat Y, Mat X, void *ctx)
 
   PetscFunctionBegin;
   PetscCall(MatShellGetContext(A, &h));
+  PetscCheck(h->S, PetscObjectComm((PetscObject)A), PETSC_ERR_SUP, "Not implemented");
   PetscCall(MatSchurComplementGetKSP(h->S, &ksp));
   PetscCall(MatIsSymmetricKnown(h->S, &set, &symm));
   if (!set) symm = PETSC_FALSE;
@@ -2166,6 +2210,7 @@ static PetscErrorCode MatDestroy_Harmonic(Mat A)
   PetscCall(MatDestroy(&h->A12));
   PetscCall(KSPDestroy(&h->ksp));
   PetscCall(MatDestroy(&h->S));
+  PetscCall(VecDestroy(&h->v));
   PetscCall(ISDestroy(h->is));
   PetscCall(ISDestroy(h->is + 1));
   PetscCall(PetscFree(h));

@@ -304,7 +304,7 @@ int main(int argc, char **argv)
       test:
         suffix: hpddm_overlap_3_define_false
         output_file: output/ex11_hpddm_overlap_3.out
-        args: -fc_pc_hpddm_harmonic_overlap 3 -fc_pc_hpddm_define_subdomains false -fc_pc_hpddm_levels_1_pc_type asm -fc_pc_hpddm_levels_1_sub_schur_pc_type cholesky -fc_pc_hpddm_levels_1_sub_schur_ksp_type preonly -fc_pc_hpddm_levels_1_svd_type lanczos -fc_pc_hpddm_levels_1_sub_harmonic_mat_schur_complement_ainv_type full -fc_pc_hpddm_levels_1_sub_harmonic_pc_type cholesky -fc_pc_hpddm_levels_1_sub_harmonic_pc_factor_shift_type inblocks
+        args: -fc_pc_hpddm_harmonic_overlap 3 -fc_pc_hpddm_define_subdomains false -fc_pc_hpddm_levels_1_pc_type asm -fc_pc_hpddm_levels_1_sub_schur_pc_type cholesky -fc_pc_hpddm_levels_1_sub_schur_ksp_type preonly -fc_pc_hpddm_levels_1_svd_type lanczos -fc_pc_hpddm_levels_1_sub_harmonic_mat_schur_complement_ainv_type full -fc_pc_hpddm_levels_1_sub_harmonic_pc_type cholesky -fc_pc_hpddm_levels_1_sub_harmonic_pc_factor_shift_type inblocks -fc_pc_hpddm_harmonic_overlap_no_schur {{true false}shared output} -options_left false
       test:
         suffix: hpddm_overlap_3_randomized
         output_file: output/ex11_hpddm_overlap_3.out
@@ -312,6 +312,6 @@ int main(int argc, char **argv)
       test:
         suffix: hpddm_overlap_4
         filter: sed -e "s/Linear fc_ solve converged due to CONVERGED_RTOL iterations 15/Linear fc_ solve converged due to CONVERGED_RTOL iterations 14/g"
-        args: -fc_pc_hpddm_harmonic_overlap 4 -fc_pc_hpddm_levels_1_sub_schur_pc_type cholesky -fc_pc_hpddm_levels_1_sub_schur_ksp_type preonly -fc_pc_hpddm_levels_1_svd_type lanczos -fc_pc_hpddm_levels_1_sub_harmonic_mat_schur_complement_ainv_type full -fc_pc_hpddm_levels_1_sub_harmonic_pc_type cholesky -fc_pc_hpddm_levels_1_sub_harmonic_pc_factor_shift_type inblocks -test_sbaij {{true false}shared output}
+        args: -fc_pc_hpddm_harmonic_overlap 4 -fc_pc_hpddm_levels_1_sub_schur_pc_type cholesky -fc_pc_hpddm_levels_1_sub_schur_ksp_type preonly -fc_pc_hpddm_levels_1_svd_type lanczos -fc_pc_hpddm_levels_1_sub_harmonic_mat_schur_complement_ainv_type full -fc_pc_hpddm_levels_1_sub_harmonic_pc_type cholesky -fc_pc_hpddm_levels_1_sub_harmonic_pc_factor_shift_type inblocks -fc_pc_hpddm_harmonic_overlap_no_schur {{true false}shared output} -test_sbaij {{true false}shared output} -options_left false
 
 TEST*/
