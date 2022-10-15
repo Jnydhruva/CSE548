@@ -310,6 +310,10 @@ int main(int argc, char **argv)
         output_file: output/ex11_hpddm_overlap_3.out
         args: -fc_pc_hpddm_harmonic_overlap 3 -fc_pc_hpddm_levels_1_sub_schur_pc_type cholesky -fc_pc_hpddm_levels_1_sub_schur_ksp_type preonly -fc_pc_hpddm_levels_1_svd_type randomized -fc_pc_hpddm_levels_1_svd_max_it 2 -fc_pc_hpddm_levels_1_svd_tol 1e-1 -fc_pc_hpddm_levels_1_sub_mat_schur_complement_ainv_type full -set_symmetry {{true false}shared output}
       test:
+        suffix: hpddm_overlap_3_randomized_no_schur
+        output_file: output/ex11_hpddm_overlap_3.out
+        args: -fc_pc_hpddm_harmonic_overlap 3 -fc_pc_hpddm_levels_1_sub_schur_pc_type cholesky -fc_pc_hpddm_levels_1_sub_schur_ksp_type preonly -fc_pc_hpddm_levels_1_svd_type randomized -fc_pc_hpddm_levels_1_svd_max_it 2 -fc_pc_hpddm_levels_1_svd_tol 1e-1 -fc_pc_hpddm_define_subdomains false -fc_pc_hpddm_levels_1_sub_harmonic_mat_schur_complement_ainv_type full -fc_pc_hpddm_levels_1_pc_type asm -fc_pc_hpddm_levels_1_sub_pc_type cholesky -fc_pc_hpddm_levels_1_sub_harmonic_pc_type cholesky -fc_pc_hpddm_levels_1_sub_harmonic_pc_factor_shift_type inblocks -fc_pc_hpddm_harmonic_overlap_no_schur true -fc_pc_hpddm_levels_1_sub_harmonic_ksp_type preonly -set_symmetry {{true false}shared output} -options_left false
+      test:
         suffix: hpddm_overlap_4
         filter: sed -e "s/Linear fc_ solve converged due to CONVERGED_RTOL iterations 15/Linear fc_ solve converged due to CONVERGED_RTOL iterations 14/g"
         args: -fc_pc_hpddm_harmonic_overlap 4 -fc_pc_hpddm_levels_1_sub_schur_pc_type cholesky -fc_pc_hpddm_levels_1_sub_schur_ksp_type preonly -fc_pc_hpddm_levels_1_svd_type lanczos -fc_pc_hpddm_levels_1_sub_harmonic_mat_schur_complement_ainv_type full -fc_pc_hpddm_levels_1_sub_harmonic_pc_type cholesky -fc_pc_hpddm_levels_1_sub_harmonic_pc_factor_shift_type inblocks -fc_pc_hpddm_harmonic_overlap_no_schur {{true false}shared output} -test_sbaij {{true false}shared output} -options_left false

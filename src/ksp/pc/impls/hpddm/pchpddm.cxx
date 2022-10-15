@@ -2204,23 +2204,39 @@ static PetscErrorCode MatProduct_AB_Harmonic(Mat A, Mat X, Mat Y, void *)
 {
   Harmonic h;
   KSP      ksp;
-  Mat      A01, Z, W;
+  Mat      A01, Z, W, V;
   Vec      w, y;
-  PetscInt i;
+  PetscInt i, m;
 
   PetscFunctionBegin;
   PetscCall(MatShellGetContext(A, &h));
-  PetscCheck(h->S, PetscObjectComm((PetscObject)A), PETSC_ERR_SUP, "Not implemented");
-  PetscCall(MatSchurComplementGetKSP(h->S, &ksp));
-  PetscCall(MatSchurComplementGetSubMatrices(h->S, NULL, NULL, &A01, NULL, NULL));
+  PetscCheck(h->S || h->v, PETSC_COMM_SELF, PETSC_ERR_PLIB, "No attached object");
   PetscCall(MatMatMult(h->A12, X, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Z));
-  PetscCall(MatDuplicate(Z, MAT_DO_NOT_COPY_VALUES, &W));
-  PetscCall(KSPMatSolve(h->ksp, Z, W));
-  PetscCall(MatDestroy(&Z));
-  PetscCall(MatMatMult(A01, W, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Z));
-  PetscCall(MatDestroy(&W));
-  PetscCall(MatDuplicate(Z, MAT_DO_NOT_COPY_VALUES, &W));
-  PetscCall(KSPMatSolve(ksp, Z, W));
+  if (h->S) {
+    PetscCall(MatSchurComplementGetKSP(h->S, &ksp));
+    PetscCall(MatSchurComplementGetSubMatrices(h->S, NULL, NULL, &A01, NULL, NULL));
+    PetscCall(MatDuplicate(Z, MAT_DO_NOT_COPY_VALUES, &W));
+    PetscCall(KSPMatSolve(h->ksp, Z, W));
+    PetscCall(MatDestroy(&Z));
+    PetscCall(MatMatMult(A01, W, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Z));
+    PetscCall(MatDestroy(&W));
+    PetscCall(MatDuplicate(Z, MAT_DO_NOT_COPY_VALUES, &W));
+    PetscCall(KSPMatSolve(ksp, Z, W));
+  } else {
+    PetscCall(MatCreateSeqDense(PETSC_COMM_SELF, h->ksp->pc->mat->rmap->n, Y->cmap->n, NULL, &V));
+    PetscCall(VecNestGetSubVec(h->v, 0, &w));
+    PetscCall(VecGetLocalSize(w, &m));
+    PetscCall(MatDenseGetSubMatrix(V, m, PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE, &W));
+    PetscCall(MatCopy(Z, W, SAME_NONZERO_PATTERN));
+    PetscCall(MatDenseRestoreSubMatrix(V, &W));
+    PetscCall(MatDestroy(&Z));
+    PetscCall(MatDuplicate(V, MAT_COPY_VALUES, &Z));
+    PetscCall(KSPMatSolve(h->ksp, V, Z));
+    PetscCall(MatDestroy(&V));
+    PetscCall(MatDenseGetSubMatrix(Z, 0, m, PETSC_DECIDE, PETSC_DECIDE, &V));
+    PetscCall(MatDuplicate(V, MAT_COPY_VALUES, &W));
+    PetscCall(MatDenseRestoreSubMatrix(Z, &V));
+  }
   PetscCall(MatDestroy(&Z));
   for (i = 0; i < W->cmap->n; ++i) {
     PetscCall(MatDenseGetColumnVecRead(W, i, &w));
@@ -2237,48 +2253,82 @@ static PetscErrorCode MatProduct_AtB_Harmonic(Mat A, Mat Y, Mat X, void *)
 {
   Harmonic  h;
   KSP       ksp;
-  Mat       A01, Z, W;
+  Mat       A01, Z = NULL, W, V;
   Vec       w, y;
-  PetscInt  i;
+  PetscInt  i, m;
   PetscBool set, symm;
 
   PetscFunctionBegin;
   PetscCall(MatShellGetContext(A, &h));
-  PetscCheck(h->S, PetscObjectComm((PetscObject)A), PETSC_ERR_SUP, "Not implemented");
-  PetscCall(MatSchurComplementGetKSP(h->S, &ksp));
-  PetscCall(MatIsSymmetricKnown(h->S, &set, &symm));
+  PetscCheck(h->S || h->v, PETSC_COMM_SELF, PETSC_ERR_PLIB, "No attached object");
+  PetscCall(MatIsSymmetricKnown(h->S ? h->S : h->ksp->pc->mat, &set, &symm));
   if (!set) symm = PETSC_FALSE;
-  PetscCall(MatSchurComplementGetSubMatrices(h->S, NULL, NULL, &A01, NULL, NULL));
-  PetscCall(MatCreateSeqDense(PETSC_COMM_SELF, A01->rmap->n, Y->cmap->n, NULL, &W));
-  for (i = 0; i < W->cmap->n; ++i) {
-    PetscCall(MatDenseGetColumnVecRead(Y, i, &y));
-    PetscCall(MatDenseGetColumnVecWrite(W, i, &w));
-    PetscCall(VecISCopy(w, h->is[0], SCATTER_FORWARD, y));
-    if (!symm) PetscCall(KSPSolveTranspose(ksp, w, w));
-    PetscCall(MatDenseRestoreColumnVecWrite(W, i, &w));
-    PetscCall(MatDenseRestoreColumnVecRead(Y, i, &y));
-  }
-  if (symm) {
-    PetscCall(MatDuplicate(W, MAT_DO_NOT_COPY_VALUES, &Z));
-    PetscCall(KSPMatSolve(ksp, W, Z));
-    PetscCall(MatHeaderReplace(W, &Z));
-  }
-  PetscCall(MatTransposeMatMult(A01, W, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Z));
-  PetscCall(MatDestroy(&W));
-  if (!symm) {
-    for (i = 0; i < Z->cmap->n; ++i) {
-      PetscCall(MatDenseGetColumnVecWrite(Z, i, &w));
-      PetscCall(KSPSolveTranspose(h->ksp, w, w));
-      PetscCall(MatDenseRestoreColumnVecWrite(Z, i, &w));
+  if (h->S) {
+    PetscCall(MatSchurComplementGetKSP(h->S, &ksp));
+    PetscCall(MatSchurComplementGetSubMatrices(h->S, NULL, NULL, &A01, NULL, NULL));
+    PetscCall(MatCreateSeqDense(PETSC_COMM_SELF, A01->rmap->n, Y->cmap->n, NULL, &W));
+    for (i = 0; i < W->cmap->n; ++i) {
+      PetscCall(MatDenseGetColumnVecRead(Y, i, &y));
+      PetscCall(MatDenseGetColumnVecWrite(W, i, &w));
+      PetscCall(VecISCopy(w, h->is[0], SCATTER_FORWARD, y));
+      if (!symm) PetscCall(KSPSolveTranspose(ksp, w, w));
+      PetscCall(MatDenseRestoreColumnVecWrite(W, i, &w));
+      PetscCall(MatDenseRestoreColumnVecRead(Y, i, &y));
+    }
+    if (symm) {
+      PetscCall(MatDuplicate(W, MAT_DO_NOT_COPY_VALUES, &Z));
+      PetscCall(KSPMatSolve(ksp, W, Z));
+      PetscCall(MatHeaderReplace(W, &Z));
+    }
+    PetscCall(MatTransposeMatMult(A01, W, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Z));
+    PetscCall(MatDestroy(&W));
+    if (!symm) {
+      for (i = 0; i < Z->cmap->n; ++i) {
+        PetscCall(MatDenseGetColumnVecWrite(Z, i, &w));
+        PetscCall(KSPSolveTranspose(h->ksp, w, w));
+        PetscCall(MatDenseRestoreColumnVecWrite(Z, i, &w));
+      }
+    } else {
+      PetscCall(MatDuplicate(Z, MAT_DO_NOT_COPY_VALUES, &W));
+      PetscCall(KSPMatSolve(h->ksp, Z, W));
+      PetscCall(MatDestroy(&Z));
+      std::swap(Z, W);
     }
   } else {
-    PetscCall(MatDuplicate(Z, MAT_DO_NOT_COPY_VALUES, &W));
-    PetscCall(KSPMatSolve(h->ksp, Z, W));
-    std::swap(Z, W);
+    PetscCall(VecNestGetSubVec(h->v, 0, &w));
+    PetscCall(VecGetLocalSize(w, &m));
+    PetscCall(MatCreateSeqDense(PETSC_COMM_SELF, m, Y->cmap->n, NULL, &W));
+    for (i = 0; i < W->cmap->n; ++i) {
+      PetscCall(MatDenseGetColumnVecRead(Y, i, &y));
+      PetscCall(MatDenseGetColumnVecWrite(W, i, &w));
+      PetscCall(VecISCopy(w, h->is[0], SCATTER_FORWARD, y));
+      PetscCall(MatDenseRestoreColumnVecWrite(W, i, &w));
+      PetscCall(MatDenseRestoreColumnVecRead(Y, i, &y));
+    }
+    PetscCall(MatCreateSeqDense(PETSC_COMM_SELF, h->ksp->pc->mat->rmap->n, Y->cmap->n, NULL, &V));
+    PetscCall(MatDenseGetSubMatrix(V, 0, m, PETSC_DECIDE, PETSC_DECIDE, &Z));
+    PetscCall(MatCopy(W, Z, SAME_NONZERO_PATTERN));
+    PetscCall(MatDenseRestoreSubMatrix(V, &Z));
+    PetscCall(MatDestroy(&W));
+    if (symm) {
+      PetscCall(MatDuplicate(V, MAT_DO_NOT_COPY_VALUES, &W));
+      PetscCall(KSPMatSolve(h->ksp, V, W));
+      PetscCall(MatHeaderReplace(V, &W));
+    } else {
+      for (i = 0; i < V->cmap->n; ++i) {
+        PetscCall(MatDenseGetColumnVecWrite(V, i, &w));
+        PetscCall(KSPSolveTranspose(h->ksp, w, w));
+        PetscCall(MatDenseRestoreColumnVecWrite(V, i, &w));
+      }
+    }
+    PetscCall(MatDenseGetSubMatrix(V, m, PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE, &Z));
   }
   PetscCall(MatTransposeMatMult(h->A12, Z, MAT_REUSE_MATRIX, PETSC_DEFAULT, &X));
-  PetscCall(MatDestroy(&W));
-  PetscCall(MatDestroy(&Z));
+  if (h->S) PetscCall(MatDestroy(&Z));
+  else {
+    PetscCall(MatDenseRestoreSubMatrix(V, &Z));
+    PetscCall(MatDestroy(&V));
+  }
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
