@@ -74,26 +74,44 @@ if __name__ == '__main__':
       args.append('-Wl,-shared')
       i = i + 1
       continue
+    # apparently some linkers can handle libblas.so.3.10.1 so strip off the numbers
+    # of course this could lead to incorrect results; one could check file links
+    l = argst[i].find('.so.')
+    if l > -1 and (i == 0 or not argst[i-1] == '-o'):
+      args.append(argst[i][0:l+3])
+      i = i + 1
+      continue
     for j in linkerargs:
       if argst[i].startswith(j):
         args.append('-Wl,'+ argst[i] + ',' + argst[i+1])
         i = i + 1
         flag = 0
         break
+    if argst[i].startswith('@'):
+      fd = open(argst[i][1:])
+      args.extend(fd.readline().strip('\n').split(' '))
+      fd.close()
+      flag = 0
     if flag: args.append(argst[i])
     i = i + 1
   if '-mismatch' in args or '-dusty' in args:
     args = [x for x in args if not x.startswith('-C=')]
 
+  if verbose or '-version' in args or '-dryrun' in args or '-V' in args:
+    print("\npetscnagfor verbose - Arguments passed to nagfor:\n")
+    print(' '.join(['nagfor','-dryrun']+args))
+
   if '-version' in args or '-dryrun' in args or '-V' in args:
+    print("\nDry run output from nagfor\n")
     (output,error,status) = runnagfor(['nagfor']+args)
-    error = error.replace('-rpath ','-Wl,-rpath')
-    print(output)
+    error = error.replace('-rpath ','-Wl,-rpath,')
     print(error,file=sys.stderr)
     exit(0)
 
-  if verbose: print(' '.join(['nagfor','-dryrun']+args))
   (output,error,status) = runnagfor(['nagfor','-dryrun']+args)
+  #if verbose:
+  #  print('\npetscnagfor verbose - Output from nagfor -dryrun\n')
+  #  print(output+error)
   if status:
     print(output)
     print(error,file=sys.stderr)
@@ -106,8 +124,21 @@ if __name__ == '__main__':
     if os.path.isfile(i[0:-1]): continue
     i = i.replace(';',' ')
     i = re.sub(r'/tmp/([a-zA-Z0-9_]*)\.([0-9]*)\.([fF90co]*)','/tmp/'+os.getenv('USER')+r"-\1.\2.\3",i)
-    for j in linkerargs:
-      i = i.replace(j+' ','-Wl,'+j+',').strip()
+    # fix -soname value and friends
+    i = i.split(' ')
+    k = 0
+    args = []
+    while k < len(i):
+      flag = True
+      for j in linkerargs:
+        if i[k].startswith(j) and (k == 0 or not i[k-1] =='-Xlinker'):
+          args.append('-Wl,'+ i[k] + ',' + i[k+1])
+          k = k + 1
+          flag = False
+          break
+      if flag: args.append(i[k])
+      k = k + 1
+    i = ' '.join(args).strip()
     if i.find('forcomp') > -1:
       i = i.replace(' -PIC','').strip()
       # each option needs its own -options in front of it
@@ -119,6 +150,7 @@ if __name__ == '__main__':
     js = [x for x in i.split(' ') if not x == '-Bstatic' and not x == '-Bdynamic']
 
     # Save all the .c files generated so they may be seen in the debugger
+    # The following code does not work; it assumes something is at the end of the line that is not
     if (i.find('/fpp') == -1 and i.find('quickfit.o') == -1):
       if i.find('forcomp') > -1:
         last = js[-2][5:]
@@ -132,7 +164,9 @@ if __name__ == '__main__':
       else:
         js[-1] = last
 
-    if verbose: print(' '.join(js))
+    if verbose:
+      print('\npetscnagfor verbose - Processed output from nagfor -dryrun\n')
+      print(' '.join(js))
     (suboutput,error,status) = runnagfor(js)
     if js[0].endswith('forcomp'):
       lerror = ''
@@ -140,7 +174,7 @@ if __name__ == '__main__':
         if k.find("Unused dummy variable") > -1: continue
         if k.find("Fixed source form") > -1: continue
         if k.find("[NAG Fortran Compiler normal termination") > -1: continue
-        if k.find("Line longer than") > -1: continue 
+        if k.find("Line longer than") > -1: continue
         lerror += k
       if lerror: print("\n"+lerror,file=sys.stderr)
 
