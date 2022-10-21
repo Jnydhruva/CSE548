@@ -3,7 +3,7 @@ import config.package
 class Configure(config.package.CMakePackage):
   def __init__(self, framework):
     config.package.CMakePackage.__init__(self, framework)
-    self.gitcommit              = 'd9e9690419d1fbf80d5dc67f77341af2e771ee90' # barry/2022-10-21/fix-lapacke-always-included Oct 21, 11:22 AM Eastern Time
+    self.gitcommit              = 'dc164052d405510c3486ee48f5095e46cc560232' # barry/2022-10-21/fix-lapacke-always-included Oct 21, 9:54 PM Eastern Time
     self.download               = ['git://https://github.com/petsc/lapack','https://github.com/petsc/lapack/archive/'+self.gitcommit+'.tar.gz']
     self.includes               = []
     self.liblist                = [['liblapack.a','libblas.a']]
@@ -25,5 +25,26 @@ class Configure(config.package.CMakePackage):
 
   def formCMakeConfigureArgs(self):
     args = config.package.CMakePackage.formCMakeConfigureArgs(self)
+    # Remove compilers not needed by the LAPACK CMake since it tests them even
+    # though it never uses them (why?) and they may fail
+    # on some systems, such as Microsoft Windows with Microsoft Windows compilers
+    args = self.rmArgsStartsWith(args,'-DCMAKE_C_COMPILER=')
+    args = self.rmArgsStartsWith(args,'-DCMAKE_CXX_COMPILER=')
+    args = self.rmArgsStartsWith(args,'-DMPI_C_COMPILER=')
+    args = self.rmArgsStartsWith(args,'-DMPI_CXX_COMPILER=')
+    args = self.rmArgsStartsWith(args,'-DMPI_Fortran_COMPILER=')
     return args
 
+  def Install(self):
+    config.package.CMakePackage.Install(self)
+
+    # LAPACK CMake cannot name the generated files with Microsoft compilers with .lib so need to rename them
+    if self.framework.getCompiler().find('win32fe') > -1:
+      import os
+      from shutil import copyfile
+      if os.path.isfile(os.path.join(self.installDir,self.libdir,'libblas.a')):
+        copyfile(os.path.join(self.installDir,self.libdir,'libblas.a'),os.path.join(self.installDir,self.libdir,'libblas.lib'))
+      if os.path.isfile(os.path.join(self.installDir,self.libdir,'liblapack.a')):
+        copyfile(os.path.join(self.installDir,self.libdir,'liblapack.a'),os.path.join(self.installDir,self.libdir,'liblapack.lib'))
+
+    return self.installDir

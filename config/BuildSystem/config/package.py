@@ -1840,11 +1840,18 @@ class CMakePackage(Package):
     else:
       args.append('-DCMAKE_BUILD_TYPE=Release')
     self.framework.pushLanguage('C')
-    args.append('-DCMAKE_C_COMPILER="'+self.framework.getCompiler()+'"')
-    # bypass CMake findMPI() bug that can find compilers later in the PATH before the first one in the PATH.
-    # relevent lines of findMPI() begins with if(_MPI_BASE_DIR)
-    self.getExecutable(self.framework.getCompiler(), getFullPath=1, resultName='mpi_C',setMakeMacro=0)
-    args.append('-DMPI_C_COMPILER="'+self.mpi_C+'"')
+    # pass wrapper program to CMake since it cannot handle win32fe icl
+    # this does not seem to work, yet for the Fortran compiler below it does work
+    if self.framework.getCompiler().find('win32fe icl') > -1:
+      cc = '"'+os.path.join(self.petscdir.dir,'lib','petsc','bin','win32fe','win_icl')+'"'
+      args.append('-DCMAKE_C_COMPILER='+cc)
+      args.append('-DMPI_C_COMPILER='+cc)
+    else:
+      args.append('-DCMAKE_C_COMPILER="'+self.framework.getCompiler()+'"')
+      # bypass CMake findMPI() bug that can find compilers later in the PATH before the first one in the PATH.
+      # relevent lines of findMPI() begins with if(_MPI_BASE_DIR)
+      self.getExecutable(self.framework.getCompiler(), getFullPath=1, resultName='mpi_C',setMakeMacro=0)
+      args.append('-DMPI_C_COMPILER="'+self.mpi_C+'"')
     args.append('-DCMAKE_AR='+self.setCompilers.AR)
     ranlib = shlex.split(self.setCompilers.RANLIB)[0]
     args.append('-DCMAKE_RANLIB='+ranlib)
@@ -1873,11 +1880,17 @@ class CMakePackage(Package):
 
     if hasattr(self.compilers, 'FC'):
       self.framework.pushLanguage('FC')
-      args.append('-DCMAKE_Fortran_COMPILER="'+self.framework.getCompiler()+'"')
-      # bypass CMake findMPI() bug that can find compilers later in the PATH before the first one in the PATH.
-      # relevent lines of findMPI() begins with if(_MPI_BASE_DIR)
-      self.getExecutable(self.framework.getCompiler(), getFullPath=1, resultName='mpi_FC',setMakeMacro=0)
-      args.append('-DMPI_Fortran_COMPILER="'+self.mpi_FC+'"')
+      # pass wrapper program to CMake since it cannot handle win32fe ifort
+      if self.framework.getCompiler().find('win32fe ifort') > -1:
+        fc = '"'+os.path.join(self.petscdir.dir,'lib','petsc','bin','win32fe','win_ifort')+'"'
+        args.append('-DCMAKE_Fortran_COMPILER='+fc)
+        args.append('-DMPI_Fortran_COMPILER='+fc)
+      else:
+        args.append('-DCMAKE_Fortran_COMPILER="'+self.framework.getCompiler()+'"')
+        # bypass CMake findMPI() bug that can find compilers later in the PATH before the first one in the PATH.
+        # relevent lines of findMPI() begins with if(_MPI_BASE_DIR)
+        self.getExecutable(self.framework.getCompiler(), getFullPath=1, resultName='mpi_FC',setMakeMacro=0)
+        args.append('-DMPI_Fortran_COMPILER="'+self.mpi_FC+'"')
       args.append('-DCMAKE_Fortran_FLAGS:STRING="'+self.updatePackageFFlags(self.framework.getCompilerFlags())+'"')
       args.append('-DCMAKE_Fortran_FLAGS_DEBUG:STRING="'+self.updatePackageFFlags(self.framework.getCompilerFlags())+'"')
       args.append('-DCMAKE_Fortran_FLAGS_RELEASE:STRING="'+self.updatePackageFFlags(self.framework.getCompilerFlags())+'"')
