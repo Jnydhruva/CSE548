@@ -3,8 +3,8 @@ import config.package
 class Configure(config.package.CMakePackage):
   def __init__(self, framework):
     config.package.CMakePackage.__init__(self, framework)
-    self.gitcommit              = 'v3.10.1'
-    self.download               = ['git://https://github.com/Reference-LAPACK/lapack','https://github.com/Reference-LAPACK/lapack/archive/'+self.gitcommit+'.tar.gz']
+    self.gitcommit              = 'd9e9690419d1fbf80d5dc67f77341af2e771ee90' # barry/2022-10-21/fix-lapacke-always-included Oct 21, 11:22 AM Eastern Time
+    self.download               = ['git://https://github.com/petsc/lapack','https://github.com/petsc/lapack/archive/'+self.gitcommit+'.tar.gz']
     self.includes               = []
     self.liblist                = [['liblapack.a','libblas.a']]
     self.precisions             = ['single','double']
