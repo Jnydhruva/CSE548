@@ -3,7 +3,7 @@ import config.package
 class Configure(config.package.CMakePackage):
   def __init__(self, framework):
     config.package.CMakePackage.__init__(self, framework)
-    self.gitcommit              = 'dc164052d405510c3486ee48f5095e46cc560232' # barry/2022-10-21/fix-lapacke-always-included Oct 21, 9:54 PM Eastern Time
+    self.gitcommit              = 'acbdf3621104c6b9224e3e17e74d54509c2f9087' # barry/2022-10-21/fix-lapacke-always-included Oct 22, 12:02 PM Eastern Time
     self.download               = ['git://https://github.com/petsc/lapack','https://github.com/petsc/lapack/archive/'+self.gitcommit+'.tar.gz']
     self.includes               = []
     self.liblist                = [['liblapack.a','libblas.a']]
