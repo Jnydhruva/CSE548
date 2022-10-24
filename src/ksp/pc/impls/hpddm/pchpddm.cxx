@@ -288,10 +288,9 @@ static PetscErrorCode PCSetFromOptions_HPDDM(PC pc, PetscOptionItems *PetscOptio
         PetscCall(PetscOptionsBoundedInt(prefix, "Local number of deflation vectors computed by SLEPc", "SVDSetDimensions", data->levels[i - 1]->nu, &data->levels[i - 1]->nu, NULL, 0));
         PetscCall(PetscSNPrintf(prefix, sizeof(prefix), "-pc_hpddm_levels_%d_svd_relative_threshold", i));
         PetscCall(PetscOptionsReal(prefix, "Local relative threshold for selecting deflation vectors returned by SLEPc", "PCHPDDM", data->levels[i - 1]->threshold, &data->levels[i - 1]->threshold, NULL));
-      } else {
-        PetscCall(PetscSNPrintf(prefix, sizeof(prefix), "-pc_hpddm_levels_1_st_share_sub_ksp"));
-        PetscCall(PetscOptionsBool(prefix, "Shared KSP between SLEPc ST and the fine-level subdomain solver", "PCHPDDMGetSTShareSubKSP", PETSC_FALSE, &data->share, NULL));
       }
+      PetscCall(PetscSNPrintf(prefix, sizeof(prefix), "-pc_hpddm_levels_1_st_share_sub_ksp"));
+      PetscCall(PetscOptionsBool(prefix, "Shared KSP between SLEPc ST and the fine-level subdomain solver", "PCHPDDMGetSTShareSubKSP", PETSC_FALSE, &data->share, NULL));
     }
     /* if there is no prescribed coarsening, just break out of the loop */
     if (data->levels[i - 1]->threshold <= 0.0 && data->levels[i - 1]->nu <= 0 && !(data->deflation && i == 1)) break;
@@ -764,6 +763,78 @@ static PetscErrorCode PCDestroy_HPDDMShell(PC pc)
   PetscCall(VecDestroy(&ctx->D));
   PetscCall(VecScatterDestroy(&ctx->scatter));
   PetscCall(PCDestroy(&ctx->pc));
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode PCSetUp_SchurShell(PC pc)
+{
+  KSP           ksp;
+  PC            factor;
+  Mat           A;
+  MatSolverType type;
+  PetscBool     flg;
+
+  PetscFunctionBegin;
+  PetscCall(PCShellGetContext(pc, &ksp));
+  PetscCall(KSPGetPC(ksp, &factor));
+  PetscCall(PCFactorGetMatSolverType(factor, &type));
+  PetscCall(PCFactorGetMatrix(factor, &A));
+  PetscCall(PetscStrcmp(type, MATSOLVERMUMPS, &flg));
+  if (flg) {
+    PetscCheck(PetscDefined(HAVE_MUMPS), PETSC_COMM_SELF, PETSC_ERR_PLIB, "Inconsistent MatSolverType");
+#if PetscDefined(HAVE_MUMPS)
+    PetscCall(MatMumpsSetIcntl(A, 26, 0));
+#endif
+  } else {
+    PetscCheck(PetscDefined(HAVE_MKL_PARDISO), PETSC_COMM_SELF, PETSC_ERR_PLIB, "Inconsistent MatSolverType");
+#if PetscDefined(HAVE_MKL_PARDISO)
+    PetscCall(MatMkl_PardisoSetCntl(A, 70, 1));
+#endif
+  }
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode PCApply_SchurShell(PC pc, Vec x, Vec y)
+{
+  KSP ksp;
+  PC  factor;
+  Mat A;
+  Vec b, c;
+  IS  is;
+
+  PetscFunctionBegin;
+  PetscCall(PCShellGetContext(pc, &ksp));
+  PetscCall(KSPGetPC(ksp, &factor));
+  PetscCall(PCFactorGetMatrix(factor, &A));
+  PetscCall(MatCreateVecs(A, &b, &c));
+  PetscCall(ISCreateStride(PETSC_COMM_SELF, pc->mat->rmap->n, 0, 1, &is));
+  PetscCall(VecSet(b, 0.0));
+  PetscCall(VecISCopy(b, is, SCATTER_FORWARD, x));
+  PetscCall(MatSolve(A, b, c));
+  PetscCall(VecISCopy(c, is, SCATTER_REVERSE, y));
+  PetscCall(ISDestroy(&is));
+  PetscCall(VecDestroy(&b));
+  PetscCall(VecDestroy(&c));
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode PCView_SchurShell(PC pc, PetscViewer viewer)
+{
+  KSP ksp;
+
+  PetscFunctionBegin;
+  PetscCall(PCShellGetContext(pc, &ksp));
+  PetscCall(KSPView(ksp, viewer));
+  PetscFunctionReturn(0);
+}
+
+static PetscErrorCode PCDestroy_SchurShell(PC pc)
+{
+  KSP ksp;
+
+  PetscFunctionBegin;
+  PetscCall(PCShellGetContext(pc, &ksp));
+  PetscCall(KSPDestroy(&ksp));
   PetscFunctionReturn(0);
 }
 
@@ -1483,7 +1554,46 @@ static PetscErrorCode PCSetUp_HPDDM(PC pc)
                 PetscCall(MatConvert(Pmat, set && symm ? MATSEQSBAIJ : MATSEQBAIJ, MAT_INPLACE_MATRIX, &Pmat));
               } else if (set && symm) PetscCall(MatConvert(Pmat, MATSEQSBAIJ, MAT_INPLACE_MATRIX, &Pmat));
               PetscCall(KSPSetOperators(h->ksp, Pmat, Pmat));
-              PetscCall(KSPSetOptionsPrefix(h->ksp, prefix));
+              if (data->share) {
+                PC        pc;
+                Mat       A;
+                PetscBool flg;
+
+                PetscCall(PetscSNPrintf(prefix, sizeof(prefix), "%spc_hpddm_levels_1_sub_", pcpre ? pcpre : ""));
+                PetscCall(KSPSetOptionsPrefix(h->ksp, prefix));
+                PetscCall(KSPSetType(h->ksp, KSPPREONLY));
+                PetscCall(KSPGetPC(h->ksp, &pc));
+                PetscCall(PCSetType(pc, PCLU));
+                if (PetscDefined(HAVE_MUMPS)) PetscCall(PCFactorSetMatSolverType(pc, MATSOLVERMUMPS));
+                else if (PetscDefined(HAVE_MKL_PARDISO)) PetscCall(PCFactorSetMatSolverType(pc, MATSOLVERMKL_PARDISO));
+                PetscCall(KSPSetFromOptions(h->ksp));
+                PetscCall(PetscObjectTypeCompareAny((PetscObject)pc, &flg, PCLU, PCCHOLESKY, ""));
+                if (flg) {
+                  MatSolverType type;
+                  PetscCall(PCFactorGetMatSolverType(pc, &type));
+                  PetscCall(PetscStrcmp(type, MATSOLVERMUMPS, &flg));
+                  if (!flg) PetscCall(PetscStrcmp(type, MATSOLVERMKL_PARDISO, &flg));
+                  if (flg) {
+                    PetscCall(PCFactorGetMatrix(pc, &A));
+                    PetscCall(ISCreateStride(PETSC_COMM_SELF, s[3]->rmap->n, s[0]->rmap->n, 1, ov));
+                    PetscCall(MatFactorSetSchurIS(A, ov[0]));
+                    PetscCall(ISDestroy(ov));
+                    PetscCall(KSPGetPC(subksp[0], &pc));
+                    PetscCall(PCSetType(pc, PCSHELL));
+                    PetscCall(PCShellSetContext(pc, h->ksp));
+                    PetscCall(PetscObjectReference((PetscObject)h->ksp));
+                    PetscCall(PCShellSetSetUp(pc, PCSetUp_SchurShell));
+                    PetscCall(PCShellSetApply(pc, PCApply_SchurShell));
+                    PetscCall(PCShellSetView(pc, PCView_SchurShell));
+                    PetscCall(PCShellSetDestroy(pc, PCDestroy_SchurShell));
+                  }
+                }
+                if (!flg) {
+                  data->share = PETSC_FALSE;
+                  PetscCall(PetscInfo(pc, "Cannot share subdomain KSP between SLEPc and PETSc since neither MUMPS nor MKL PARDISO are used\n"));
+                }
+              }
+              if (!data->share) PetscCall(KSPSetOptionsPrefix(h->ksp, prefix));
               h->S = NULL;
             }
             PetscCall(MatDestroy(&Pmat));
@@ -1585,7 +1695,7 @@ static PetscErrorCode PCSetUp_HPDDM(PC pc)
           std::swap(uis, data->is);
           swap = PETSC_TRUE;
         }
-      } else if (data->share) {
+      } else if (data->share && overlap == -1) {
         data->share = PETSC_FALSE;
         PetscCall(PetscInfo(pc, "Cannot share subdomain KSP between SLEPc and PETSc since -%spc_hpddm_levels_1_st_matstructure %s (!= %s)\n", pcpre ? pcpre : "", MatStructures[structure], MatStructures[SAME_NONZERO_PATTERN]));
       }
@@ -1627,7 +1737,7 @@ static PetscErrorCode PCSetUp_HPDDM(PC pc)
       } else weighted = data->B;
       /* SLEPc is used inside the loaded symbol */
       PetscCall((*loadedSym)(data->levels[0]->P, data->is, ismatis ? C : (algebraic && !block && overlap == -1 ? sub[0] : data->aux), weighted, data->B, initial, data->levels));
-      if (data->share) {
+      if (data->share && overlap == -1) {
         Mat st[2];
         PetscCall(KSPGetOperators(ksp[0], st, st + 1));
         PetscCall(MatCopy(subA[0], st[0], structure));
