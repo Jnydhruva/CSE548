@@ -554,11 +554,12 @@ static PetscErrorCode landau_deposit(DM vdm, Vec x, PetscInt local_field, PetscI
   DM       sw;
   PetscReal *moms = NULL;
   Vec           ff;
-PetscCall(DMViewFromOptions(vdm, NULL, "-vel_dm_view"));
+
   PetscFunctionBegin;
   PetscCall(DMGetApplicationContext(vdm, &ctx));
-  sp = ctx->species_offset[grid] + local_field; // make the arg -- TODO
+  sp = ctx->species_offset[grid] + local_field; // make the arg ???
   sw = user->sw[bid][sp]; // particle list
+  PetscCall(DMSwarmSetCellDM(sw, vdm)); // we tell the sub-swarm that you are working with this velocity grid
   PetscCall(DMSwarmGetLocalSize(sw, &npart));
   PetscCall(PetscInfo(vdm, "landau_deposit grid %" PetscInt_FMT ", batch %" PetscInt_FMT " and species %" PetscInt_FMT ", num particles = %" PetscInt_FMT ", sw=%p\n", grid, bid, sp, npart,sw));
   if (bid == ctx->batch_view_idx) moms = user->moments;
@@ -569,6 +570,8 @@ PetscCall(DMViewFromOptions(vdm, NULL, "-vel_dm_view"));
   }
   /* This gives M f = \int_\Omega \phi f, which looks like a rhs for a PDE */
   PetscCall(DMCreateMassMatrix(sw, vdm, &user->Mp[bid][sp]));
+  PetscCall(MatViewFromOptions(user->Mp[bid][sp], NULL, "-mass_view"));
+  PetscCall(DMViewFromOptions(sw, NULL, "-mass_view"));
   PetscCall(DMSwarmCreateGlobalVectorFromField(sw, "w_q", &ff)); // this grabs access !!!!!
   PetscCall(PetscObjectSetName((PetscObject)ff, "weights"));
   PetscCall(MatMultTranspose(user->Mp[bid][sp], ff, x)); // Add or not?
@@ -620,11 +623,11 @@ static PetscErrorCode advanceCollisions(DM pack, Mat J, Vec X, PetscReal dt, Par
 
   PetscFunctionBeginUser;
   PetscCall(DMGetApplicationContext(pack, &ctx));
-  PetscCall(DMSwarmGetCellDM(sw_loc_species[0],&dm_x));
+  PetscCall(DMSwarmGetCellDM(sw_loc_species[0],&dm_x)); // one species DM, everone has same spatial grid
   PetscCall(DMPlexGetHeightStratum(dm_x, 0, &cStart, &cEnd)); // my local part of global X grid
   // deposit: pack up particles
   for (PetscInt sp = 0; sp < ctx->num_species; sp++) {
-    for(int c = cStart; c < cEnd; c++){
+    for(int c = 0 /* cStart */; c < cEnd; c++){
       PetscCall(DMCreate(PETSC_COMM_SELF, &user.sw[c][sp]));
       PetscCall(DMSwarmGetCellSwarm(sw_loc_species[sp], c, user.sw[c][sp]));
       PetscCall(PetscInfo(pack, "%d) cell sw = %p\n",c,user.sw[c][sp]));
