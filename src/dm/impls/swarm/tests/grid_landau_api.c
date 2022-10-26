@@ -76,7 +76,7 @@ static PetscErrorCode InitSwarm(MPI_Comm comm, DM dm_x, DM *sw)
   PetscCall(DMSetDimension(*sw, dim));
   PetscCall(DMSwarmSetType(*sw, DMSWARM_PIC));
   PetscCall(DMSwarmSetCellDM(*sw, dm_x));
-  PetscCall(DMSwarmRegisterPetscDatatypeField(*sw, "w_q", 1, PETSC_SCALAR));
+  PetscCall(DMSwarmRegisterPetscDatatypeField(*sw, "w_q", 1, PETSC_REAL));
   PetscCall(DMSwarmRegisterPetscDatatypeField(*sw, "vpar", 1, PETSC_REAL));
   PetscCall(DMSwarmFinalizeFieldRegister(*sw));
   PetscCall(PetscObjectSetName((PetscObject)*sw, "Particles"));
