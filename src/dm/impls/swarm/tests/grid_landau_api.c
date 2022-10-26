@@ -42,7 +42,7 @@ static char help[] = "Particle interface for 2V grid-based Landau advance: creat
     __cart[1] = __psi*PetscSinReal(__theta);				\
     __cart[2] = -__R*PetscSinReal(__phi);       \
   }
- 
+
 #define CartTocyl2D(__R_0, __R, __cart, __psi,  __theta) {              \
     __R = __cart[0];                                                    \
     XYToPsiTheta(__R - __R_0, __cart[1], __psi, __theta);               \
@@ -563,7 +563,10 @@ PetscCall(DMViewFromOptions(vdm, NULL, "-vel_dm_view"));
   PetscCall(PetscInfo(vdm, "landau_deposit grid %" PetscInt_FMT ", batch %" PetscInt_FMT " and species %" PetscInt_FMT ", num particles = %" PetscInt_FMT ", sw=%p\n", grid, bid, sp, npart,sw));
   if (bid == ctx->batch_view_idx) moms = user->moments;
   user->Mp[bid][sp] = NULL;
-  if (moms) PetscCall(DMViewFromOptions(sw, NULL, "-swarm_view"));
+  if (moms) {
+    PetscCall(DMViewFromOptions(sw, NULL, "-landau_deposit_swarm_view"));
+    PetscCall(DMViewFromOptions(vdm, NULL, "-landau_deposit_plex_view"));
+  }
   /* This gives M f = \int_\Omega \phi f, which looks like a rhs for a PDE */
   PetscCall(DMCreateMassMatrix(sw, vdm, &user->Mp[bid][sp]));
   PetscCall(DMSwarmCreateGlobalVectorFromField(sw, "w_q", &ff)); // this grabs access !!!!!
@@ -656,6 +659,7 @@ static PetscErrorCode advanceCollisions(DM pack, Mat J, Vec X, PetscReal dt, Par
     }
   }
 
+  PetscCall(TSDestroy(&ts));
   PetscFunctionReturn(0);
 }
 
@@ -668,7 +672,6 @@ int main(int argc, char **argv)
   PetscInt dim, cStart, cEnd, nDMs, nCells;
   char   batch_opt[32] = "-dm_landau_batch_size ", numstr[32];
   Vec            X;
-  TS             ts;
   Mat            J;
 
   PetscFunctionBeginUser;
@@ -732,7 +735,6 @@ int main(int argc, char **argv)
   for (PetscInt sp = 0; sp < ctx->num_species; sp++) PetscCall(DMDestroy(&sw_loc_species[sp]));
   PetscCall(DMDestroy(&dm_x));
   PetscCall(DMPlexLandauDestroyVelocitySpace(&pack));
-  PetscCall(TSDestroy(&ts));
   PetscCall(VecDestroy(&X));
   PetscCall(PetscFinalize());
   return 0;
