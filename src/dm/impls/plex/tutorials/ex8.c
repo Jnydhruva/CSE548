@@ -11,7 +11,7 @@ static PetscErrorCode ViewOffsets(DM dm, Vec X)
 
   PetscFunctionBegin;
   PetscCall(PetscObjectGetName((PetscObject)dm, &name));
-  PetscCall(DMPlexGetLocalOffsets(dm, NULL, 0, 0, 0, &num_elem, &elem_size, &num_comp, &num_dof, &elem_restr_offsets));
+  PetscCall(DMPlexGetLocalOffsetsFEM(dm, NULL, 0, 0, 0, &num_elem, &elem_size, &num_comp, &num_dof, &elem_restr_offsets));
   PetscCall(PetscPrintf(PETSC_COMM_SELF, "DM %s offsets: num_elem %" PetscInt_FMT ", size %" PetscInt_FMT ", comp %" PetscInt_FMT ", dof %" PetscInt_FMT "\n", name, num_elem, elem_size, num_comp, num_dof));
   if (X) PetscCall(VecGetArrayRead(X, &x));
   for (PetscInt c = 0; c < num_elem; c++) {

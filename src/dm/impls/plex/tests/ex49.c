@@ -66,7 +66,7 @@ static PetscErrorCode CheckOffsets(DM dm, const char *domain_name, PetscInt labe
   for (f = 0; f < Nf; ++f) {
     char name[PETSC_MAX_PATH_LEN];
 
-    PetscCall(DMPlexGetLocalOffsets(dm, domain_label, label_value, height, f, &Ncell, &Ncl, &Nc, &n, &offsets));
+    PetscCall(DMPlexGetLocalOffsetsFEM(dm, domain_label, label_value, height, f, &Ncell, &Ncl, &Nc, &n, &offsets));
     PetscCall(ISCreateGeneral(PETSC_COMM_SELF, Ncell * Ncl, offsets, PETSC_OWN_POINTER, &offIS));
     PetscCall(PetscSNPrintf(name, PETSC_MAX_PATH_LEN, "Field %" PetscInt_FMT " Offsets", f));
     PetscCall(PetscObjectSetName((PetscObject)offIS, name));
@@ -94,7 +94,7 @@ static PetscErrorCode CheckOffsets(DM dm, const char *domain_name, PetscInt labe
     }
     if (isDG && height) PetscFunctionReturn(0);
     if (domain_name) PetscCall(DMGetLabel(cdm, domain_name, &domain_label));
-    PetscCall(DMPlexGetLocalOffsets(cdm, domain_label, label_value, height, 0, &Ncell, &Ncl, &Nc, &n, &offsets));
+    PetscCall(DMPlexGetLocalOffsetsFEM(cdm, domain_label, label_value, height, 0, &Ncell, &Ncl, &Nc, &n, &offsets));
     PetscCall(DMGetCoordinateDim(dm, &cdim));
     PetscCheck(Nc == cdim, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "Geometric dimension %" PetscInt_FMT " should be %" PetscInt_FMT, Nc, cdim);
     PetscCall(DMGetLocalSection(cdm, &s));

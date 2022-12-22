@@ -541,7 +541,8 @@ PETSC_EXTERN PetscErrorCode DMPlexSectionLoad(DM, PetscViewer, DM, PetscSF, Pets
 PETSC_EXTERN PetscErrorCode DMPlexGlobalVectorLoad(DM, PetscViewer, DM, PetscSF, Vec);
 PETSC_EXTERN PetscErrorCode DMPlexLocalVectorLoad(DM, PetscViewer, DM, PetscSF, Vec);
 
-PETSC_EXTERN PetscErrorCode DMPlexGetLocalOffsets(DM, DMLabel, PetscInt, PetscInt, PetscInt, PetscInt *, PetscInt *, PetscInt *, PetscInt *, PetscInt **);
+PETSC_EXTERN PetscErrorCode DMPlexGetLocalOffsetsFEM(DM, DMLabel, PetscInt, PetscInt, PetscInt, PetscInt *, PetscInt *, PetscInt *, PetscInt *, PetscInt **);
+PETSC_EXTERN PetscErrorCode DMPlexGetLocalOffsetsFVM(DM, DMLabel, PetscInt, PetscInt *, PetscInt *, PetscInt *, PetscInt **, PetscInt **);
 
 /* point queue */
 PETSC_EXTERN PetscErrorCode DMPlexPointQueueCreate(PetscInt, DMPlexPointQueue *);
