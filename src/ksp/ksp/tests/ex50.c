@@ -1,9 +1,16 @@
 
 static char help[] = "Tests point block Jacobi and ILU for different block sizes\n\n";
 
+#include <pthread.h>
 #include <petscksp.h>
 
-int main(int argc, char **args)
+typedef struct {
+  int      argc;
+  char   **argv;
+  MPI_Comm comm;
+} ThreadInfo;
+
+PetscErrorCode petsc_main(int argc, char **argv)
 {
   Vec         x, b, u;
   Mat         A;    /* linear system matrix */
@@ -14,7 +21,7 @@ int main(int argc, char **args)
   PetscScalar v;
 
   PetscFunctionBeginUser;
-  PetscCall(PetscInitialize(&argc, &args, (char *)0, help));
+  PetscCall(PetscInitialize(&argc, &argv, (char *)0, help));
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-bs", &bs, NULL));
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-n", &n, NULL));
 
@@ -112,6 +119,49 @@ int main(int argc, char **args)
   */
   PetscCall(PetscFinalize());
   return 0;
+}
+
+void *thread_start(void *arg)
+{
+  ThreadInfo    *tinfo = (ThreadInfo *)arg;
+  MPI_Comm       comm  = tinfo->comm;
+  PetscErrorCode ierr;
+
+  PETSC_COMM_WORLD = comm;
+  MPIX_Threadcomm_start(comm);
+  ierr = petsc_main(tinfo->argc, tinfo->argv);
+  MPIX_Threadcomm_finish(comm);
+  return (void *)(intptr_t)ierr;
+}
+
+int main(int argc, char **argv)
+{
+  int        rc, ierr, provided, nthreads = 4;
+  MPI_Comm   comm;
+  pthread_t  threads[16];
+  ThreadInfo tinfo;
+  void      *res;
+
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+  MPIX_Threadcomm_init(MPI_COMM_WORLD, nthreads, &comm);
+
+  tinfo.argc = argc;
+  tinfo.argv = argv;
+  tinfo.comm = comm;
+
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+  for (int i = 0; i < nthreads; i++) pthread_create(&threads[i], &attr, thread_start, &tinfo);
+  pthread_attr_destroy(&attr);
+  for (int i = 0; i < nthreads; i++) {
+    rc = pthread_join(threads[i], &res);
+    if (rc) ierr = rc;
+    if (res) ierr = (intptr_t)res;
+  }
+  MPIX_Threadcomm_free(&comm);
+  return ierr;
 }
 
 /*TEST
