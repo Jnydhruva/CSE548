@@ -1,12 +1,11 @@
 -include ../../../../../../petscdir.mk
-#requirespackage   'PETSC_HAVE_CUDA'
+#requirespackage   'PETSC_HAVE_CUPM'
 
-SOURCECU = densecuda.cu
-SOURCEF  =
-SOURCEH  =
-LIBBASE  = libpetscmat
-MANSEC   = Mat
-LOCDIR   = src/mat/impls/dense/seq/cuda/
+DIRS    = cuda hip
+SOURCEH = matmpidensecupm.hpp
+LIBBASE = libpetscmat
+MANSEC  = Mat
+LOCDIR  = src/mat/impls/dense/mpi/cupm/
 
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules

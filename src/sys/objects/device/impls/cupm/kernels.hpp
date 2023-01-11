@@ -31,6 +31,24 @@ PETSC_DEVICE_INLINE_DECL static void grid_stride_1D(const SizeType size, T &&fun
 
 } // namespace kernels
 
+namespace functors
+{
+
+template <typename T>
+class plus_equals {
+public:
+  using value_type = T;
+
+  PETSC_HOSTDEVICE_DECL constexpr explicit plus_equals(value_type v = value_type{}) noexcept : v_(std::move(v)) { }
+
+  PETSC_NODISCARD PETSC_HOSTDEVICE_INLINE_DECL constexpr T operator()(const T &val) const noexcept { return val + v_; }
+
+private:
+  value_type v_;
+};
+
+} // namespace functors
+
 } // namespace cupm
 
 } // namespace device

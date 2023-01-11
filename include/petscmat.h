@@ -2257,8 +2257,6 @@ PETSC_EXTERN PetscErrorCode MatSeqAIJCUSPARSERestoreArray(Mat, PetscScalar **);
 
 PETSC_EXTERN PetscErrorCode MatCreateDenseCUDA(MPI_Comm, PetscInt, PetscInt, PetscInt, PetscInt, PetscScalar[], Mat *);
 PETSC_EXTERN PetscErrorCode MatCreateSeqDenseCUDA(MPI_Comm, PetscInt, PetscInt, PetscScalar[], Mat *);
-PETSC_EXTERN PetscErrorCode MatMPIDenseCUDASetPreallocation(Mat, PetscScalar[]);
-PETSC_EXTERN PetscErrorCode MatSeqDenseCUDASetPreallocation(Mat, PetscScalar[]);
 PETSC_EXTERN PetscErrorCode MatDenseCUDAGetArrayWrite(Mat, PetscScalar **);
 PETSC_EXTERN PetscErrorCode MatDenseCUDAGetArrayRead(Mat, const PetscScalar **);
 PETSC_EXTERN PetscErrorCode MatDenseCUDAGetArray(Mat, PetscScalar **);
