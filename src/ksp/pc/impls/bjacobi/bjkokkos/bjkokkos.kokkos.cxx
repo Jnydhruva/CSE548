@@ -581,7 +581,6 @@ KOKKOS_INLINE_FUNCTION PetscErrorCode BJSolve_BICG(const team_member team, const
   /*     r <- b (x is 0) */
   parallel_for(Kokkos::TeamVectorRange(team, start, end), [=](int rowb) {
     int rowa = ic[rowb];
-    //PetscCall(VecCopy(Rr,Rl));
     Rl[rowb - start] = Rr[rowb - start] = glb_b[rowa];
     XX[rowb - start]                    = 0;
   });
@@ -1103,18 +1102,16 @@ static PetscErrorCode PCSetUp_BJKOKKOS(PC pc)
   PetscCheck(!pc->useAmat, PetscObjectComm((PetscObject)pc), PETSC_ERR_SUP, "No support for using 'use_amat'");
   PetscCheck(A, PetscObjectComm((PetscObject)A), PETSC_ERR_USER, "No matrix - A is used above");
   PetscCall(PetscObjectTypeCompareAny((PetscObject)A, &flg, MATSEQAIJKOKKOS, MATMPIAIJKOKKOS, MATAIJKOKKOS, ""));
-  PetscCheck(flg, PetscObjectComm((PetscObject)A), PETSC_ERR_ARG_WRONG, "must use '-dm_mat_type aijkokkos -dm_vec_type kokkos' for -pc_type bjkokkos");
+  PetscCheck(flg, PetscObjectComm((PetscObject)A), PETSC_ERR_ARG_WRONG, "must use '-[dm_]mat_type aijkokkos -[dm_]vec_type kokkos' for -pc_type bjkokkos");
   PetscCheck((aijkok = static_cast<Mat_SeqAIJKokkos *>(A->spptr)), PetscObjectComm((PetscObject)A), PETSC_ERR_USER, "No aijkok");
   {
     if (!jac->vec_diag) {
-      Vec           *subX;
-      DM             pack, *subDM;
-      PetscInt       nDMs, n;
-      PetscContainer container;
-      PetscCall(PetscObjectQuery((PetscObject)A, "plex_batch_is", (PetscObject *)&container));
+      Vec           *subX = NULL;
+      DM             pack, *subDM = NULL;
+      PetscInt       nDMs, n, *block_sizes = NULL;
+      IS              isrow, isicol;
       { // Permute the matrix to get a block diagonal system: d_isrow_k, d_isicol_k
         MatOrderingType rtype;
-        IS              isrow, isicol;
         const PetscInt *rowindices, *icolindices;
         rtype = MATORDERINGRCM;
         // get permutation. Not what I expect so inverted here
@@ -1122,7 +1119,7 @@ static PetscErrorCode PCSetUp_BJKOKKOS(PC pc)
         PetscCall(ISDestroy(&isrow));
         PetscCall(ISInvertPermutation(isicol, PETSC_DECIDE, &isrow)); // THIS IS BACKWARD -- isrow is inverse -- FIX!!!!!
 
-        Mat mat_block_order;
+        Mat mat_block_order; // debug
         PetscCall(MatCreateSubMatrix(A, isicol, isicol, MAT_INITIAL_MATRIX, &mat_block_order));
         PetscCall(MatViewFromOptions(mat_block_order, NULL, "-ksp_batch_reorder_view"));
         PetscCall(MatDestroy(&mat_block_order));
@@ -1137,17 +1134,65 @@ static PetscErrorCode PCSetUp_BJKOKKOS(PC pc)
         Kokkos::deep_copy(*jac->d_isicol_k, h_isicol_k);
         PetscCall(ISRestoreIndices(isrow, &rowindices));
         PetscCall(ISRestoreIndices(isicol, &icolindices));
-        PetscCall(ISDestroy(&isrow));
-        PetscCall(ISDestroy(&isicol));
+        // PetscCall(ISView(isicol, PETSC_VIEWER_STDOUT_SELF));
       }
-      // get block sizes
+      // get block sizes & allocate vec_diag
       PetscCall(PCGetDM(pc, &pack));
-      PetscCheck(pack, PetscObjectComm((PetscObject)A), PETSC_ERR_USER, "no DM. Requires a composite DM");
-      PetscCall(PetscObjectTypeCompare((PetscObject)pack, DMCOMPOSITE, &flg));
-      PetscCheck(flg, PetscObjectComm((PetscObject)pack), PETSC_ERR_USER, "Not for type %s", ((PetscObject)pack)->type_name);
-      PetscCall(DMCompositeGetNumberDM(pack, &nDMs));
+      if (pack) {
+        PetscCall(PetscObjectTypeCompare((PetscObject)pack, DMCOMPOSITE, &flg));
+        if (flg) {
+          PetscCall(DMCompositeGetNumberDM(pack, &nDMs));
+          PetscCall(DMCreateGlobalVector(pack, &jac->vec_diag));
+        } else pack = NULL; // flag for no DM
+      }
+      if (!jac->vec_diag) { // get 'nDMs' and sizes 'block_sizes' w/o DMComposite.
+        PetscInt buffsz;
+        PetscInt bsrt,bend,ncols,ntot=0;
+        const PetscInt *colsA;
+        const PetscInt *rowindices, *icolindices;
+        PetscCall(MatGetSize(A, &buffsz, NULL));
+        PetscCall(PetscMalloc1(buffsz, &block_sizes)); // very inefficient, to big
+        PetscCall(ISGetIndices(isrow, &rowindices));
+        PetscCall(ISGetIndices(isicol, &icolindices));
+        nDMs = 0; bsrt = 0; bend = 1;
+        for (PetscInt row_B = 0; row_B < buffsz; row_B++) { // for all rows in block diagonal space
+          PetscInt rowA = icolindices[row_B], minj = PETSC_MAX_INT, maxj = 0;
+          PetscCall(MatGetRow(A, rowA, &ncols, &colsA, NULL)); // not sorted in permutation
+          PetscCheck(ncols, PetscObjectComm((PetscObject)pc), PETSC_ERR_ARG_WRONG, "Empty row not supported: %" PetscInt_FMT "\n",row_B);
+          for (PetscInt colj = 0; colj < ncols; colj++) {
+            PetscInt colB = rowindices[colsA[colj]];
+            if (colB > maxj) maxj = colB;
+            if (colB < minj) minj = colB;
+          }
+          if (minj >= bend) { // first column is > max of last block -- new block or last block
+            //PetscCall(PetscPrintf(PetscObjectComm((PetscObject)A), "\t\t finish block %d, N loc = %d (%d,%d)\n", nDMs+1, bend - bsrt,bsrt,bend));
+            block_sizes[nDMs] = bend - bsrt;
+            ntot += block_sizes[nDMs];
+            PetscCheck(minj == bend, PetscObjectComm((PetscObject)pc), PETSC_ERR_ARG_WRONG, "minj != bend: %" PetscInt_FMT " != %" PetscInt_FMT "\n",minj,bend);
+            bsrt = bend;
+            bend++; // start with size 1 in new block
+            nDMs++;
+          }
+          if (maxj+1 > bend) bend = maxj+1;
+          PetscCheck(minj >= bsrt || row_B == buffsz-1, PetscObjectComm((PetscObject)pc), PETSC_ERR_ARG_WRONG, "%" PetscInt_FMT ") minj < bsrt: %" PetscInt_FMT " != %" PetscInt_FMT "\n",rowA,minj,bsrt);
+          //PetscCall(PetscPrintf(PetscObjectComm((PetscObject)A), "%d) row %d.%d) cols %d : %d ; bsrt = %d, bend = %d\n",row_B,nDMs,rowA,minj,maxj,bsrt,bend));
+        }
+        // do last block
+        //PetscCall(PetscPrintf(PetscObjectComm((PetscObject)A), "\t\t\t finish block %d, N loc = %d (%d,%d)\n", nDMs+1, bend - bsrt,bsrt,bend));
+        block_sizes[nDMs] = bend - bsrt;
+        ntot += block_sizes[nDMs];
+        nDMs++;
+        // cleanup
+        PetscCheck(ntot == buffsz, PetscObjectComm((PetscObject)pc), PETSC_ERR_ARG_WRONG, "ntot != buffsz: %" PetscInt_FMT " != %" PetscInt_FMT "\n",ntot,buffsz);
+        PetscCall(ISRestoreIndices(isrow, &rowindices));
+        PetscCall(ISRestoreIndices(isicol, &icolindices));
+        PetscCall(PetscRealloc(sizeof(PetscInt) * nDMs, &block_sizes));
+        PetscCall(MatCreateVecs(A, &jac->vec_diag, NULL)); // not Landau
+        PetscInfo(pc, "Setup Matrix based meta data (not DMComposite not attached to PC) %" PetscInt_FMT " sub domains\n", nDMs);
+      }
+      PetscCall(ISDestroy(&isrow));
+      PetscCall(ISDestroy(&isicol));
       jac->num_dms = nDMs;
-      PetscCall(DMCreateGlobalVector(pack, &jac->vec_diag));
       PetscCall(VecGetLocalSize(jac->vec_diag, &n));
       jac->n         = n;
       jac->d_idiag_k = new Kokkos::View<PetscScalar *, Kokkos::LayoutRight>("idiag", n);
@@ -1178,18 +1223,22 @@ static PetscErrorCode PCSetUp_BJKOKKOS(PC pc)
       PetscCheck(jac->batch_target < jac->num_dms, PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "-ksp_batch_target (%" PetscInt_FMT ") >= number of DMs (%" PetscInt_FMT ")", jac->batch_target, jac->num_dms);
       PetscOptionsEnd();
       // get blocks - jac->d_bid_eqOffset_k
-      PetscCall(PetscMalloc(sizeof(*subX) * nDMs, &subX));
-      PetscCall(PetscMalloc(sizeof(*subDM) * nDMs, &subDM));
+      if (pack) {
+        PetscCall(PetscMalloc(sizeof(*subX) * nDMs, &subX));
+        PetscCall(PetscMalloc(sizeof(*subDM) * nDMs, &subDM));
+      }
       PetscCall(PetscMalloc(sizeof(*jac->dm_Nf) * nDMs, &jac->dm_Nf));
       PetscCall(PetscInfo(pc, "Have %" PetscInt_FMT " DMs, n=%" PetscInt_FMT " rtol=%g type = %s\n", nDMs, n, (double)jac->ksp->rtol, ((PetscObject)jac->ksp)->type_name));
-      PetscCall(DMCompositeGetEntriesArray(pack, subDM));
+      if (pack) PetscCall(DMCompositeGetEntriesArray(pack, subDM));
       jac->nBlocks = 0;
       for (PetscInt ii = 0; ii < nDMs; ii++) {
-        PetscSection section;
         PetscInt     Nf;
-        DM           dm = subDM[ii];
-        PetscCall(DMGetLocalSection(dm, &section));
-        PetscCall(PetscSectionGetNumFields(section, &Nf));
+        if (subDM) {
+          DM           dm = subDM[ii];
+          PetscSection section;
+          PetscCall(DMGetLocalSection(dm, &section));
+          PetscCall(PetscSectionGetNumFields(section, &Nf));
+        } else Nf = 1;
         jac->nBlocks += Nf;
 #if PCBJKOKKOS_VERBOSE_LEVEL <= 2
         if (ii == 0) PetscCall(PetscInfo(pc, "%" PetscInt_FMT ") %" PetscInt_FMT " blocks (%" PetscInt_FMT " total)\n", ii, Nf, jac->nBlocks));
@@ -1200,12 +1249,13 @@ static PetscErrorCode PCSetUp_BJKOKKOS(PC pc)
       }
       { // d_bid_eqOffset_k
         Kokkos::View<PetscInt *, Kokkos::LayoutRight, Kokkos::HostSpace> h_block_offsets("block_offsets", jac->nBlocks + 1);
-        PetscCall(DMCompositeGetAccessArray(pack, jac->vec_diag, nDMs, NULL, subX));
+        if (pack) PetscCall(DMCompositeGetAccessArray(pack, jac->vec_diag, nDMs, NULL, subX));
         h_block_offsets[0]    = 0;
         jac->const_block_size = -1;
         for (PetscInt ii = 0, idx = 0; ii < nDMs; ii++) {
           PetscInt nloc, nblk;
-          PetscCall(VecGetSize(subX[ii], &nloc));
+          if (pack) PetscCall(VecGetSize(subX[ii], &nloc));
+          else nloc = block_sizes[ii];
           nblk = nloc / jac->dm_Nf[ii];
           PetscCheck(nloc % jac->dm_Nf[ii] == 0, PetscObjectComm((PetscObject)pc), PETSC_ERR_USER, "nloc%%jac->dm_Nf[ii] (%" PetscInt_FMT ") != 0 DMs", nloc % jac->dm_Nf[ii]);
           for (PetscInt jj = 0; jj < jac->dm_Nf[ii]; jj++, idx++) {
@@ -1219,12 +1269,15 @@ static PetscErrorCode PCSetUp_BJKOKKOS(PC pc)
             else if (jac->const_block_size > 0 && jac->const_block_size != nblk) jac->const_block_size = 0;
           }
         }
-        PetscCall(DMCompositeRestoreAccessArray(pack, jac->vec_diag, jac->nBlocks, NULL, subX));
-        PetscCall(PetscFree(subX));
-        PetscCall(PetscFree(subDM));
+        if (pack) {
+          PetscCall(DMCompositeRestoreAccessArray(pack, jac->vec_diag, jac->nBlocks, NULL, subX));
+          PetscCall(PetscFree(subX));
+          PetscCall(PetscFree(subDM));
+        }
         jac->d_bid_eqOffset_k = new Kokkos::View<PetscInt *, Kokkos::LayoutRight>(Kokkos::create_mirror(Kokkos::DefaultExecutionSpace::memory_space(), h_block_offsets));
         Kokkos::deep_copy(*jac->d_bid_eqOffset_k, h_block_offsets);
       }
+      if (!pack) PetscCall(PetscFree(block_sizes));
     }
     { // get jac->d_idiag_k (PC setup),
       const PetscInt    *d_ai = aijkok->i_device_data(), *d_aj = aijkok->j_device_data();
