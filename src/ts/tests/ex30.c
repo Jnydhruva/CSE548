@@ -551,7 +551,7 @@ int main(int argc, char **argv)
           -ksp_type preonly -pc_type lu \
           -ptof_ksp_type cg -ptof_pc_type jacobi -ptof_ksp_converged_reason -ptof_ksp_rtol 1e-12\
           -snes_converged_reason -snes_monitor -snes_rtol 1e-12 -snes_stol 1e-12\
-          -ts_dt 0.1 -ts_exact_final_time stepover -ts_max_snes_failures -1 -ts_max_steps 1 -ts_monitor -ts_type beuler -info :vec
+          -ts_dt 0.05 -ts_exact_final_time stepover -ts_max_snes_failures -1 -ts_max_steps 1 -ts_monitor -ts_type beuler -info :vec
 
     test:
       suffix: cpu_3d
