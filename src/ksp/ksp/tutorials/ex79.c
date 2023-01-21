@@ -164,4 +164,18 @@ int main(int argc, char **args)
          suffix: 8_hpddm
          output_file: output/ex77_preonly.out
 
+   testset:
+      requires: hypre
+      args: -pc_type hypre -pc_hypre_boomeramg_relax_type_all l1scaled-Jacobi -pc_hypre_boomeramg_no_CF -ksp_max_it 20 -ksp_error_if_not_converged
+      test:
+         suffix: 9
+         output_file: output/ex77_preonly.out
+         args: -ksp_type preonly
+      test:
+         suffix: 9_hpddm
+         output_file: output/ex77_preonly.out
+         requires: hpddm
+         args: -ksp_type hpddm
+
+
 TEST*/
