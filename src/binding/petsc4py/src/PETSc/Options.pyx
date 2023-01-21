@@ -62,6 +62,12 @@ cdef class Options:
 
     def prefixPop(self):
         CHKERR( PetscOptionsPrefixPop(self.opt) )
+
+    def push(self):
+        CHKERR( PetscOptionsPush(self.opt) )
+
+    def pop(self):
+        CHKERR( PetscOptionsPop() )
     #
 
     def hasName(self, name):

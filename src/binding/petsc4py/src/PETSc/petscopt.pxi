@@ -11,6 +11,9 @@ cdef extern from * nogil:
     int PetscOptionsPrefixPush(PetscOptions,char[])
     int PetscOptionsPrefixPop(PetscOptions)
 
+    int PetscOptionsPush(PetscOptions)
+    int PetscOptionsPop()
+
     int PetscOptionsHasName(PetscOptions,char[],char[],PetscBool*)
     int PetscOptionsSetAlias(PetscOptions,char[],char[])
     int PetscOptionsSetValue(PetscOptions,char[],char[])
