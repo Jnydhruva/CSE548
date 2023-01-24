@@ -195,4 +195,14 @@ cdef PetscBool get_citation(object citation):
 cdef set_citation(object citation, bint is_set):
     citations_registry[citation] = is_set
 
+def petscHelpPrintfStringEnd(object comm):
+        cdef MPI_Comm ccomm = def_Comm(comm, PETSC_COMM_DEFAULT)
+        cdef const char* cval = NULL
+        CHKERR( PetscHelpPrintfStringEnd(ccomm,&cval))
+        return bytes2str(cval)
+
+def petscHelpPrintfStringBegin(object comm):
+        cdef MPI_Comm ccomm = def_Comm(comm, PETSC_COMM_DEFAULT)
+        CHKERR( PetscHelpPrintfStringBegin(ccomm))
+
 # --------------------------------------------------------------------

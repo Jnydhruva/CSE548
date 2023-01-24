@@ -3259,3 +3259,64 @@ PetscErrorCode PetscOptionsDeprecated_Private(PetscOptionItems *PetscOptionsObje
   }
   PetscFunctionReturn(0);
 }
+
+enum {
+  PetscHelpPrintfStringLength = 1000 * 80
+};
+static char *petschelpprintfstringbuffer     = NULL;
+static int   petschelpprintfstringbufferhead = 0;
+
+/*
+  Prints the help message into a large string buffer that can be accessed with PetscHelpPrintfStringGetBuffer()
+*/
+PetscErrorCode PetscHelpPrintfString(MPI_Comm comm, const char format[], ...)
+{
+  PetscMPIInt rank;
+
+  PetscFunctionBegin;
+  PetscCheck(comm != MPI_COMM_NULL, PETSC_COMM_SELF, PETSC_ERR_PLIB, "Called with MPI_COMM_NULL, likely PetscObjectComm() failed");
+  PetscCallMPI(MPI_Comm_rank(comm, &rank));
+  if (rank == 0) {
+    va_list Argp;
+    va_start(Argp, format);
+#if defined(PETSC_HAVE_VSNPRINTF)
+    if (PetscHelpPrintfStringLength - petschelpprintfstringbufferhead > 0) {
+      int flen = vsnprintf(petschelpprintfstringbuffer + petschelpprintfstringbufferhead, PetscHelpPrintfStringLength - petschelpprintfstringbufferhead, format, Argp);
+      petschelpprintfstringbufferhead += flen;
+    }
+#else
+  #error "vsnprintf not found"
+#endif
+    va_end(Argp);
+  }
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode PetscHelpPrintfStringBegin(MPI_Comm comm)
+{
+  PetscMPIInt rank;
+
+  PetscFunctionBegin;
+  PetscHelpPrintf                 = PetscHelpPrintfString;
+  petschelpprintfstringbufferhead = 0;
+  PetscCheck(comm != MPI_COMM_NULL, PETSC_COMM_SELF, PETSC_ERR_PLIB, "Called with MPI_COMM_NULL, likely PetscObjectComm() failed");
+  PetscCallMPI(MPI_Comm_rank(comm, &rank));
+  if (rank == 0) {
+    if (!petschelpprintfstringbuffer) PetscCall(PetscMalloc1(PetscHelpPrintfStringLength, &petschelpprintfstringbuffer));
+  }
+  defaultoptions->help = PETSC_TRUE;
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode PetscHelpPrintfStringEnd(MPI_Comm comm, const char **buffer)
+{
+  PetscMPIInt rank;
+
+  PetscFunctionBegin;
+  PetscHelpPrintf = PetscHelpPrintfDefault;
+  PetscCheck(comm != MPI_COMM_NULL, PETSC_COMM_SELF, PETSC_ERR_PLIB, "Called with MPI_COMM_NULL, likely PetscObjectComm() failed");
+  PetscCallMPI(MPI_Comm_rank(comm, &rank));
+  if (rank == 0) { *buffer = petschelpprintfstringbuffer; }
+  defaultoptions->help = PETSC_FALSE;
+  PetscFunctionReturn(0);
+}

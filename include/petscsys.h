@@ -1444,6 +1444,8 @@ PETSC_EXTERN PetscErrorCode PetscFormatRealArray(char[], size_t, const char *, P
 PETSC_EXTERN PetscErrorCode PetscErrorPrintfDefault(const char[], ...) PETSC_ATTRIBUTE_FORMAT(1, 2);
 PETSC_EXTERN PetscErrorCode PetscErrorPrintfNone(const char[], ...) PETSC_ATTRIBUTE_FORMAT(1, 2);
 PETSC_EXTERN PetscErrorCode PetscHelpPrintfDefault(MPI_Comm, const char[], ...) PETSC_ATTRIBUTE_FORMAT(2, 3);
+PETSC_EXTERN PetscErrorCode PetscHelpPrintfStringBegin(MPI_Comm);
+PETSC_EXTERN PetscErrorCode PetscHelpPrintfStringEnd(MPI_Comm, const char **);
 
 PETSC_EXTERN PetscErrorCode PetscFormatConvertGetSize(const char *, size_t *);
 PETSC_EXTERN PetscErrorCode PetscFormatConvert(const char *, char *);

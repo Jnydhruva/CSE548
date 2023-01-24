@@ -56,6 +56,9 @@ cdef extern from * nogil:
 
     int PetscHasExternalPackage(const char[],PetscBool*)
 
+    int PetscHelpPrintfStringBegin(MPI_Comm)
+    int PetscHelpPrintfStringEnd(MPI_Comm,const char **)
+
 cdef extern from *:
     int (*PetscVFPrintf)(FILE*,const char[],va_list)
 
@@ -110,3 +113,4 @@ cdef inline int Sys_Layout(
     _n[0] = n * bs
     _N[0] = N * bs
     return 0
+
