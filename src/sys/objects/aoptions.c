@@ -326,7 +326,7 @@ PetscErrorCode PetscOptionsGetFromTextInput(PetscOptionItems *PetscOptionsObject
       }
       break;
     case OPTION_FLIST:
-      PetscCall(PetscFunctionListPrintTypes(PETSC_COMM_WORLD, stdout, PetscOptionsObject->prefix, next->option, next->text, next->man, next->flist, (char *)next->data, (char *)next->data));
+      PetscCall(PetscFunctionListPrintTypes(PETSC_COMM_WORLD, PetscOptionsObject->prefix, next->option, next->text, next->man, next->flist, (char *)next->data, (char *)next->data));
       PetscCall(PetscScanString(PETSC_COMM_WORLD, 512, str));
       if (str[0]) {
         PetscOptionsObject->changedmethod = PETSC_TRUE;
@@ -1186,7 +1186,7 @@ PetscErrorCode PetscOptionsFList_Private(PetscOptionItems *PetscOptionsObject, c
   PetscCall(PetscOptionsGetString(PetscOptionsObject->options, PetscOptionsObject->prefix, opt, value, len, &lset));
   if (set) *set = lset;
   if (PetscOptionsObject->printhelp && PetscOptionsObject->count == 1 && !PetscOptionsObject->alreadyprinted) {
-    PetscCall(PetscFunctionListPrintTypes(PetscOptionsObject->comm, stdout, PetscOptionsObject->prefix, opt, ltext, man, list, currentvalue, lset && value ? value : currentvalue));
+    PetscCall(PetscFunctionListPrintTypes(PetscOptionsObject->comm, PetscOptionsObject->prefix, opt, ltext, man, list, currentvalue, lset && value ? value : currentvalue));
   }
   PetscFunctionReturn(0);
 }
