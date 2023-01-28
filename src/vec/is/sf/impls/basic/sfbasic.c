@@ -11,13 +11,13 @@ PETSC_INTERN PetscErrorCode PetscSFSetUp_Basic(PetscSF sf)
   PetscInt      *rlengths, *ilengths, i, nRemoteRootRanks, nRemoteLeafRanks;
   PetscMPIInt    rank, niranks, *iranks, tag;
   MPI_Comm       comm;
-  MPI_Group      group;
-  MPI_Request   *rootreqs, *leafreqs;
+  // MPI_Group      group;
+  MPI_Request *rootreqs, *leafreqs;
 
   PetscFunctionBegin;
-  PetscCallMPI(MPI_Comm_group(PETSC_COMM_SELF, &group));
-  PetscCall(PetscSFSetUpRanks(sf, group));
-  PetscCallMPI(MPI_Group_free(&group));
+  // PetscCallMPI(MPI_Comm_group(PETSC_COMM_SELF, &group));
+  PetscCall(PetscSFSetUpRanks(sf, MPI_GROUP_NULL));
+  // PetscCallMPI(MPI_Group_free(&group));
   PetscCall(PetscObjectGetComm((PetscObject)sf, &comm));
   PetscCall(PetscObjectGetNewTag((PetscObject)sf, &tag));
   PetscCallMPI(MPI_Comm_rank(comm, &rank));

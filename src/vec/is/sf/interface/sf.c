@@ -999,13 +999,14 @@ PetscErrorCode PetscSFSetUpRanks(PetscSF sf, MPI_Group dgroup)
 {
   PetscHMapI    table;
   PetscHashIter pos;
-  PetscMPIInt   size, groupsize, *groupranks;
+  PetscMPIInt   size, groupsize;
   PetscInt     *rcount, *ranks;
   PetscInt      i, irank = -1, orank = -1;
 
   PetscFunctionBegin;
   PetscValidHeaderSpecific(sf, PETSCSF_CLASSID, 1);
   PetscSFCheckGraphSet(sf, 1);
+  PetscCheck(dgroup == MPI_GROUP_NULL, PetscObjectComm((PetscObject)sf), PETSC_ERR_ARG_WRONG, "Unexpected the distinguished group");
   PetscCallMPI(MPI_Comm_size(PetscObjectComm((PetscObject)sf), &size));
   PetscCall(PetscHMapICreateWithSize(10, &table));
   for (i = 0; i < sf->nleaves; i++) {
@@ -1024,19 +1025,23 @@ PetscErrorCode PetscSFSetUpRanks(PetscSF sf, MPI_Group dgroup)
   }
   PetscCall(PetscHMapIDestroy(&table));
 
-  /* We expect that dgroup is reliably "small" while nranks could be large */
-  {
-    MPI_Group    group = MPI_GROUP_NULL;
-    PetscMPIInt *dgroupranks;
-    PetscCallMPI(MPI_Comm_group(PetscObjectComm((PetscObject)sf), &group));
-    PetscCallMPI(MPI_Group_size(dgroup, &groupsize));
-    PetscCall(PetscMalloc1(groupsize, &dgroupranks));
-    PetscCall(PetscMalloc1(groupsize, &groupranks));
-    for (i = 0; i < groupsize; i++) dgroupranks[i] = i;
-    if (groupsize) PetscCallMPI(MPI_Group_translate_ranks(dgroup, groupsize, dgroupranks, group, groupranks));
-    PetscCallMPI(MPI_Group_free(&group));
-    PetscCall(PetscFree(dgroupranks));
-  }
+  // /* We expect that dgroup is reliably "small" while nranks could be large */
+  // {
+  //   MPI_Group    group = MPI_GROUP_NULL;
+  //   PetscMPIInt *dgroupranks;
+  //   PetscCallMPI(MPI_Comm_group(PetscObjectComm((PetscObject)sf), &group));
+  //   PetscCallMPI(MPI_Group_size(dgroup, &groupsize));
+  //   PetscCall(PetscMalloc1(groupsize, &dgroupranks));
+  //   PetscCall(PetscMalloc1(groupsize, &groupranks));
+  //   for (i = 0; i < groupsize; i++) dgroupranks[i] = i;
+  //   if (groupsize) PetscCallMPI(MPI_Group_translate_ranks(dgroup, groupsize, dgroupranks, group, groupranks));
+  //   PetscCallMPI(MPI_Group_free(&group));
+  //   PetscCall(PetscFree(dgroupranks));
+  // }
+
+  PetscMPIInt groupranks[1];
+  groupsize = 1;
+  PetscCallMPI(MPI_Comm_rank(PetscObjectComm((PetscObject)sf), &groupranks[0]));
 
   /* Partition ranks[] into distinguished (first sf->ndranks) followed by non-distinguished */
   for (sf->ndranks = 0, i = sf->nranks; sf->ndranks < i;) {
@@ -1058,7 +1063,7 @@ PetscErrorCode PetscSFSetUpRanks(PetscSF sf, MPI_Group dgroup)
       sf->ndranks++;
     }
   }
-  PetscCall(PetscFree(groupranks));
+  // PetscCall(PetscFree(groupranks));
   PetscCall(PetscSortIntWithArray(sf->ndranks, ranks, rcount));
   PetscCall(PetscSortIntWithArray(sf->nranks - sf->ndranks, ranks + sf->ndranks, rcount + sf->ndranks));
   sf->roffset[0] = 0;
