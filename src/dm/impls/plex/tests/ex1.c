@@ -957,13 +957,31 @@ int main(int argc, char **argv)
     args: -dm_plex_dim 2 -dm_plex_shape hypercubic -dm_plex_box_faces 3,3 -dm_plex_check_all -dm_view
 
   test:
+    suffix: hypercubic_0_par
+    nsize: 4
+    args: -dm_plex_dim 2 -dm_plex_shape hypercubic -dm_plex_box_faces 4,4 -dm_view -final_diagnostics 0 \
+          -dm_plex_check_symmetry -dm_plex_check_skeleton -dm_plex_check_faces -dm_plex_check_pointsf
+
+  test:
     suffix: hypercubic_1
     args: -dm_plex_dim 3 -dm_plex_shape hypercubic -dm_plex_box_faces 3,3,3 -dm_plex_check_all -dm_view
+
+  test:
+    suffix: hypercubic_1_par
+    nsize: 8
+    args: -dm_plex_dim 3 -dm_plex_shape hypercubic -dm_plex_box_faces 4,4,4 -dm_view -final_diagnostics 0 \
+          -dm_plex_check_symmetry -dm_plex_check_skeleton -dm_plex_check_faces -dm_plex_check_pointsf
 
   test:
     suffix: hypercubic_2
     args: -dm_plex_dim 4 -dm_plex_shape hypercubic -dm_plex_box_faces 3,3,3,3 -dm_view \
           -dm_plex_check_symmetry -dm_plex_check_skeleton -dm_plex_check_faces -dm_plex_check_pointsf -final_diagnostics 0
+
+  test:
+    suffix: hypercubic_2_par
+    nsize: 16
+    args: -dm_plex_dim 4 -dm_plex_shape hypercubic -dm_plex_box_faces 4,4,4,4 -dm_view -final_diagnostics 0 \
+          -dm_plex_check_symmetry -dm_plex_check_skeleton -dm_plex_check_faces -dm_plex_check_pointsf
 
   test:
     suffix: hypercubic_3

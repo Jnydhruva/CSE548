@@ -1,0 +1,5029 @@
+Process grid: 2 2 2
+Topology for rank 0:
+Vertex 192: 0 0 0
+  Vertex 193: 1 0 0
+  Edge 0 (192 193)
+  Vertex 196: 0 1 0
+  Edge 1 (192 196)
+  Vertex 208: 0 0 1
+  Edge 2 (192 208)
+Vertex 193: 1 0 0
+  Vertex 194: 2 0 0
+  Edge 3 (193 194)
+  Vertex 197: 1 1 0
+  Edge 4 (193 197)
+  Vertex 209: 1 0 1
+  Edge 5 (193 209)
+Vertex 194: 2 0 0
+  Vertex 195: 3 0 0
+  Edge 6 (194 195)
+  Vertex 198: 2 1 0
+  Edge 7 (194 198)
+  Vertex 210: 2 0 1
+  Edge 8 (194 210)
+Vertex 195: 3 0 0
+  Vertex 192: 0 0 0
+  Edge 9 (195 192)
+  Vertex 199: 3 1 0
+  Edge 10 (195 199)
+  Vertex 211: 3 0 1
+  Edge 11 (195 211)
+Vertex 196: 0 1 0
+  Vertex 197: 1 1 0
+  Edge 12 (196 197)
+  Vertex 200: 0 2 0
+  Edge 13 (196 200)
+  Vertex 212: 0 1 1
+  Edge 14 (196 212)
+Vertex 197: 1 1 0
+  Vertex 198: 2 1 0
+  Edge 15 (197 198)
+  Vertex 201: 1 2 0
+  Edge 16 (197 201)
+  Vertex 213: 1 1 1
+  Edge 17 (197 213)
+Vertex 198: 2 1 0
+  Vertex 199: 3 1 0
+  Edge 18 (198 199)
+  Vertex 202: 2 2 0
+  Edge 19 (198 202)
+  Vertex 214: 2 1 1
+  Edge 20 (198 214)
+Vertex 199: 3 1 0
+  Vertex 196: 0 1 0
+  Edge 21 (199 196)
+  Vertex 203: 3 2 0
+  Edge 22 (199 203)
+  Vertex 215: 3 1 1
+  Edge 23 (199 215)
+Vertex 200: 0 2 0
+  Vertex 201: 1 2 0
+  Edge 24 (200 201)
+  Vertex 204: 0 3 0
+  Edge 25 (200 204)
+  Vertex 216: 0 2 1
+  Edge 26 (200 216)
+Vertex 201: 1 2 0
+  Vertex 202: 2 2 0
+  Edge 27 (201 202)
+  Vertex 205: 1 3 0
+  Edge 28 (201 205)
+  Vertex 217: 1 2 1
+  Edge 29 (201 217)
+Vertex 202: 2 2 0
+  Vertex 203: 3 2 0
+  Edge 30 (202 203)
+  Vertex 206: 2 3 0
+  Edge 31 (202 206)
+  Vertex 218: 2 2 1
+  Edge 32 (202 218)
+Vertex 203: 3 2 0
+  Vertex 200: 0 2 0
+  Edge 33 (203 200)
+  Vertex 207: 3 3 0
+  Edge 34 (203 207)
+  Vertex 219: 3 2 1
+  Edge 35 (203 219)
+Vertex 204: 0 3 0
+  Vertex 205: 1 3 0
+  Edge 36 (204 205)
+  Vertex 192: 0 0 0
+  Edge 37 (204 192)
+  Vertex 220: 0 3 1
+  Edge 38 (204 220)
+Vertex 205: 1 3 0
+  Vertex 206: 2 3 0
+  Edge 39 (205 206)
+  Vertex 193: 1 0 0
+  Edge 40 (205 193)
+  Vertex 221: 1 3 1
+  Edge 41 (205 221)
+Vertex 206: 2 3 0
+  Vertex 207: 3 3 0
+  Edge 42 (206 207)
+  Vertex 194: 2 0 0
+  Edge 43 (206 194)
+  Vertex 222: 2 3 1
+  Edge 44 (206 222)
+Vertex 207: 3 3 0
+  Vertex 204: 0 3 0
+  Edge 45 (207 204)
+  Vertex 195: 3 0 0
+  Edge 46 (207 195)
+  Vertex 223: 3 3 1
+  Edge 47 (207 223)
+Vertex 208: 0 0 1
+  Vertex 209: 1 0 1
+  Edge 48 (208 209)
+  Vertex 212: 0 1 1
+  Edge 49 (208 212)
+  Vertex 224: 0 0 2
+  Edge 50 (208 224)
+Vertex 209: 1 0 1
+  Vertex 210: 2 0 1
+  Edge 51 (209 210)
+  Vertex 213: 1 1 1
+  Edge 52 (209 213)
+  Vertex 225: 1 0 2
+  Edge 53 (209 225)
+Vertex 210: 2 0 1
+  Vertex 211: 3 0 1
+  Edge 54 (210 211)
+  Vertex 214: 2 1 1
+  Edge 55 (210 214)
+  Vertex 226: 2 0 2
+  Edge 56 (210 226)
+Vertex 211: 3 0 1
+  Vertex 208: 0 0 1
+  Edge 57 (211 208)
+  Vertex 215: 3 1 1
+  Edge 58 (211 215)
+  Vertex 227: 3 0 2
+  Edge 59 (211 227)
+Vertex 212: 0 1 1
+  Vertex 213: 1 1 1
+  Edge 60 (212 213)
+  Vertex 216: 0 2 1
+  Edge 61 (212 216)
+  Vertex 228: 0 1 2
+  Edge 62 (212 228)
+Vertex 213: 1 1 1
+  Vertex 214: 2 1 1
+  Edge 63 (213 214)
+  Vertex 217: 1 2 1
+  Edge 64 (213 217)
+  Vertex 229: 1 1 2
+  Edge 65 (213 229)
+Vertex 214: 2 1 1
+  Vertex 215: 3 1 1
+  Edge 66 (214 215)
+  Vertex 218: 2 2 1
+  Edge 67 (214 218)
+  Vertex 230: 2 1 2
+  Edge 68 (214 230)
+Vertex 215: 3 1 1
+  Vertex 212: 0 1 1
+  Edge 69 (215 212)
+  Vertex 219: 3 2 1
+  Edge 70 (215 219)
+  Vertex 231: 3 1 2
+  Edge 71 (215 231)
+Vertex 216: 0 2 1
+  Vertex 217: 1 2 1
+  Edge 72 (216 217)
+  Vertex 220: 0 3 1
+  Edge 73 (216 220)
+  Vertex 232: 0 2 2
+  Edge 74 (216 232)
+Vertex 217: 1 2 1
+  Vertex 218: 2 2 1
+  Edge 75 (217 218)
+  Vertex 221: 1 3 1
+  Edge 76 (217 221)
+  Vertex 233: 1 2 2
+  Edge 77 (217 233)
+Vertex 218: 2 2 1
+  Vertex 219: 3 2 1
+  Edge 78 (218 219)
+  Vertex 222: 2 3 1
+  Edge 79 (218 222)
+  Vertex 234: 2 2 2
+  Edge 80 (218 234)
+Vertex 219: 3 2 1
+  Vertex 216: 0 2 1
+  Edge 81 (219 216)
+  Vertex 223: 3 3 1
+  Edge 82 (219 223)
+  Vertex 235: 3 2 2
+  Edge 83 (219 235)
+Vertex 220: 0 3 1
+  Vertex 221: 1 3 1
+  Edge 84 (220 221)
+  Vertex 208: 0 0 1
+  Edge 85 (220 208)
+  Vertex 236: 0 3 2
+  Edge 86 (220 236)
+Vertex 221: 1 3 1
+  Vertex 222: 2 3 1
+  Edge 87 (221 222)
+  Vertex 209: 1 0 1
+  Edge 88 (221 209)
+  Vertex 237: 1 3 2
+  Edge 89 (221 237)
+Vertex 222: 2 3 1
+  Vertex 223: 3 3 1
+  Edge 90 (222 223)
+  Vertex 210: 2 0 1
+  Edge 91 (222 210)
+  Vertex 238: 2 3 2
+  Edge 92 (222 238)
+Vertex 223: 3 3 1
+  Vertex 220: 0 3 1
+  Edge 93 (223 220)
+  Vertex 211: 3 0 1
+  Edge 94 (223 211)
+  Vertex 239: 3 3 2
+  Edge 95 (223 239)
+Vertex 224: 0 0 2
+  Vertex 225: 1 0 2
+  Edge 96 (224 225)
+  Vertex 228: 0 1 2
+  Edge 97 (224 228)
+  Vertex 240: 0 0 3
+  Edge 98 (224 240)
+Vertex 225: 1 0 2
+  Vertex 226: 2 0 2
+  Edge 99 (225 226)
+  Vertex 229: 1 1 2
+  Edge 100 (225 229)
+  Vertex 241: 1 0 3
+  Edge 101 (225 241)
+Vertex 226: 2 0 2
+  Vertex 227: 3 0 2
+  Edge 102 (226 227)
+  Vertex 230: 2 1 2
+  Edge 103 (226 230)
+  Vertex 242: 2 0 3
+  Edge 104 (226 242)
+Vertex 227: 3 0 2
+  Vertex 224: 0 0 2
+  Edge 105 (227 224)
+  Vertex 231: 3 1 2
+  Edge 106 (227 231)
+  Vertex 243: 3 0 3
+  Edge 107 (227 243)
+Vertex 228: 0 1 2
+  Vertex 229: 1 1 2
+  Edge 108 (228 229)
+  Vertex 232: 0 2 2
+  Edge 109 (228 232)
+  Vertex 244: 0 1 3
+  Edge 110 (228 244)
+Vertex 229: 1 1 2
+  Vertex 230: 2 1 2
+  Edge 111 (229 230)
+  Vertex 233: 1 2 2
+  Edge 112 (229 233)
+  Vertex 245: 1 1 3
+  Edge 113 (229 245)
+Vertex 230: 2 1 2
+  Vertex 231: 3 1 2
+  Edge 114 (230 231)
+  Vertex 234: 2 2 2
+  Edge 115 (230 234)
+  Vertex 246: 2 1 3
+  Edge 116 (230 246)
+Vertex 231: 3 1 2
+  Vertex 228: 0 1 2
+  Edge 117 (231 228)
+  Vertex 235: 3 2 2
+  Edge 118 (231 235)
+  Vertex 247: 3 1 3
+  Edge 119 (231 247)
+Vertex 232: 0 2 2
+  Vertex 233: 1 2 2
+  Edge 120 (232 233)
+  Vertex 236: 0 3 2
+  Edge 121 (232 236)
+  Vertex 248: 0 2 3
+  Edge 122 (232 248)
+Vertex 233: 1 2 2
+  Vertex 234: 2 2 2
+  Edge 123 (233 234)
+  Vertex 237: 1 3 2
+  Edge 124 (233 237)
+  Vertex 249: 1 2 3
+  Edge 125 (233 249)
+Vertex 234: 2 2 2
+  Vertex 235: 3 2 2
+  Edge 126 (234 235)
+  Vertex 238: 2 3 2
+  Edge 127 (234 238)
+  Vertex 250: 2 2 3
+  Edge 128 (234 250)
+Vertex 235: 3 2 2
+  Vertex 232: 0 2 2
+  Edge 129 (235 232)
+  Vertex 239: 3 3 2
+  Edge 130 (235 239)
+  Vertex 251: 3 2 3
+  Edge 131 (235 251)
+Vertex 236: 0 3 2
+  Vertex 237: 1 3 2
+  Edge 132 (236 237)
+  Vertex 224: 0 0 2
+  Edge 133 (236 224)
+  Vertex 252: 0 3 3
+  Edge 134 (236 252)
+Vertex 237: 1 3 2
+  Vertex 238: 2 3 2
+  Edge 135 (237 238)
+  Vertex 225: 1 0 2
+  Edge 136 (237 225)
+  Vertex 253: 1 3 3
+  Edge 137 (237 253)
+Vertex 238: 2 3 2
+  Vertex 239: 3 3 2
+  Edge 138 (238 239)
+  Vertex 226: 2 0 2
+  Edge 139 (238 226)
+  Vertex 254: 2 3 3
+  Edge 140 (238 254)
+Vertex 239: 3 3 2
+  Vertex 236: 0 3 2
+  Edge 141 (239 236)
+  Vertex 227: 3 0 2
+  Edge 142 (239 227)
+  Vertex 255: 3 3 3
+  Edge 143 (239 255)
+Vertex 240: 0 0 3
+  Vertex 241: 1 0 3
+  Edge 144 (240 241)
+  Vertex 244: 0 1 3
+  Edge 145 (240 244)
+  Vertex 192: 0 0 0
+  Edge 146 (240 192)
+Vertex 241: 1 0 3
+  Vertex 242: 2 0 3
+  Edge 147 (241 242)
+  Vertex 245: 1 1 3
+  Edge 148 (241 245)
+  Vertex 193: 1 0 0
+  Edge 149 (241 193)
+Vertex 242: 2 0 3
+  Vertex 243: 3 0 3
+  Edge 150 (242 243)
+  Vertex 246: 2 1 3
+  Edge 151 (242 246)
+  Vertex 194: 2 0 0
+  Edge 152 (242 194)
+Vertex 243: 3 0 3
+  Vertex 240: 0 0 3
+  Edge 153 (243 240)
+  Vertex 247: 3 1 3
+  Edge 154 (243 247)
+  Vertex 195: 3 0 0
+  Edge 155 (243 195)
+Vertex 244: 0 1 3
+  Vertex 245: 1 1 3
+  Edge 156 (244 245)
+  Vertex 248: 0 2 3
+  Edge 157 (244 248)
+  Vertex 196: 0 1 0
+  Edge 158 (244 196)
+Vertex 245: 1 1 3
+  Vertex 246: 2 1 3
+  Edge 159 (245 246)
+  Vertex 249: 1 2 3
+  Edge 160 (245 249)
+  Vertex 197: 1 1 0
+  Edge 161 (245 197)
+Vertex 246: 2 1 3
+  Vertex 247: 3 1 3
+  Edge 162 (246 247)
+  Vertex 250: 2 2 3
+  Edge 163 (246 250)
+  Vertex 198: 2 1 0
+  Edge 164 (246 198)
+Vertex 247: 3 1 3
+  Vertex 244: 0 1 3
+  Edge 165 (247 244)
+  Vertex 251: 3 2 3
+  Edge 166 (247 251)
+  Vertex 199: 3 1 0
+  Edge 167 (247 199)
+Vertex 248: 0 2 3
+  Vertex 249: 1 2 3
+  Edge 168 (248 249)
+  Vertex 252: 0 3 3
+  Edge 169 (248 252)
+  Vertex 200: 0 2 0
+  Edge 170 (248 200)
+Vertex 249: 1 2 3
+  Vertex 250: 2 2 3
+  Edge 171 (249 250)
+  Vertex 253: 1 3 3
+  Edge 172 (249 253)
+  Vertex 201: 1 2 0
+  Edge 173 (249 201)
+Vertex 250: 2 2 3
+  Vertex 251: 3 2 3
+  Edge 174 (250 251)
+  Vertex 254: 2 3 3
+  Edge 175 (250 254)
+  Vertex 202: 2 2 0
+  Edge 176 (250 202)
+Vertex 251: 3 2 3
+  Vertex 248: 0 2 3
+  Edge 177 (251 248)
+  Vertex 255: 3 3 3
+  Edge 178 (251 255)
+  Vertex 203: 3 2 0
+  Edge 179 (251 203)
+Vertex 252: 0 3 3
+  Vertex 253: 1 3 3
+  Edge 180 (252 253)
+  Vertex 240: 0 0 3
+  Edge 181 (252 240)
+  Vertex 204: 0 3 0
+  Edge 182 (252 204)
+Vertex 253: 1 3 3
+  Vertex 254: 2 3 3
+  Edge 183 (253 254)
+  Vertex 241: 1 0 3
+  Edge 184 (253 241)
+  Vertex 205: 1 3 0
+  Edge 185 (253 205)
+Vertex 254: 2 3 3
+  Vertex 255: 3 3 3
+  Edge 186 (254 255)
+  Vertex 242: 2 0 3
+  Edge 187 (254 242)
+  Vertex 206: 2 3 0
+  Edge 188 (254 206)
+Vertex 255: 3 3 3
+  Vertex 252: 0 3 3
+  Edge 189 (255 252)
+  Vertex 243: 3 0 3
+  Edge 190 (255 243)
+  Vertex 207: 3 3 0
+  Edge 191 (255 207)
+Topology for rank 1:
+Vertex 192: 0 0 0
+  Vertex 193: 1 0 0
+  Edge 0 (192 193)
+  Vertex 196: 0 1 0
+  Edge 1 (192 196)
+  Vertex 208: 0 0 1
+  Edge 2 (192 208)
+Vertex 193: 1 0 0
+  Vertex 194: 2 0 0
+  Edge 3 (193 194)
+  Vertex 197: 1 1 0
+  Edge 4 (193 197)
+  Vertex 209: 1 0 1
+  Edge 5 (193 209)
+Vertex 194: 2 0 0
+  Vertex 195: 3 0 0
+  Edge 6 (194 195)
+  Vertex 198: 2 1 0
+  Edge 7 (194 198)
+  Vertex 210: 2 0 1
+  Edge 8 (194 210)
+Vertex 195: 3 0 0
+  Vertex 192: 0 0 0
+  Edge 9 (195 192)
+  Vertex 199: 3 1 0
+  Edge 10 (195 199)
+  Vertex 211: 3 0 1
+  Edge 11 (195 211)
+Vertex 196: 0 1 0
+  Vertex 197: 1 1 0
+  Edge 12 (196 197)
+  Vertex 200: 0 2 0
+  Edge 13 (196 200)
+  Vertex 212: 0 1 1
+  Edge 14 (196 212)
+Vertex 197: 1 1 0
+  Vertex 198: 2 1 0
+  Edge 15 (197 198)
+  Vertex 201: 1 2 0
+  Edge 16 (197 201)
+  Vertex 213: 1 1 1
+  Edge 17 (197 213)
+Vertex 198: 2 1 0
+  Vertex 199: 3 1 0
+  Edge 18 (198 199)
+  Vertex 202: 2 2 0
+  Edge 19 (198 202)
+  Vertex 214: 2 1 1
+  Edge 20 (198 214)
+Vertex 199: 3 1 0
+  Vertex 196: 0 1 0
+  Edge 21 (199 196)
+  Vertex 203: 3 2 0
+  Edge 22 (199 203)
+  Vertex 215: 3 1 1
+  Edge 23 (199 215)
+Vertex 200: 0 2 0
+  Vertex 201: 1 2 0
+  Edge 24 (200 201)
+  Vertex 204: 0 3 0
+  Edge 25 (200 204)
+  Vertex 216: 0 2 1
+  Edge 26 (200 216)
+Vertex 201: 1 2 0
+  Vertex 202: 2 2 0
+  Edge 27 (201 202)
+  Vertex 205: 1 3 0
+  Edge 28 (201 205)
+  Vertex 217: 1 2 1
+  Edge 29 (201 217)
+Vertex 202: 2 2 0
+  Vertex 203: 3 2 0
+  Edge 30 (202 203)
+  Vertex 206: 2 3 0
+  Edge 31 (202 206)
+  Vertex 218: 2 2 1
+  Edge 32 (202 218)
+Vertex 203: 3 2 0
+  Vertex 200: 0 2 0
+  Edge 33 (203 200)
+  Vertex 207: 3 3 0
+  Edge 34 (203 207)
+  Vertex 219: 3 2 1
+  Edge 35 (203 219)
+Vertex 204: 0 3 0
+  Vertex 205: 1 3 0
+  Edge 36 (204 205)
+  Vertex 192: 0 0 0
+  Edge 37 (204 192)
+  Vertex 220: 0 3 1
+  Edge 38 (204 220)
+Vertex 205: 1 3 0
+  Vertex 206: 2 3 0
+  Edge 39 (205 206)
+  Vertex 193: 1 0 0
+  Edge 40 (205 193)
+  Vertex 221: 1 3 1
+  Edge 41 (205 221)
+Vertex 206: 2 3 0
+  Vertex 207: 3 3 0
+  Edge 42 (206 207)
+  Vertex 194: 2 0 0
+  Edge 43 (206 194)
+  Vertex 222: 2 3 1
+  Edge 44 (206 222)
+Vertex 207: 3 3 0
+  Vertex 204: 0 3 0
+  Edge 45 (207 204)
+  Vertex 195: 3 0 0
+  Edge 46 (207 195)
+  Vertex 223: 3 3 1
+  Edge 47 (207 223)
+Vertex 208: 0 0 1
+  Vertex 209: 1 0 1
+  Edge 48 (208 209)
+  Vertex 212: 0 1 1
+  Edge 49 (208 212)
+  Vertex 224: 0 0 2
+  Edge 50 (208 224)
+Vertex 209: 1 0 1
+  Vertex 210: 2 0 1
+  Edge 51 (209 210)
+  Vertex 213: 1 1 1
+  Edge 52 (209 213)
+  Vertex 225: 1 0 2
+  Edge 53 (209 225)
+Vertex 210: 2 0 1
+  Vertex 211: 3 0 1
+  Edge 54 (210 211)
+  Vertex 214: 2 1 1
+  Edge 55 (210 214)
+  Vertex 226: 2 0 2
+  Edge 56 (210 226)
+Vertex 211: 3 0 1
+  Vertex 208: 0 0 1
+  Edge 57 (211 208)
+  Vertex 215: 3 1 1
+  Edge 58 (211 215)
+  Vertex 227: 3 0 2
+  Edge 59 (211 227)
+Vertex 212: 0 1 1
+  Vertex 213: 1 1 1
+  Edge 60 (212 213)
+  Vertex 216: 0 2 1
+  Edge 61 (212 216)
+  Vertex 228: 0 1 2
+  Edge 62 (212 228)
+Vertex 213: 1 1 1
+  Vertex 214: 2 1 1
+  Edge 63 (213 214)
+  Vertex 217: 1 2 1
+  Edge 64 (213 217)
+  Vertex 229: 1 1 2
+  Edge 65 (213 229)
+Vertex 214: 2 1 1
+  Vertex 215: 3 1 1
+  Edge 66 (214 215)
+  Vertex 218: 2 2 1
+  Edge 67 (214 218)
+  Vertex 230: 2 1 2
+  Edge 68 (214 230)
+Vertex 215: 3 1 1
+  Vertex 212: 0 1 1
+  Edge 69 (215 212)
+  Vertex 219: 3 2 1
+  Edge 70 (215 219)
+  Vertex 231: 3 1 2
+  Edge 71 (215 231)
+Vertex 216: 0 2 1
+  Vertex 217: 1 2 1
+  Edge 72 (216 217)
+  Vertex 220: 0 3 1
+  Edge 73 (216 220)
+  Vertex 232: 0 2 2
+  Edge 74 (216 232)
+Vertex 217: 1 2 1
+  Vertex 218: 2 2 1
+  Edge 75 (217 218)
+  Vertex 221: 1 3 1
+  Edge 76 (217 221)
+  Vertex 233: 1 2 2
+  Edge 77 (217 233)
+Vertex 218: 2 2 1
+  Vertex 219: 3 2 1
+  Edge 78 (218 219)
+  Vertex 222: 2 3 1
+  Edge 79 (218 222)
+  Vertex 234: 2 2 2
+  Edge 80 (218 234)
+Vertex 219: 3 2 1
+  Vertex 216: 0 2 1
+  Edge 81 (219 216)
+  Vertex 223: 3 3 1
+  Edge 82 (219 223)
+  Vertex 235: 3 2 2
+  Edge 83 (219 235)
+Vertex 220: 0 3 1
+  Vertex 221: 1 3 1
+  Edge 84 (220 221)
+  Vertex 208: 0 0 1
+  Edge 85 (220 208)
+  Vertex 236: 0 3 2
+  Edge 86 (220 236)
+Vertex 221: 1 3 1
+  Vertex 222: 2 3 1
+  Edge 87 (221 222)
+  Vertex 209: 1 0 1
+  Edge 88 (221 209)
+  Vertex 237: 1 3 2
+  Edge 89 (221 237)
+Vertex 222: 2 3 1
+  Vertex 223: 3 3 1
+  Edge 90 (222 223)
+  Vertex 210: 2 0 1
+  Edge 91 (222 210)
+  Vertex 238: 2 3 2
+  Edge 92 (222 238)
+Vertex 223: 3 3 1
+  Vertex 220: 0 3 1
+  Edge 93 (223 220)
+  Vertex 211: 3 0 1
+  Edge 94 (223 211)
+  Vertex 239: 3 3 2
+  Edge 95 (223 239)
+Vertex 224: 0 0 2
+  Vertex 225: 1 0 2
+  Edge 96 (224 225)
+  Vertex 228: 0 1 2
+  Edge 97 (224 228)
+  Vertex 240: 0 0 3
+  Edge 98 (224 240)
+Vertex 225: 1 0 2
+  Vertex 226: 2 0 2
+  Edge 99 (225 226)
+  Vertex 229: 1 1 2
+  Edge 100 (225 229)
+  Vertex 241: 1 0 3
+  Edge 101 (225 241)
+Vertex 226: 2 0 2
+  Vertex 227: 3 0 2
+  Edge 102 (226 227)
+  Vertex 230: 2 1 2
+  Edge 103 (226 230)
+  Vertex 242: 2 0 3
+  Edge 104 (226 242)
+Vertex 227: 3 0 2
+  Vertex 224: 0 0 2
+  Edge 105 (227 224)
+  Vertex 231: 3 1 2
+  Edge 106 (227 231)
+  Vertex 243: 3 0 3
+  Edge 107 (227 243)
+Vertex 228: 0 1 2
+  Vertex 229: 1 1 2
+  Edge 108 (228 229)
+  Vertex 232: 0 2 2
+  Edge 109 (228 232)
+  Vertex 244: 0 1 3
+  Edge 110 (228 244)
+Vertex 229: 1 1 2
+  Vertex 230: 2 1 2
+  Edge 111 (229 230)
+  Vertex 233: 1 2 2
+  Edge 112 (229 233)
+  Vertex 245: 1 1 3
+  Edge 113 (229 245)
+Vertex 230: 2 1 2
+  Vertex 231: 3 1 2
+  Edge 114 (230 231)
+  Vertex 234: 2 2 2
+  Edge 115 (230 234)
+  Vertex 246: 2 1 3
+  Edge 116 (230 246)
+Vertex 231: 3 1 2
+  Vertex 228: 0 1 2
+  Edge 117 (231 228)
+  Vertex 235: 3 2 2
+  Edge 118 (231 235)
+  Vertex 247: 3 1 3
+  Edge 119 (231 247)
+Vertex 232: 0 2 2
+  Vertex 233: 1 2 2
+  Edge 120 (232 233)
+  Vertex 236: 0 3 2
+  Edge 121 (232 236)
+  Vertex 248: 0 2 3
+  Edge 122 (232 248)
+Vertex 233: 1 2 2
+  Vertex 234: 2 2 2
+  Edge 123 (233 234)
+  Vertex 237: 1 3 2
+  Edge 124 (233 237)
+  Vertex 249: 1 2 3
+  Edge 125 (233 249)
+Vertex 234: 2 2 2
+  Vertex 235: 3 2 2
+  Edge 126 (234 235)
+  Vertex 238: 2 3 2
+  Edge 127 (234 238)
+  Vertex 250: 2 2 3
+  Edge 128 (234 250)
+Vertex 235: 3 2 2
+  Vertex 232: 0 2 2
+  Edge 129 (235 232)
+  Vertex 239: 3 3 2
+  Edge 130 (235 239)
+  Vertex 251: 3 2 3
+  Edge 131 (235 251)
+Vertex 236: 0 3 2
+  Vertex 237: 1 3 2
+  Edge 132 (236 237)
+  Vertex 224: 0 0 2
+  Edge 133 (236 224)
+  Vertex 252: 0 3 3
+  Edge 134 (236 252)
+Vertex 237: 1 3 2
+  Vertex 238: 2 3 2
+  Edge 135 (237 238)
+  Vertex 225: 1 0 2
+  Edge 136 (237 225)
+  Vertex 253: 1 3 3
+  Edge 137 (237 253)
+Vertex 238: 2 3 2
+  Vertex 239: 3 3 2
+  Edge 138 (238 239)
+  Vertex 226: 2 0 2
+  Edge 139 (238 226)
+  Vertex 254: 2 3 3
+  Edge 140 (238 254)
+Vertex 239: 3 3 2
+  Vertex 236: 0 3 2
+  Edge 141 (239 236)
+  Vertex 227: 3 0 2
+  Edge 142 (239 227)
+  Vertex 255: 3 3 3
+  Edge 143 (239 255)
+Vertex 240: 0 0 3
+  Vertex 241: 1 0 3
+  Edge 144 (240 241)
+  Vertex 244: 0 1 3
+  Edge 145 (240 244)
+  Vertex 192: 0 0 0
+  Edge 146 (240 192)
+Vertex 241: 1 0 3
+  Vertex 242: 2 0 3
+  Edge 147 (241 242)
+  Vertex 245: 1 1 3
+  Edge 148 (241 245)
+  Vertex 193: 1 0 0
+  Edge 149 (241 193)
+Vertex 242: 2 0 3
+  Vertex 243: 3 0 3
+  Edge 150 (242 243)
+  Vertex 246: 2 1 3
+  Edge 151 (242 246)
+  Vertex 194: 2 0 0
+  Edge 152 (242 194)
+Vertex 243: 3 0 3
+  Vertex 240: 0 0 3
+  Edge 153 (243 240)
+  Vertex 247: 3 1 3
+  Edge 154 (243 247)
+  Vertex 195: 3 0 0
+  Edge 155 (243 195)
+Vertex 244: 0 1 3
+  Vertex 245: 1 1 3
+  Edge 156 (244 245)
+  Vertex 248: 0 2 3
+  Edge 157 (244 248)
+  Vertex 196: 0 1 0
+  Edge 158 (244 196)
+Vertex 245: 1 1 3
+  Vertex 246: 2 1 3
+  Edge 159 (245 246)
+  Vertex 249: 1 2 3
+  Edge 160 (245 249)
+  Vertex 197: 1 1 0
+  Edge 161 (245 197)
+Vertex 246: 2 1 3
+  Vertex 247: 3 1 3
+  Edge 162 (246 247)
+  Vertex 250: 2 2 3
+  Edge 163 (246 250)
+  Vertex 198: 2 1 0
+  Edge 164 (246 198)
+Vertex 247: 3 1 3
+  Vertex 244: 0 1 3
+  Edge 165 (247 244)
+  Vertex 251: 3 2 3
+  Edge 166 (247 251)
+  Vertex 199: 3 1 0
+  Edge 167 (247 199)
+Vertex 248: 0 2 3
+  Vertex 249: 1 2 3
+  Edge 168 (248 249)
+  Vertex 252: 0 3 3
+  Edge 169 (248 252)
+  Vertex 200: 0 2 0
+  Edge 170 (248 200)
+Vertex 249: 1 2 3
+  Vertex 250: 2 2 3
+  Edge 171 (249 250)
+  Vertex 253: 1 3 3
+  Edge 172 (249 253)
+  Vertex 201: 1 2 0
+  Edge 173 (249 201)
+Vertex 250: 2 2 3
+  Vertex 251: 3 2 3
+  Edge 174 (250 251)
+  Vertex 254: 2 3 3
+  Edge 175 (250 254)
+  Vertex 202: 2 2 0
+  Edge 176 (250 202)
+Vertex 251: 3 2 3
+  Vertex 248: 0 2 3
+  Edge 177 (251 248)
+  Vertex 255: 3 3 3
+  Edge 178 (251 255)
+  Vertex 203: 3 2 0
+  Edge 179 (251 203)
+Vertex 252: 0 3 3
+  Vertex 253: 1 3 3
+  Edge 180 (252 253)
+  Vertex 240: 0 0 3
+  Edge 181 (252 240)
+  Vertex 204: 0 3 0
+  Edge 182 (252 204)
+Vertex 253: 1 3 3
+  Vertex 254: 2 3 3
+  Edge 183 (253 254)
+  Vertex 241: 1 0 3
+  Edge 184 (253 241)
+  Vertex 205: 1 3 0
+  Edge 185 (253 205)
+Vertex 254: 2 3 3
+  Vertex 255: 3 3 3
+  Edge 186 (254 255)
+  Vertex 242: 2 0 3
+  Edge 187 (254 242)
+  Vertex 206: 2 3 0
+  Edge 188 (254 206)
+Vertex 255: 3 3 3
+  Vertex 252: 0 3 3
+  Edge 189 (255 252)
+  Vertex 243: 3 0 3
+  Edge 190 (255 243)
+  Vertex 207: 3 3 0
+  Edge 191 (255 207)
+Topology for rank 2:
+Vertex 192: 0 0 0
+  Vertex 193: 1 0 0
+  Edge 0 (192 193)
+  Vertex 196: 0 1 0
+  Edge 1 (192 196)
+  Vertex 208: 0 0 1
+  Edge 2 (192 208)
+Vertex 193: 1 0 0
+  Vertex 194: 2 0 0
+  Edge 3 (193 194)
+  Vertex 197: 1 1 0
+  Edge 4 (193 197)
+  Vertex 209: 1 0 1
+  Edge 5 (193 209)
+Vertex 194: 2 0 0
+  Vertex 195: 3 0 0
+  Edge 6 (194 195)
+  Vertex 198: 2 1 0
+  Edge 7 (194 198)
+  Vertex 210: 2 0 1
+  Edge 8 (194 210)
+Vertex 195: 3 0 0
+  Vertex 192: 0 0 0
+  Edge 9 (195 192)
+  Vertex 199: 3 1 0
+  Edge 10 (195 199)
+  Vertex 211: 3 0 1
+  Edge 11 (195 211)
+Vertex 196: 0 1 0
+  Vertex 197: 1 1 0
+  Edge 12 (196 197)
+  Vertex 200: 0 2 0
+  Edge 13 (196 200)
+  Vertex 212: 0 1 1
+  Edge 14 (196 212)
+Vertex 197: 1 1 0
+  Vertex 198: 2 1 0
+  Edge 15 (197 198)
+  Vertex 201: 1 2 0
+  Edge 16 (197 201)
+  Vertex 213: 1 1 1
+  Edge 17 (197 213)
+Vertex 198: 2 1 0
+  Vertex 199: 3 1 0
+  Edge 18 (198 199)
+  Vertex 202: 2 2 0
+  Edge 19 (198 202)
+  Vertex 214: 2 1 1
+  Edge 20 (198 214)
+Vertex 199: 3 1 0
+  Vertex 196: 0 1 0
+  Edge 21 (199 196)
+  Vertex 203: 3 2 0
+  Edge 22 (199 203)
+  Vertex 215: 3 1 1
+  Edge 23 (199 215)
+Vertex 200: 0 2 0
+  Vertex 201: 1 2 0
+  Edge 24 (200 201)
+  Vertex 204: 0 3 0
+  Edge 25 (200 204)
+  Vertex 216: 0 2 1
+  Edge 26 (200 216)
+Vertex 201: 1 2 0
+  Vertex 202: 2 2 0
+  Edge 27 (201 202)
+  Vertex 205: 1 3 0
+  Edge 28 (201 205)
+  Vertex 217: 1 2 1
+  Edge 29 (201 217)
+Vertex 202: 2 2 0
+  Vertex 203: 3 2 0
+  Edge 30 (202 203)
+  Vertex 206: 2 3 0
+  Edge 31 (202 206)
+  Vertex 218: 2 2 1
+  Edge 32 (202 218)
+Vertex 203: 3 2 0
+  Vertex 200: 0 2 0
+  Edge 33 (203 200)
+  Vertex 207: 3 3 0
+  Edge 34 (203 207)
+  Vertex 219: 3 2 1
+  Edge 35 (203 219)
+Vertex 204: 0 3 0
+  Vertex 205: 1 3 0
+  Edge 36 (204 205)
+  Vertex 192: 0 0 0
+  Edge 37 (204 192)
+  Vertex 220: 0 3 1
+  Edge 38 (204 220)
+Vertex 205: 1 3 0
+  Vertex 206: 2 3 0
+  Edge 39 (205 206)
+  Vertex 193: 1 0 0
+  Edge 40 (205 193)
+  Vertex 221: 1 3 1
+  Edge 41 (205 221)
+Vertex 206: 2 3 0
+  Vertex 207: 3 3 0
+  Edge 42 (206 207)
+  Vertex 194: 2 0 0
+  Edge 43 (206 194)
+  Vertex 222: 2 3 1
+  Edge 44 (206 222)
+Vertex 207: 3 3 0
+  Vertex 204: 0 3 0
+  Edge 45 (207 204)
+  Vertex 195: 3 0 0
+  Edge 46 (207 195)
+  Vertex 223: 3 3 1
+  Edge 47 (207 223)
+Vertex 208: 0 0 1
+  Vertex 209: 1 0 1
+  Edge 48 (208 209)
+  Vertex 212: 0 1 1
+  Edge 49 (208 212)
+  Vertex 224: 0 0 2
+  Edge 50 (208 224)
+Vertex 209: 1 0 1
+  Vertex 210: 2 0 1
+  Edge 51 (209 210)
+  Vertex 213: 1 1 1
+  Edge 52 (209 213)
+  Vertex 225: 1 0 2
+  Edge 53 (209 225)
+Vertex 210: 2 0 1
+  Vertex 211: 3 0 1
+  Edge 54 (210 211)
+  Vertex 214: 2 1 1
+  Edge 55 (210 214)
+  Vertex 226: 2 0 2
+  Edge 56 (210 226)
+Vertex 211: 3 0 1
+  Vertex 208: 0 0 1
+  Edge 57 (211 208)
+  Vertex 215: 3 1 1
+  Edge 58 (211 215)
+  Vertex 227: 3 0 2
+  Edge 59 (211 227)
+Vertex 212: 0 1 1
+  Vertex 213: 1 1 1
+  Edge 60 (212 213)
+  Vertex 216: 0 2 1
+  Edge 61 (212 216)
+  Vertex 228: 0 1 2
+  Edge 62 (212 228)
+Vertex 213: 1 1 1
+  Vertex 214: 2 1 1
+  Edge 63 (213 214)
+  Vertex 217: 1 2 1
+  Edge 64 (213 217)
+  Vertex 229: 1 1 2
+  Edge 65 (213 229)
+Vertex 214: 2 1 1
+  Vertex 215: 3 1 1
+  Edge 66 (214 215)
+  Vertex 218: 2 2 1
+  Edge 67 (214 218)
+  Vertex 230: 2 1 2
+  Edge 68 (214 230)
+Vertex 215: 3 1 1
+  Vertex 212: 0 1 1
+  Edge 69 (215 212)
+  Vertex 219: 3 2 1
+  Edge 70 (215 219)
+  Vertex 231: 3 1 2
+  Edge 71 (215 231)
+Vertex 216: 0 2 1
+  Vertex 217: 1 2 1
+  Edge 72 (216 217)
+  Vertex 220: 0 3 1
+  Edge 73 (216 220)
+  Vertex 232: 0 2 2
+  Edge 74 (216 232)
+Vertex 217: 1 2 1
+  Vertex 218: 2 2 1
+  Edge 75 (217 218)
+  Vertex 221: 1 3 1
+  Edge 76 (217 221)
+  Vertex 233: 1 2 2
+  Edge 77 (217 233)
+Vertex 218: 2 2 1
+  Vertex 219: 3 2 1
+  Edge 78 (218 219)
+  Vertex 222: 2 3 1
+  Edge 79 (218 222)
+  Vertex 234: 2 2 2
+  Edge 80 (218 234)
+Vertex 219: 3 2 1
+  Vertex 216: 0 2 1
+  Edge 81 (219 216)
+  Vertex 223: 3 3 1
+  Edge 82 (219 223)
+  Vertex 235: 3 2 2
+  Edge 83 (219 235)
+Vertex 220: 0 3 1
+  Vertex 221: 1 3 1
+  Edge 84 (220 221)
+  Vertex 208: 0 0 1
+  Edge 85 (220 208)
+  Vertex 236: 0 3 2
+  Edge 86 (220 236)
+Vertex 221: 1 3 1
+  Vertex 222: 2 3 1
+  Edge 87 (221 222)
+  Vertex 209: 1 0 1
+  Edge 88 (221 209)
+  Vertex 237: 1 3 2
+  Edge 89 (221 237)
+Vertex 222: 2 3 1
+  Vertex 223: 3 3 1
+  Edge 90 (222 223)
+  Vertex 210: 2 0 1
+  Edge 91 (222 210)
+  Vertex 238: 2 3 2
+  Edge 92 (222 238)
+Vertex 223: 3 3 1
+  Vertex 220: 0 3 1
+  Edge 93 (223 220)
+  Vertex 211: 3 0 1
+  Edge 94 (223 211)
+  Vertex 239: 3 3 2
+  Edge 95 (223 239)
+Vertex 224: 0 0 2
+  Vertex 225: 1 0 2
+  Edge 96 (224 225)
+  Vertex 228: 0 1 2
+  Edge 97 (224 228)
+  Vertex 240: 0 0 3
+  Edge 98 (224 240)
+Vertex 225: 1 0 2
+  Vertex 226: 2 0 2
+  Edge 99 (225 226)
+  Vertex 229: 1 1 2
+  Edge 100 (225 229)
+  Vertex 241: 1 0 3
+  Edge 101 (225 241)
+Vertex 226: 2 0 2
+  Vertex 227: 3 0 2
+  Edge 102 (226 227)
+  Vertex 230: 2 1 2
+  Edge 103 (226 230)
+  Vertex 242: 2 0 3
+  Edge 104 (226 242)
+Vertex 227: 3 0 2
+  Vertex 224: 0 0 2
+  Edge 105 (227 224)
+  Vertex 231: 3 1 2
+  Edge 106 (227 231)
+  Vertex 243: 3 0 3
+  Edge 107 (227 243)
+Vertex 228: 0 1 2
+  Vertex 229: 1 1 2
+  Edge 108 (228 229)
+  Vertex 232: 0 2 2
+  Edge 109 (228 232)
+  Vertex 244: 0 1 3
+  Edge 110 (228 244)
+Vertex 229: 1 1 2
+  Vertex 230: 2 1 2
+  Edge 111 (229 230)
+  Vertex 233: 1 2 2
+  Edge 112 (229 233)
+  Vertex 245: 1 1 3
+  Edge 113 (229 245)
+Vertex 230: 2 1 2
+  Vertex 231: 3 1 2
+  Edge 114 (230 231)
+  Vertex 234: 2 2 2
+  Edge 115 (230 234)
+  Vertex 246: 2 1 3
+  Edge 116 (230 246)
+Vertex 231: 3 1 2
+  Vertex 228: 0 1 2
+  Edge 117 (231 228)
+  Vertex 235: 3 2 2
+  Edge 118 (231 235)
+  Vertex 247: 3 1 3
+  Edge 119 (231 247)
+Vertex 232: 0 2 2
+  Vertex 233: 1 2 2
+  Edge 120 (232 233)
+  Vertex 236: 0 3 2
+  Edge 121 (232 236)
+  Vertex 248: 0 2 3
+  Edge 122 (232 248)
+Vertex 233: 1 2 2
+  Vertex 234: 2 2 2
+  Edge 123 (233 234)
+  Vertex 237: 1 3 2
+  Edge 124 (233 237)
+  Vertex 249: 1 2 3
+  Edge 125 (233 249)
+Vertex 234: 2 2 2
+  Vertex 235: 3 2 2
+  Edge 126 (234 235)
+  Vertex 238: 2 3 2
+  Edge 127 (234 238)
+  Vertex 250: 2 2 3
+  Edge 128 (234 250)
+Vertex 235: 3 2 2
+  Vertex 232: 0 2 2
+  Edge 129 (235 232)
+  Vertex 239: 3 3 2
+  Edge 130 (235 239)
+  Vertex 251: 3 2 3
+  Edge 131 (235 251)
+Vertex 236: 0 3 2
+  Vertex 237: 1 3 2
+  Edge 132 (236 237)
+  Vertex 224: 0 0 2
+  Edge 133 (236 224)
+  Vertex 252: 0 3 3
+  Edge 134 (236 252)
+Vertex 237: 1 3 2
+  Vertex 238: 2 3 2
+  Edge 135 (237 238)
+  Vertex 225: 1 0 2
+  Edge 136 (237 225)
+  Vertex 253: 1 3 3
+  Edge 137 (237 253)
+Vertex 238: 2 3 2
+  Vertex 239: 3 3 2
+  Edge 138 (238 239)
+  Vertex 226: 2 0 2
+  Edge 139 (238 226)
+  Vertex 254: 2 3 3
+  Edge 140 (238 254)
+Vertex 239: 3 3 2
+  Vertex 236: 0 3 2
+  Edge 141 (239 236)
+  Vertex 227: 3 0 2
+  Edge 142 (239 227)
+  Vertex 255: 3 3 3
+  Edge 143 (239 255)
+Vertex 240: 0 0 3
+  Vertex 241: 1 0 3
+  Edge 144 (240 241)
+  Vertex 244: 0 1 3
+  Edge 145 (240 244)
+  Vertex 192: 0 0 0
+  Edge 146 (240 192)
+Vertex 241: 1 0 3
+  Vertex 242: 2 0 3
+  Edge 147 (241 242)
+  Vertex 245: 1 1 3
+  Edge 148 (241 245)
+  Vertex 193: 1 0 0
+  Edge 149 (241 193)
+Vertex 242: 2 0 3
+  Vertex 243: 3 0 3
+  Edge 150 (242 243)
+  Vertex 246: 2 1 3
+  Edge 151 (242 246)
+  Vertex 194: 2 0 0
+  Edge 152 (242 194)
+Vertex 243: 3 0 3
+  Vertex 240: 0 0 3
+  Edge 153 (243 240)
+  Vertex 247: 3 1 3
+  Edge 154 (243 247)
+  Vertex 195: 3 0 0
+  Edge 155 (243 195)
+Vertex 244: 0 1 3
+  Vertex 245: 1 1 3
+  Edge 156 (244 245)
+  Vertex 248: 0 2 3
+  Edge 157 (244 248)
+  Vertex 196: 0 1 0
+  Edge 158 (244 196)
+Vertex 245: 1 1 3
+  Vertex 246: 2 1 3
+  Edge 159 (245 246)
+  Vertex 249: 1 2 3
+  Edge 160 (245 249)
+  Vertex 197: 1 1 0
+  Edge 161 (245 197)
+Vertex 246: 2 1 3
+  Vertex 247: 3 1 3
+  Edge 162 (246 247)
+  Vertex 250: 2 2 3
+  Edge 163 (246 250)
+  Vertex 198: 2 1 0
+  Edge 164 (246 198)
+Vertex 247: 3 1 3
+  Vertex 244: 0 1 3
+  Edge 165 (247 244)
+  Vertex 251: 3 2 3
+  Edge 166 (247 251)
+  Vertex 199: 3 1 0
+  Edge 167 (247 199)
+Vertex 248: 0 2 3
+  Vertex 249: 1 2 3
+  Edge 168 (248 249)
+  Vertex 252: 0 3 3
+  Edge 169 (248 252)
+  Vertex 200: 0 2 0
+  Edge 170 (248 200)
+Vertex 249: 1 2 3
+  Vertex 250: 2 2 3
+  Edge 171 (249 250)
+  Vertex 253: 1 3 3
+  Edge 172 (249 253)
+  Vertex 201: 1 2 0
+  Edge 173 (249 201)
+Vertex 250: 2 2 3
+  Vertex 251: 3 2 3
+  Edge 174 (250 251)
+  Vertex 254: 2 3 3
+  Edge 175 (250 254)
+  Vertex 202: 2 2 0
+  Edge 176 (250 202)
+Vertex 251: 3 2 3
+  Vertex 248: 0 2 3
+  Edge 177 (251 248)
+  Vertex 255: 3 3 3
+  Edge 178 (251 255)
+  Vertex 203: 3 2 0
+  Edge 179 (251 203)
+Vertex 252: 0 3 3
+  Vertex 253: 1 3 3
+  Edge 180 (252 253)
+  Vertex 240: 0 0 3
+  Edge 181 (252 240)
+  Vertex 204: 0 3 0
+  Edge 182 (252 204)
+Vertex 253: 1 3 3
+  Vertex 254: 2 3 3
+  Edge 183 (253 254)
+  Vertex 241: 1 0 3
+  Edge 184 (253 241)
+  Vertex 205: 1 3 0
+  Edge 185 (253 205)
+Vertex 254: 2 3 3
+  Vertex 255: 3 3 3
+  Edge 186 (254 255)
+  Vertex 242: 2 0 3
+  Edge 187 (254 242)
+  Vertex 206: 2 3 0
+  Edge 188 (254 206)
+Vertex 255: 3 3 3
+  Vertex 252: 0 3 3
+  Edge 189 (255 252)
+  Vertex 243: 3 0 3
+  Edge 190 (255 243)
+  Vertex 207: 3 3 0
+  Edge 191 (255 207)
+Topology for rank 3:
+Vertex 192: 0 0 0
+  Vertex 193: 1 0 0
+  Edge 0 (192 193)
+  Vertex 196: 0 1 0
+  Edge 1 (192 196)
+  Vertex 208: 0 0 1
+  Edge 2 (192 208)
+Vertex 193: 1 0 0
+  Vertex 194: 2 0 0
+  Edge 3 (193 194)
+  Vertex 197: 1 1 0
+  Edge 4 (193 197)
+  Vertex 209: 1 0 1
+  Edge 5 (193 209)
+Vertex 194: 2 0 0
+  Vertex 195: 3 0 0
+  Edge 6 (194 195)
+  Vertex 198: 2 1 0
+  Edge 7 (194 198)
+  Vertex 210: 2 0 1
+  Edge 8 (194 210)
+Vertex 195: 3 0 0
+  Vertex 192: 0 0 0
+  Edge 9 (195 192)
+  Vertex 199: 3 1 0
+  Edge 10 (195 199)
+  Vertex 211: 3 0 1
+  Edge 11 (195 211)
+Vertex 196: 0 1 0
+  Vertex 197: 1 1 0
+  Edge 12 (196 197)
+  Vertex 200: 0 2 0
+  Edge 13 (196 200)
+  Vertex 212: 0 1 1
+  Edge 14 (196 212)
+Vertex 197: 1 1 0
+  Vertex 198: 2 1 0
+  Edge 15 (197 198)
+  Vertex 201: 1 2 0
+  Edge 16 (197 201)
+  Vertex 213: 1 1 1
+  Edge 17 (197 213)
+Vertex 198: 2 1 0
+  Vertex 199: 3 1 0
+  Edge 18 (198 199)
+  Vertex 202: 2 2 0
+  Edge 19 (198 202)
+  Vertex 214: 2 1 1
+  Edge 20 (198 214)
+Vertex 199: 3 1 0
+  Vertex 196: 0 1 0
+  Edge 21 (199 196)
+  Vertex 203: 3 2 0
+  Edge 22 (199 203)
+  Vertex 215: 3 1 1
+  Edge 23 (199 215)
+Vertex 200: 0 2 0
+  Vertex 201: 1 2 0
+  Edge 24 (200 201)
+  Vertex 204: 0 3 0
+  Edge 25 (200 204)
+  Vertex 216: 0 2 1
+  Edge 26 (200 216)
+Vertex 201: 1 2 0
+  Vertex 202: 2 2 0
+  Edge 27 (201 202)
+  Vertex 205: 1 3 0
+  Edge 28 (201 205)
+  Vertex 217: 1 2 1
+  Edge 29 (201 217)
+Vertex 202: 2 2 0
+  Vertex 203: 3 2 0
+  Edge 30 (202 203)
+  Vertex 206: 2 3 0
+  Edge 31 (202 206)
+  Vertex 218: 2 2 1
+  Edge 32 (202 218)
+Vertex 203: 3 2 0
+  Vertex 200: 0 2 0
+  Edge 33 (203 200)
+  Vertex 207: 3 3 0
+  Edge 34 (203 207)
+  Vertex 219: 3 2 1
+  Edge 35 (203 219)
+Vertex 204: 0 3 0
+  Vertex 205: 1 3 0
+  Edge 36 (204 205)
+  Vertex 192: 0 0 0
+  Edge 37 (204 192)
+  Vertex 220: 0 3 1
+  Edge 38 (204 220)
+Vertex 205: 1 3 0
+  Vertex 206: 2 3 0
+  Edge 39 (205 206)
+  Vertex 193: 1 0 0
+  Edge 40 (205 193)
+  Vertex 221: 1 3 1
+  Edge 41 (205 221)
+Vertex 206: 2 3 0
+  Vertex 207: 3 3 0
+  Edge 42 (206 207)
+  Vertex 194: 2 0 0
+  Edge 43 (206 194)
+  Vertex 222: 2 3 1
+  Edge 44 (206 222)
+Vertex 207: 3 3 0
+  Vertex 204: 0 3 0
+  Edge 45 (207 204)
+  Vertex 195: 3 0 0
+  Edge 46 (207 195)
+  Vertex 223: 3 3 1
+  Edge 47 (207 223)
+Vertex 208: 0 0 1
+  Vertex 209: 1 0 1
+  Edge 48 (208 209)
+  Vertex 212: 0 1 1
+  Edge 49 (208 212)
+  Vertex 224: 0 0 2
+  Edge 50 (208 224)
+Vertex 209: 1 0 1
+  Vertex 210: 2 0 1
+  Edge 51 (209 210)
+  Vertex 213: 1 1 1
+  Edge 52 (209 213)
+  Vertex 225: 1 0 2
+  Edge 53 (209 225)
+Vertex 210: 2 0 1
+  Vertex 211: 3 0 1
+  Edge 54 (210 211)
+  Vertex 214: 2 1 1
+  Edge 55 (210 214)
+  Vertex 226: 2 0 2
+  Edge 56 (210 226)
+Vertex 211: 3 0 1
+  Vertex 208: 0 0 1
+  Edge 57 (211 208)
+  Vertex 215: 3 1 1
+  Edge 58 (211 215)
+  Vertex 227: 3 0 2
+  Edge 59 (211 227)
+Vertex 212: 0 1 1
+  Vertex 213: 1 1 1
+  Edge 60 (212 213)
+  Vertex 216: 0 2 1
+  Edge 61 (212 216)
+  Vertex 228: 0 1 2
+  Edge 62 (212 228)
+Vertex 213: 1 1 1
+  Vertex 214: 2 1 1
+  Edge 63 (213 214)
+  Vertex 217: 1 2 1
+  Edge 64 (213 217)
+  Vertex 229: 1 1 2
+  Edge 65 (213 229)
+Vertex 214: 2 1 1
+  Vertex 215: 3 1 1
+  Edge 66 (214 215)
+  Vertex 218: 2 2 1
+  Edge 67 (214 218)
+  Vertex 230: 2 1 2
+  Edge 68 (214 230)
+Vertex 215: 3 1 1
+  Vertex 212: 0 1 1
+  Edge 69 (215 212)
+  Vertex 219: 3 2 1
+  Edge 70 (215 219)
+  Vertex 231: 3 1 2
+  Edge 71 (215 231)
+Vertex 216: 0 2 1
+  Vertex 217: 1 2 1
+  Edge 72 (216 217)
+  Vertex 220: 0 3 1
+  Edge 73 (216 220)
+  Vertex 232: 0 2 2
+  Edge 74 (216 232)
+Vertex 217: 1 2 1
+  Vertex 218: 2 2 1
+  Edge 75 (217 218)
+  Vertex 221: 1 3 1
+  Edge 76 (217 221)
+  Vertex 233: 1 2 2
+  Edge 77 (217 233)
+Vertex 218: 2 2 1
+  Vertex 219: 3 2 1
+  Edge 78 (218 219)
+  Vertex 222: 2 3 1
+  Edge 79 (218 222)
+  Vertex 234: 2 2 2
+  Edge 80 (218 234)
+Vertex 219: 3 2 1
+  Vertex 216: 0 2 1
+  Edge 81 (219 216)
+  Vertex 223: 3 3 1
+  Edge 82 (219 223)
+  Vertex 235: 3 2 2
+  Edge 83 (219 235)
+Vertex 220: 0 3 1
+  Vertex 221: 1 3 1
+  Edge 84 (220 221)
+  Vertex 208: 0 0 1
+  Edge 85 (220 208)
+  Vertex 236: 0 3 2
+  Edge 86 (220 236)
+Vertex 221: 1 3 1
+  Vertex 222: 2 3 1
+  Edge 87 (221 222)
+  Vertex 209: 1 0 1
+  Edge 88 (221 209)
+  Vertex 237: 1 3 2
+  Edge 89 (221 237)
+Vertex 222: 2 3 1
+  Vertex 223: 3 3 1
+  Edge 90 (222 223)
+  Vertex 210: 2 0 1
+  Edge 91 (222 210)
+  Vertex 238: 2 3 2
+  Edge 92 (222 238)
+Vertex 223: 3 3 1
+  Vertex 220: 0 3 1
+  Edge 93 (223 220)
+  Vertex 211: 3 0 1
+  Edge 94 (223 211)
+  Vertex 239: 3 3 2
+  Edge 95 (223 239)
+Vertex 224: 0 0 2
+  Vertex 225: 1 0 2
+  Edge 96 (224 225)
+  Vertex 228: 0 1 2
+  Edge 97 (224 228)
+  Vertex 240: 0 0 3
+  Edge 98 (224 240)
+Vertex 225: 1 0 2
+  Vertex 226: 2 0 2
+  Edge 99 (225 226)
+  Vertex 229: 1 1 2
+  Edge 100 (225 229)
+  Vertex 241: 1 0 3
+  Edge 101 (225 241)
+Vertex 226: 2 0 2
+  Vertex 227: 3 0 2
+  Edge 102 (226 227)
+  Vertex 230: 2 1 2
+  Edge 103 (226 230)
+  Vertex 242: 2 0 3
+  Edge 104 (226 242)
+Vertex 227: 3 0 2
+  Vertex 224: 0 0 2
+  Edge 105 (227 224)
+  Vertex 231: 3 1 2
+  Edge 106 (227 231)
+  Vertex 243: 3 0 3
+  Edge 107 (227 243)
+Vertex 228: 0 1 2
+  Vertex 229: 1 1 2
+  Edge 108 (228 229)
+  Vertex 232: 0 2 2
+  Edge 109 (228 232)
+  Vertex 244: 0 1 3
+  Edge 110 (228 244)
+Vertex 229: 1 1 2
+  Vertex 230: 2 1 2
+  Edge 111 (229 230)
+  Vertex 233: 1 2 2
+  Edge 112 (229 233)
+  Vertex 245: 1 1 3
+  Edge 113 (229 245)
+Vertex 230: 2 1 2
+  Vertex 231: 3 1 2
+  Edge 114 (230 231)
+  Vertex 234: 2 2 2
+  Edge 115 (230 234)
+  Vertex 246: 2 1 3
+  Edge 116 (230 246)
+Vertex 231: 3 1 2
+  Vertex 228: 0 1 2
+  Edge 117 (231 228)
+  Vertex 235: 3 2 2
+  Edge 118 (231 235)
+  Vertex 247: 3 1 3
+  Edge 119 (231 247)
+Vertex 232: 0 2 2
+  Vertex 233: 1 2 2
+  Edge 120 (232 233)
+  Vertex 236: 0 3 2
+  Edge 121 (232 236)
+  Vertex 248: 0 2 3
+  Edge 122 (232 248)
+Vertex 233: 1 2 2
+  Vertex 234: 2 2 2
+  Edge 123 (233 234)
+  Vertex 237: 1 3 2
+  Edge 124 (233 237)
+  Vertex 249: 1 2 3
+  Edge 125 (233 249)
+Vertex 234: 2 2 2
+  Vertex 235: 3 2 2
+  Edge 126 (234 235)
+  Vertex 238: 2 3 2
+  Edge 127 (234 238)
+  Vertex 250: 2 2 3
+  Edge 128 (234 250)
+Vertex 235: 3 2 2
+  Vertex 232: 0 2 2
+  Edge 129 (235 232)
+  Vertex 239: 3 3 2
+  Edge 130 (235 239)
+  Vertex 251: 3 2 3
+  Edge 131 (235 251)
+Vertex 236: 0 3 2
+  Vertex 237: 1 3 2
+  Edge 132 (236 237)
+  Vertex 224: 0 0 2
+  Edge 133 (236 224)
+  Vertex 252: 0 3 3
+  Edge 134 (236 252)
+Vertex 237: 1 3 2
+  Vertex 238: 2 3 2
+  Edge 135 (237 238)
+  Vertex 225: 1 0 2
+  Edge 136 (237 225)
+  Vertex 253: 1 3 3
+  Edge 137 (237 253)
+Vertex 238: 2 3 2
+  Vertex 239: 3 3 2
+  Edge 138 (238 239)
+  Vertex 226: 2 0 2
+  Edge 139 (238 226)
+  Vertex 254: 2 3 3
+  Edge 140 (238 254)
+Vertex 239: 3 3 2
+  Vertex 236: 0 3 2
+  Edge 141 (239 236)
+  Vertex 227: 3 0 2
+  Edge 142 (239 227)
+  Vertex 255: 3 3 3
+  Edge 143 (239 255)
+Vertex 240: 0 0 3
+  Vertex 241: 1 0 3
+  Edge 144 (240 241)
+  Vertex 244: 0 1 3
+  Edge 145 (240 244)
+  Vertex 192: 0 0 0
+  Edge 146 (240 192)
+Vertex 241: 1 0 3
+  Vertex 242: 2 0 3
+  Edge 147 (241 242)
+  Vertex 245: 1 1 3
+  Edge 148 (241 245)
+  Vertex 193: 1 0 0
+  Edge 149 (241 193)
+Vertex 242: 2 0 3
+  Vertex 243: 3 0 3
+  Edge 150 (242 243)
+  Vertex 246: 2 1 3
+  Edge 151 (242 246)
+  Vertex 194: 2 0 0
+  Edge 152 (242 194)
+Vertex 243: 3 0 3
+  Vertex 240: 0 0 3
+  Edge 153 (243 240)
+  Vertex 247: 3 1 3
+  Edge 154 (243 247)
+  Vertex 195: 3 0 0
+  Edge 155 (243 195)
+Vertex 244: 0 1 3
+  Vertex 245: 1 1 3
+  Edge 156 (244 245)
+  Vertex 248: 0 2 3
+  Edge 157 (244 248)
+  Vertex 196: 0 1 0
+  Edge 158 (244 196)
+Vertex 245: 1 1 3
+  Vertex 246: 2 1 3
+  Edge 159 (245 246)
+  Vertex 249: 1 2 3
+  Edge 160 (245 249)
+  Vertex 197: 1 1 0
+  Edge 161 (245 197)
+Vertex 246: 2 1 3
+  Vertex 247: 3 1 3
+  Edge 162 (246 247)
+  Vertex 250: 2 2 3
+  Edge 163 (246 250)
+  Vertex 198: 2 1 0
+  Edge 164 (246 198)
+Vertex 247: 3 1 3
+  Vertex 244: 0 1 3
+  Edge 165 (247 244)
+  Vertex 251: 3 2 3
+  Edge 166 (247 251)
+  Vertex 199: 3 1 0
+  Edge 167 (247 199)
+Vertex 248: 0 2 3
+  Vertex 249: 1 2 3
+  Edge 168 (248 249)
+  Vertex 252: 0 3 3
+  Edge 169 (248 252)
+  Vertex 200: 0 2 0
+  Edge 170 (248 200)
+Vertex 249: 1 2 3
+  Vertex 250: 2 2 3
+  Edge 171 (249 250)
+  Vertex 253: 1 3 3
+  Edge 172 (249 253)
+  Vertex 201: 1 2 0
+  Edge 173 (249 201)
+Vertex 250: 2 2 3
+  Vertex 251: 3 2 3
+  Edge 174 (250 251)
+  Vertex 254: 2 3 3
+  Edge 175 (250 254)
+  Vertex 202: 2 2 0
+  Edge 176 (250 202)
+Vertex 251: 3 2 3
+  Vertex 248: 0 2 3
+  Edge 177 (251 248)
+  Vertex 255: 3 3 3
+  Edge 178 (251 255)
+  Vertex 203: 3 2 0
+  Edge 179 (251 203)
+Vertex 252: 0 3 3
+  Vertex 253: 1 3 3
+  Edge 180 (252 253)
+  Vertex 240: 0 0 3
+  Edge 181 (252 240)
+  Vertex 204: 0 3 0
+  Edge 182 (252 204)
+Vertex 253: 1 3 3
+  Vertex 254: 2 3 3
+  Edge 183 (253 254)
+  Vertex 241: 1 0 3
+  Edge 184 (253 241)
+  Vertex 205: 1 3 0
+  Edge 185 (253 205)
+Vertex 254: 2 3 3
+  Vertex 255: 3 3 3
+  Edge 186 (254 255)
+  Vertex 242: 2 0 3
+  Edge 187 (254 242)
+  Vertex 206: 2 3 0
+  Edge 188 (254 206)
+Vertex 255: 3 3 3
+  Vertex 252: 0 3 3
+  Edge 189 (255 252)
+  Vertex 243: 3 0 3
+  Edge 190 (255 243)
+  Vertex 207: 3 3 0
+  Edge 191 (255 207)
+Topology for rank 4:
+Vertex 192: 0 0 0
+  Vertex 193: 1 0 0
+  Edge 0 (192 193)
+  Vertex 196: 0 1 0
+  Edge 1 (192 196)
+  Vertex 208: 0 0 1
+  Edge 2 (192 208)
+Vertex 193: 1 0 0
+  Vertex 194: 2 0 0
+  Edge 3 (193 194)
+  Vertex 197: 1 1 0
+  Edge 4 (193 197)
+  Vertex 209: 1 0 1
+  Edge 5 (193 209)
+Vertex 194: 2 0 0
+  Vertex 195: 3 0 0
+  Edge 6 (194 195)
+  Vertex 198: 2 1 0
+  Edge 7 (194 198)
+  Vertex 210: 2 0 1
+  Edge 8 (194 210)
+Vertex 195: 3 0 0
+  Vertex 192: 0 0 0
+  Edge 9 (195 192)
+  Vertex 199: 3 1 0
+  Edge 10 (195 199)
+  Vertex 211: 3 0 1
+  Edge 11 (195 211)
+Vertex 196: 0 1 0
+  Vertex 197: 1 1 0
+  Edge 12 (196 197)
+  Vertex 200: 0 2 0
+  Edge 13 (196 200)
+  Vertex 212: 0 1 1
+  Edge 14 (196 212)
+Vertex 197: 1 1 0
+  Vertex 198: 2 1 0
+  Edge 15 (197 198)
+  Vertex 201: 1 2 0
+  Edge 16 (197 201)
+  Vertex 213: 1 1 1
+  Edge 17 (197 213)
+Vertex 198: 2 1 0
+  Vertex 199: 3 1 0
+  Edge 18 (198 199)
+  Vertex 202: 2 2 0
+  Edge 19 (198 202)
+  Vertex 214: 2 1 1
+  Edge 20 (198 214)
+Vertex 199: 3 1 0
+  Vertex 196: 0 1 0
+  Edge 21 (199 196)
+  Vertex 203: 3 2 0
+  Edge 22 (199 203)
+  Vertex 215: 3 1 1
+  Edge 23 (199 215)
+Vertex 200: 0 2 0
+  Vertex 201: 1 2 0
+  Edge 24 (200 201)
+  Vertex 204: 0 3 0
+  Edge 25 (200 204)
+  Vertex 216: 0 2 1
+  Edge 26 (200 216)
+Vertex 201: 1 2 0
+  Vertex 202: 2 2 0
+  Edge 27 (201 202)
+  Vertex 205: 1 3 0
+  Edge 28 (201 205)
+  Vertex 217: 1 2 1
+  Edge 29 (201 217)
+Vertex 202: 2 2 0
+  Vertex 203: 3 2 0
+  Edge 30 (202 203)
+  Vertex 206: 2 3 0
+  Edge 31 (202 206)
+  Vertex 218: 2 2 1
+  Edge 32 (202 218)
+Vertex 203: 3 2 0
+  Vertex 200: 0 2 0
+  Edge 33 (203 200)
+  Vertex 207: 3 3 0
+  Edge 34 (203 207)
+  Vertex 219: 3 2 1
+  Edge 35 (203 219)
+Vertex 204: 0 3 0
+  Vertex 205: 1 3 0
+  Edge 36 (204 205)
+  Vertex 192: 0 0 0
+  Edge 37 (204 192)
+  Vertex 220: 0 3 1
+  Edge 38 (204 220)
+Vertex 205: 1 3 0
+  Vertex 206: 2 3 0
+  Edge 39 (205 206)
+  Vertex 193: 1 0 0
+  Edge 40 (205 193)
+  Vertex 221: 1 3 1
+  Edge 41 (205 221)
+Vertex 206: 2 3 0
+  Vertex 207: 3 3 0
+  Edge 42 (206 207)
+  Vertex 194: 2 0 0
+  Edge 43 (206 194)
+  Vertex 222: 2 3 1
+  Edge 44 (206 222)
+Vertex 207: 3 3 0
+  Vertex 204: 0 3 0
+  Edge 45 (207 204)
+  Vertex 195: 3 0 0
+  Edge 46 (207 195)
+  Vertex 223: 3 3 1
+  Edge 47 (207 223)
+Vertex 208: 0 0 1
+  Vertex 209: 1 0 1
+  Edge 48 (208 209)
+  Vertex 212: 0 1 1
+  Edge 49 (208 212)
+  Vertex 224: 0 0 2
+  Edge 50 (208 224)
+Vertex 209: 1 0 1
+  Vertex 210: 2 0 1
+  Edge 51 (209 210)
+  Vertex 213: 1 1 1
+  Edge 52 (209 213)
+  Vertex 225: 1 0 2
+  Edge 53 (209 225)
+Vertex 210: 2 0 1
+  Vertex 211: 3 0 1
+  Edge 54 (210 211)
+  Vertex 214: 2 1 1
+  Edge 55 (210 214)
+  Vertex 226: 2 0 2
+  Edge 56 (210 226)
+Vertex 211: 3 0 1
+  Vertex 208: 0 0 1
+  Edge 57 (211 208)
+  Vertex 215: 3 1 1
+  Edge 58 (211 215)
+  Vertex 227: 3 0 2
+  Edge 59 (211 227)
+Vertex 212: 0 1 1
+  Vertex 213: 1 1 1
+  Edge 60 (212 213)
+  Vertex 216: 0 2 1
+  Edge 61 (212 216)
+  Vertex 228: 0 1 2
+  Edge 62 (212 228)
+Vertex 213: 1 1 1
+  Vertex 214: 2 1 1
+  Edge 63 (213 214)
+  Vertex 217: 1 2 1
+  Edge 64 (213 217)
+  Vertex 229: 1 1 2
+  Edge 65 (213 229)
+Vertex 214: 2 1 1
+  Vertex 215: 3 1 1
+  Edge 66 (214 215)
+  Vertex 218: 2 2 1
+  Edge 67 (214 218)
+  Vertex 230: 2 1 2
+  Edge 68 (214 230)
+Vertex 215: 3 1 1
+  Vertex 212: 0 1 1
+  Edge 69 (215 212)
+  Vertex 219: 3 2 1
+  Edge 70 (215 219)
+  Vertex 231: 3 1 2
+  Edge 71 (215 231)
+Vertex 216: 0 2 1
+  Vertex 217: 1 2 1
+  Edge 72 (216 217)
+  Vertex 220: 0 3 1
+  Edge 73 (216 220)
+  Vertex 232: 0 2 2
+  Edge 74 (216 232)
+Vertex 217: 1 2 1
+  Vertex 218: 2 2 1
+  Edge 75 (217 218)
+  Vertex 221: 1 3 1
+  Edge 76 (217 221)
+  Vertex 233: 1 2 2
+  Edge 77 (217 233)
+Vertex 218: 2 2 1
+  Vertex 219: 3 2 1
+  Edge 78 (218 219)
+  Vertex 222: 2 3 1
+  Edge 79 (218 222)
+  Vertex 234: 2 2 2
+  Edge 80 (218 234)
+Vertex 219: 3 2 1
+  Vertex 216: 0 2 1
+  Edge 81 (219 216)
+  Vertex 223: 3 3 1
+  Edge 82 (219 223)
+  Vertex 235: 3 2 2
+  Edge 83 (219 235)
+Vertex 220: 0 3 1
+  Vertex 221: 1 3 1
+  Edge 84 (220 221)
+  Vertex 208: 0 0 1
+  Edge 85 (220 208)
+  Vertex 236: 0 3 2
+  Edge 86 (220 236)
+Vertex 221: 1 3 1
+  Vertex 222: 2 3 1
+  Edge 87 (221 222)
+  Vertex 209: 1 0 1
+  Edge 88 (221 209)
+  Vertex 237: 1 3 2
+  Edge 89 (221 237)
+Vertex 222: 2 3 1
+  Vertex 223: 3 3 1
+  Edge 90 (222 223)
+  Vertex 210: 2 0 1
+  Edge 91 (222 210)
+  Vertex 238: 2 3 2
+  Edge 92 (222 238)
+Vertex 223: 3 3 1
+  Vertex 220: 0 3 1
+  Edge 93 (223 220)
+  Vertex 211: 3 0 1
+  Edge 94 (223 211)
+  Vertex 239: 3 3 2
+  Edge 95 (223 239)
+Vertex 224: 0 0 2
+  Vertex 225: 1 0 2
+  Edge 96 (224 225)
+  Vertex 228: 0 1 2
+  Edge 97 (224 228)
+  Vertex 240: 0 0 3
+  Edge 98 (224 240)
+Vertex 225: 1 0 2
+  Vertex 226: 2 0 2
+  Edge 99 (225 226)
+  Vertex 229: 1 1 2
+  Edge 100 (225 229)
+  Vertex 241: 1 0 3
+  Edge 101 (225 241)
+Vertex 226: 2 0 2
+  Vertex 227: 3 0 2
+  Edge 102 (226 227)
+  Vertex 230: 2 1 2
+  Edge 103 (226 230)
+  Vertex 242: 2 0 3
+  Edge 104 (226 242)
+Vertex 227: 3 0 2
+  Vertex 224: 0 0 2
+  Edge 105 (227 224)
+  Vertex 231: 3 1 2
+  Edge 106 (227 231)
+  Vertex 243: 3 0 3
+  Edge 107 (227 243)
+Vertex 228: 0 1 2
+  Vertex 229: 1 1 2
+  Edge 108 (228 229)
+  Vertex 232: 0 2 2
+  Edge 109 (228 232)
+  Vertex 244: 0 1 3
+  Edge 110 (228 244)
+Vertex 229: 1 1 2
+  Vertex 230: 2 1 2
+  Edge 111 (229 230)
+  Vertex 233: 1 2 2
+  Edge 112 (229 233)
+  Vertex 245: 1 1 3
+  Edge 113 (229 245)
+Vertex 230: 2 1 2
+  Vertex 231: 3 1 2
+  Edge 114 (230 231)
+  Vertex 234: 2 2 2
+  Edge 115 (230 234)
+  Vertex 246: 2 1 3
+  Edge 116 (230 246)
+Vertex 231: 3 1 2
+  Vertex 228: 0 1 2
+  Edge 117 (231 228)
+  Vertex 235: 3 2 2
+  Edge 118 (231 235)
+  Vertex 247: 3 1 3
+  Edge 119 (231 247)
+Vertex 232: 0 2 2
+  Vertex 233: 1 2 2
+  Edge 120 (232 233)
+  Vertex 236: 0 3 2
+  Edge 121 (232 236)
+  Vertex 248: 0 2 3
+  Edge 122 (232 248)
+Vertex 233: 1 2 2
+  Vertex 234: 2 2 2
+  Edge 123 (233 234)
+  Vertex 237: 1 3 2
+  Edge 124 (233 237)
+  Vertex 249: 1 2 3
+  Edge 125 (233 249)
+Vertex 234: 2 2 2
+  Vertex 235: 3 2 2
+  Edge 126 (234 235)
+  Vertex 238: 2 3 2
+  Edge 127 (234 238)
+  Vertex 250: 2 2 3
+  Edge 128 (234 250)
+Vertex 235: 3 2 2
+  Vertex 232: 0 2 2
+  Edge 129 (235 232)
+  Vertex 239: 3 3 2
+  Edge 130 (235 239)
+  Vertex 251: 3 2 3
+  Edge 131 (235 251)
+Vertex 236: 0 3 2
+  Vertex 237: 1 3 2
+  Edge 132 (236 237)
+  Vertex 224: 0 0 2
+  Edge 133 (236 224)
+  Vertex 252: 0 3 3
+  Edge 134 (236 252)
+Vertex 237: 1 3 2
+  Vertex 238: 2 3 2
+  Edge 135 (237 238)
+  Vertex 225: 1 0 2
+  Edge 136 (237 225)
+  Vertex 253: 1 3 3
+  Edge 137 (237 253)
+Vertex 238: 2 3 2
+  Vertex 239: 3 3 2
+  Edge 138 (238 239)
+  Vertex 226: 2 0 2
+  Edge 139 (238 226)
+  Vertex 254: 2 3 3
+  Edge 140 (238 254)
+Vertex 239: 3 3 2
+  Vertex 236: 0 3 2
+  Edge 141 (239 236)
+  Vertex 227: 3 0 2
+  Edge 142 (239 227)
+  Vertex 255: 3 3 3
+  Edge 143 (239 255)
+Vertex 240: 0 0 3
+  Vertex 241: 1 0 3
+  Edge 144 (240 241)
+  Vertex 244: 0 1 3
+  Edge 145 (240 244)
+  Vertex 192: 0 0 0
+  Edge 146 (240 192)
+Vertex 241: 1 0 3
+  Vertex 242: 2 0 3
+  Edge 147 (241 242)
+  Vertex 245: 1 1 3
+  Edge 148 (241 245)
+  Vertex 193: 1 0 0
+  Edge 149 (241 193)
+Vertex 242: 2 0 3
+  Vertex 243: 3 0 3
+  Edge 150 (242 243)
+  Vertex 246: 2 1 3
+  Edge 151 (242 246)
+  Vertex 194: 2 0 0
+  Edge 152 (242 194)
+Vertex 243: 3 0 3
+  Vertex 240: 0 0 3
+  Edge 153 (243 240)
+  Vertex 247: 3 1 3
+  Edge 154 (243 247)
+  Vertex 195: 3 0 0
+  Edge 155 (243 195)
+Vertex 244: 0 1 3
+  Vertex 245: 1 1 3
+  Edge 156 (244 245)
+  Vertex 248: 0 2 3
+  Edge 157 (244 248)
+  Vertex 196: 0 1 0
+  Edge 158 (244 196)
+Vertex 245: 1 1 3
+  Vertex 246: 2 1 3
+  Edge 159 (245 246)
+  Vertex 249: 1 2 3
+  Edge 160 (245 249)
+  Vertex 197: 1 1 0
+  Edge 161 (245 197)
+Vertex 246: 2 1 3
+  Vertex 247: 3 1 3
+  Edge 162 (246 247)
+  Vertex 250: 2 2 3
+  Edge 163 (246 250)
+  Vertex 198: 2 1 0
+  Edge 164 (246 198)
+Vertex 247: 3 1 3
+  Vertex 244: 0 1 3
+  Edge 165 (247 244)
+  Vertex 251: 3 2 3
+  Edge 166 (247 251)
+  Vertex 199: 3 1 0
+  Edge 167 (247 199)
+Vertex 248: 0 2 3
+  Vertex 249: 1 2 3
+  Edge 168 (248 249)
+  Vertex 252: 0 3 3
+  Edge 169 (248 252)
+  Vertex 200: 0 2 0
+  Edge 170 (248 200)
+Vertex 249: 1 2 3
+  Vertex 250: 2 2 3
+  Edge 171 (249 250)
+  Vertex 253: 1 3 3
+  Edge 172 (249 253)
+  Vertex 201: 1 2 0
+  Edge 173 (249 201)
+Vertex 250: 2 2 3
+  Vertex 251: 3 2 3
+  Edge 174 (250 251)
+  Vertex 254: 2 3 3
+  Edge 175 (250 254)
+  Vertex 202: 2 2 0
+  Edge 176 (250 202)
+Vertex 251: 3 2 3
+  Vertex 248: 0 2 3
+  Edge 177 (251 248)
+  Vertex 255: 3 3 3
+  Edge 178 (251 255)
+  Vertex 203: 3 2 0
+  Edge 179 (251 203)
+Vertex 252: 0 3 3
+  Vertex 253: 1 3 3
+  Edge 180 (252 253)
+  Vertex 240: 0 0 3
+  Edge 181 (252 240)
+  Vertex 204: 0 3 0
+  Edge 182 (252 204)
+Vertex 253: 1 3 3
+  Vertex 254: 2 3 3
+  Edge 183 (253 254)
+  Vertex 241: 1 0 3
+  Edge 184 (253 241)
+  Vertex 205: 1 3 0
+  Edge 185 (253 205)
+Vertex 254: 2 3 3
+  Vertex 255: 3 3 3
+  Edge 186 (254 255)
+  Vertex 242: 2 0 3
+  Edge 187 (254 242)
+  Vertex 206: 2 3 0
+  Edge 188 (254 206)
+Vertex 255: 3 3 3
+  Vertex 252: 0 3 3
+  Edge 189 (255 252)
+  Vertex 243: 3 0 3
+  Edge 190 (255 243)
+  Vertex 207: 3 3 0
+  Edge 191 (255 207)
+Topology for rank 5:
+Vertex 192: 0 0 0
+  Vertex 193: 1 0 0
+  Edge 0 (192 193)
+  Vertex 196: 0 1 0
+  Edge 1 (192 196)
+  Vertex 208: 0 0 1
+  Edge 2 (192 208)
+Vertex 193: 1 0 0
+  Vertex 194: 2 0 0
+  Edge 3 (193 194)
+  Vertex 197: 1 1 0
+  Edge 4 (193 197)
+  Vertex 209: 1 0 1
+  Edge 5 (193 209)
+Vertex 194: 2 0 0
+  Vertex 195: 3 0 0
+  Edge 6 (194 195)
+  Vertex 198: 2 1 0
+  Edge 7 (194 198)
+  Vertex 210: 2 0 1
+  Edge 8 (194 210)
+Vertex 195: 3 0 0
+  Vertex 192: 0 0 0
+  Edge 9 (195 192)
+  Vertex 199: 3 1 0
+  Edge 10 (195 199)
+  Vertex 211: 3 0 1
+  Edge 11 (195 211)
+Vertex 196: 0 1 0
+  Vertex 197: 1 1 0
+  Edge 12 (196 197)
+  Vertex 200: 0 2 0
+  Edge 13 (196 200)
+  Vertex 212: 0 1 1
+  Edge 14 (196 212)
+Vertex 197: 1 1 0
+  Vertex 198: 2 1 0
+  Edge 15 (197 198)
+  Vertex 201: 1 2 0
+  Edge 16 (197 201)
+  Vertex 213: 1 1 1
+  Edge 17 (197 213)
+Vertex 198: 2 1 0
+  Vertex 199: 3 1 0
+  Edge 18 (198 199)
+  Vertex 202: 2 2 0
+  Edge 19 (198 202)
+  Vertex 214: 2 1 1
+  Edge 20 (198 214)
+Vertex 199: 3 1 0
+  Vertex 196: 0 1 0
+  Edge 21 (199 196)
+  Vertex 203: 3 2 0
+  Edge 22 (199 203)
+  Vertex 215: 3 1 1
+  Edge 23 (199 215)
+Vertex 200: 0 2 0
+  Vertex 201: 1 2 0
+  Edge 24 (200 201)
+  Vertex 204: 0 3 0
+  Edge 25 (200 204)
+  Vertex 216: 0 2 1
+  Edge 26 (200 216)
+Vertex 201: 1 2 0
+  Vertex 202: 2 2 0
+  Edge 27 (201 202)
+  Vertex 205: 1 3 0
+  Edge 28 (201 205)
+  Vertex 217: 1 2 1
+  Edge 29 (201 217)
+Vertex 202: 2 2 0
+  Vertex 203: 3 2 0
+  Edge 30 (202 203)
+  Vertex 206: 2 3 0
+  Edge 31 (202 206)
+  Vertex 218: 2 2 1
+  Edge 32 (202 218)
+Vertex 203: 3 2 0
+  Vertex 200: 0 2 0
+  Edge 33 (203 200)
+  Vertex 207: 3 3 0
+  Edge 34 (203 207)
+  Vertex 219: 3 2 1
+  Edge 35 (203 219)
+Vertex 204: 0 3 0
+  Vertex 205: 1 3 0
+  Edge 36 (204 205)
+  Vertex 192: 0 0 0
+  Edge 37 (204 192)
+  Vertex 220: 0 3 1
+  Edge 38 (204 220)
+Vertex 205: 1 3 0
+  Vertex 206: 2 3 0
+  Edge 39 (205 206)
+  Vertex 193: 1 0 0
+  Edge 40 (205 193)
+  Vertex 221: 1 3 1
+  Edge 41 (205 221)
+Vertex 206: 2 3 0
+  Vertex 207: 3 3 0
+  Edge 42 (206 207)
+  Vertex 194: 2 0 0
+  Edge 43 (206 194)
+  Vertex 222: 2 3 1
+  Edge 44 (206 222)
+Vertex 207: 3 3 0
+  Vertex 204: 0 3 0
+  Edge 45 (207 204)
+  Vertex 195: 3 0 0
+  Edge 46 (207 195)
+  Vertex 223: 3 3 1
+  Edge 47 (207 223)
+Vertex 208: 0 0 1
+  Vertex 209: 1 0 1
+  Edge 48 (208 209)
+  Vertex 212: 0 1 1
+  Edge 49 (208 212)
+  Vertex 224: 0 0 2
+  Edge 50 (208 224)
+Vertex 209: 1 0 1
+  Vertex 210: 2 0 1
+  Edge 51 (209 210)
+  Vertex 213: 1 1 1
+  Edge 52 (209 213)
+  Vertex 225: 1 0 2
+  Edge 53 (209 225)
+Vertex 210: 2 0 1
+  Vertex 211: 3 0 1
+  Edge 54 (210 211)
+  Vertex 214: 2 1 1
+  Edge 55 (210 214)
+  Vertex 226: 2 0 2
+  Edge 56 (210 226)
+Vertex 211: 3 0 1
+  Vertex 208: 0 0 1
+  Edge 57 (211 208)
+  Vertex 215: 3 1 1
+  Edge 58 (211 215)
+  Vertex 227: 3 0 2
+  Edge 59 (211 227)
+Vertex 212: 0 1 1
+  Vertex 213: 1 1 1
+  Edge 60 (212 213)
+  Vertex 216: 0 2 1
+  Edge 61 (212 216)
+  Vertex 228: 0 1 2
+  Edge 62 (212 228)
+Vertex 213: 1 1 1
+  Vertex 214: 2 1 1
+  Edge 63 (213 214)
+  Vertex 217: 1 2 1
+  Edge 64 (213 217)
+  Vertex 229: 1 1 2
+  Edge 65 (213 229)
+Vertex 214: 2 1 1
+  Vertex 215: 3 1 1
+  Edge 66 (214 215)
+  Vertex 218: 2 2 1
+  Edge 67 (214 218)
+  Vertex 230: 2 1 2
+  Edge 68 (214 230)
+Vertex 215: 3 1 1
+  Vertex 212: 0 1 1
+  Edge 69 (215 212)
+  Vertex 219: 3 2 1
+  Edge 70 (215 219)
+  Vertex 231: 3 1 2
+  Edge 71 (215 231)
+Vertex 216: 0 2 1
+  Vertex 217: 1 2 1
+  Edge 72 (216 217)
+  Vertex 220: 0 3 1
+  Edge 73 (216 220)
+  Vertex 232: 0 2 2
+  Edge 74 (216 232)
+Vertex 217: 1 2 1
+  Vertex 218: 2 2 1
+  Edge 75 (217 218)
+  Vertex 221: 1 3 1
+  Edge 76 (217 221)
+  Vertex 233: 1 2 2
+  Edge 77 (217 233)
+Vertex 218: 2 2 1
+  Vertex 219: 3 2 1
+  Edge 78 (218 219)
+  Vertex 222: 2 3 1
+  Edge 79 (218 222)
+  Vertex 234: 2 2 2
+  Edge 80 (218 234)
+Vertex 219: 3 2 1
+  Vertex 216: 0 2 1
+  Edge 81 (219 216)
+  Vertex 223: 3 3 1
+  Edge 82 (219 223)
+  Vertex 235: 3 2 2
+  Edge 83 (219 235)
+Vertex 220: 0 3 1
+  Vertex 221: 1 3 1
+  Edge 84 (220 221)
+  Vertex 208: 0 0 1
+  Edge 85 (220 208)
+  Vertex 236: 0 3 2
+  Edge 86 (220 236)
+Vertex 221: 1 3 1
+  Vertex 222: 2 3 1
+  Edge 87 (221 222)
+  Vertex 209: 1 0 1
+  Edge 88 (221 209)
+  Vertex 237: 1 3 2
+  Edge 89 (221 237)
+Vertex 222: 2 3 1
+  Vertex 223: 3 3 1
+  Edge 90 (222 223)
+  Vertex 210: 2 0 1
+  Edge 91 (222 210)
+  Vertex 238: 2 3 2
+  Edge 92 (222 238)
+Vertex 223: 3 3 1
+  Vertex 220: 0 3 1
+  Edge 93 (223 220)
+  Vertex 211: 3 0 1
+  Edge 94 (223 211)
+  Vertex 239: 3 3 2
+  Edge 95 (223 239)
+Vertex 224: 0 0 2
+  Vertex 225: 1 0 2
+  Edge 96 (224 225)
+  Vertex 228: 0 1 2
+  Edge 97 (224 228)
+  Vertex 240: 0 0 3
+  Edge 98 (224 240)
+Vertex 225: 1 0 2
+  Vertex 226: 2 0 2
+  Edge 99 (225 226)
+  Vertex 229: 1 1 2
+  Edge 100 (225 229)
+  Vertex 241: 1 0 3
+  Edge 101 (225 241)
+Vertex 226: 2 0 2
+  Vertex 227: 3 0 2
+  Edge 102 (226 227)
+  Vertex 230: 2 1 2
+  Edge 103 (226 230)
+  Vertex 242: 2 0 3
+  Edge 104 (226 242)
+Vertex 227: 3 0 2
+  Vertex 224: 0 0 2
+  Edge 105 (227 224)
+  Vertex 231: 3 1 2
+  Edge 106 (227 231)
+  Vertex 243: 3 0 3
+  Edge 107 (227 243)
+Vertex 228: 0 1 2
+  Vertex 229: 1 1 2
+  Edge 108 (228 229)
+  Vertex 232: 0 2 2
+  Edge 109 (228 232)
+  Vertex 244: 0 1 3
+  Edge 110 (228 244)
+Vertex 229: 1 1 2
+  Vertex 230: 2 1 2
+  Edge 111 (229 230)
+  Vertex 233: 1 2 2
+  Edge 112 (229 233)
+  Vertex 245: 1 1 3
+  Edge 113 (229 245)
+Vertex 230: 2 1 2
+  Vertex 231: 3 1 2
+  Edge 114 (230 231)
+  Vertex 234: 2 2 2
+  Edge 115 (230 234)
+  Vertex 246: 2 1 3
+  Edge 116 (230 246)
+Vertex 231: 3 1 2
+  Vertex 228: 0 1 2
+  Edge 117 (231 228)
+  Vertex 235: 3 2 2
+  Edge 118 (231 235)
+  Vertex 247: 3 1 3
+  Edge 119 (231 247)
+Vertex 232: 0 2 2
+  Vertex 233: 1 2 2
+  Edge 120 (232 233)
+  Vertex 236: 0 3 2
+  Edge 121 (232 236)
+  Vertex 248: 0 2 3
+  Edge 122 (232 248)
+Vertex 233: 1 2 2
+  Vertex 234: 2 2 2
+  Edge 123 (233 234)
+  Vertex 237: 1 3 2
+  Edge 124 (233 237)
+  Vertex 249: 1 2 3
+  Edge 125 (233 249)
+Vertex 234: 2 2 2
+  Vertex 235: 3 2 2
+  Edge 126 (234 235)
+  Vertex 238: 2 3 2
+  Edge 127 (234 238)
+  Vertex 250: 2 2 3
+  Edge 128 (234 250)
+Vertex 235: 3 2 2
+  Vertex 232: 0 2 2
+  Edge 129 (235 232)
+  Vertex 239: 3 3 2
+  Edge 130 (235 239)
+  Vertex 251: 3 2 3
+  Edge 131 (235 251)
+Vertex 236: 0 3 2
+  Vertex 237: 1 3 2
+  Edge 132 (236 237)
+  Vertex 224: 0 0 2
+  Edge 133 (236 224)
+  Vertex 252: 0 3 3
+  Edge 134 (236 252)
+Vertex 237: 1 3 2
+  Vertex 238: 2 3 2
+  Edge 135 (237 238)
+  Vertex 225: 1 0 2
+  Edge 136 (237 225)
+  Vertex 253: 1 3 3
+  Edge 137 (237 253)
+Vertex 238: 2 3 2
+  Vertex 239: 3 3 2
+  Edge 138 (238 239)
+  Vertex 226: 2 0 2
+  Edge 139 (238 226)
+  Vertex 254: 2 3 3
+  Edge 140 (238 254)
+Vertex 239: 3 3 2
+  Vertex 236: 0 3 2
+  Edge 141 (239 236)
+  Vertex 227: 3 0 2
+  Edge 142 (239 227)
+  Vertex 255: 3 3 3
+  Edge 143 (239 255)
+Vertex 240: 0 0 3
+  Vertex 241: 1 0 3
+  Edge 144 (240 241)
+  Vertex 244: 0 1 3
+  Edge 145 (240 244)
+  Vertex 192: 0 0 0
+  Edge 146 (240 192)
+Vertex 241: 1 0 3
+  Vertex 242: 2 0 3
+  Edge 147 (241 242)
+  Vertex 245: 1 1 3
+  Edge 148 (241 245)
+  Vertex 193: 1 0 0
+  Edge 149 (241 193)
+Vertex 242: 2 0 3
+  Vertex 243: 3 0 3
+  Edge 150 (242 243)
+  Vertex 246: 2 1 3
+  Edge 151 (242 246)
+  Vertex 194: 2 0 0
+  Edge 152 (242 194)
+Vertex 243: 3 0 3
+  Vertex 240: 0 0 3
+  Edge 153 (243 240)
+  Vertex 247: 3 1 3
+  Edge 154 (243 247)
+  Vertex 195: 3 0 0
+  Edge 155 (243 195)
+Vertex 244: 0 1 3
+  Vertex 245: 1 1 3
+  Edge 156 (244 245)
+  Vertex 248: 0 2 3
+  Edge 157 (244 248)
+  Vertex 196: 0 1 0
+  Edge 158 (244 196)
+Vertex 245: 1 1 3
+  Vertex 246: 2 1 3
+  Edge 159 (245 246)
+  Vertex 249: 1 2 3
+  Edge 160 (245 249)
+  Vertex 197: 1 1 0
+  Edge 161 (245 197)
+Vertex 246: 2 1 3
+  Vertex 247: 3 1 3
+  Edge 162 (246 247)
+  Vertex 250: 2 2 3
+  Edge 163 (246 250)
+  Vertex 198: 2 1 0
+  Edge 164 (246 198)
+Vertex 247: 3 1 3
+  Vertex 244: 0 1 3
+  Edge 165 (247 244)
+  Vertex 251: 3 2 3
+  Edge 166 (247 251)
+  Vertex 199: 3 1 0
+  Edge 167 (247 199)
+Vertex 248: 0 2 3
+  Vertex 249: 1 2 3
+  Edge 168 (248 249)
+  Vertex 252: 0 3 3
+  Edge 169 (248 252)
+  Vertex 200: 0 2 0
+  Edge 170 (248 200)
+Vertex 249: 1 2 3
+  Vertex 250: 2 2 3
+  Edge 171 (249 250)
+  Vertex 253: 1 3 3
+  Edge 172 (249 253)
+  Vertex 201: 1 2 0
+  Edge 173 (249 201)
+Vertex 250: 2 2 3
+  Vertex 251: 3 2 3
+  Edge 174 (250 251)
+  Vertex 254: 2 3 3
+  Edge 175 (250 254)
+  Vertex 202: 2 2 0
+  Edge 176 (250 202)
+Vertex 251: 3 2 3
+  Vertex 248: 0 2 3
+  Edge 177 (251 248)
+  Vertex 255: 3 3 3
+  Edge 178 (251 255)
+  Vertex 203: 3 2 0
+  Edge 179 (251 203)
+Vertex 252: 0 3 3
+  Vertex 253: 1 3 3
+  Edge 180 (252 253)
+  Vertex 240: 0 0 3
+  Edge 181 (252 240)
+  Vertex 204: 0 3 0
+  Edge 182 (252 204)
+Vertex 253: 1 3 3
+  Vertex 254: 2 3 3
+  Edge 183 (253 254)
+  Vertex 241: 1 0 3
+  Edge 184 (253 241)
+  Vertex 205: 1 3 0
+  Edge 185 (253 205)
+Vertex 254: 2 3 3
+  Vertex 255: 3 3 3
+  Edge 186 (254 255)
+  Vertex 242: 2 0 3
+  Edge 187 (254 242)
+  Vertex 206: 2 3 0
+  Edge 188 (254 206)
+Vertex 255: 3 3 3
+  Vertex 252: 0 3 3
+  Edge 189 (255 252)
+  Vertex 243: 3 0 3
+  Edge 190 (255 243)
+  Vertex 207: 3 3 0
+  Edge 191 (255 207)
+Topology for rank 6:
+Vertex 192: 0 0 0
+  Vertex 193: 1 0 0
+  Edge 0 (192 193)
+  Vertex 196: 0 1 0
+  Edge 1 (192 196)
+  Vertex 208: 0 0 1
+  Edge 2 (192 208)
+Vertex 193: 1 0 0
+  Vertex 194: 2 0 0
+  Edge 3 (193 194)
+  Vertex 197: 1 1 0
+  Edge 4 (193 197)
+  Vertex 209: 1 0 1
+  Edge 5 (193 209)
+Vertex 194: 2 0 0
+  Vertex 195: 3 0 0
+  Edge 6 (194 195)
+  Vertex 198: 2 1 0
+  Edge 7 (194 198)
+  Vertex 210: 2 0 1
+  Edge 8 (194 210)
+Vertex 195: 3 0 0
+  Vertex 192: 0 0 0
+  Edge 9 (195 192)
+  Vertex 199: 3 1 0
+  Edge 10 (195 199)
+  Vertex 211: 3 0 1
+  Edge 11 (195 211)
+Vertex 196: 0 1 0
+  Vertex 197: 1 1 0
+  Edge 12 (196 197)
+  Vertex 200: 0 2 0
+  Edge 13 (196 200)
+  Vertex 212: 0 1 1
+  Edge 14 (196 212)
+Vertex 197: 1 1 0
+  Vertex 198: 2 1 0
+  Edge 15 (197 198)
+  Vertex 201: 1 2 0
+  Edge 16 (197 201)
+  Vertex 213: 1 1 1
+  Edge 17 (197 213)
+Vertex 198: 2 1 0
+  Vertex 199: 3 1 0
+  Edge 18 (198 199)
+  Vertex 202: 2 2 0
+  Edge 19 (198 202)
+  Vertex 214: 2 1 1
+  Edge 20 (198 214)
+Vertex 199: 3 1 0
+  Vertex 196: 0 1 0
+  Edge 21 (199 196)
+  Vertex 203: 3 2 0
+  Edge 22 (199 203)
+  Vertex 215: 3 1 1
+  Edge 23 (199 215)
+Vertex 200: 0 2 0
+  Vertex 201: 1 2 0
+  Edge 24 (200 201)
+  Vertex 204: 0 3 0
+  Edge 25 (200 204)
+  Vertex 216: 0 2 1
+  Edge 26 (200 216)
+Vertex 201: 1 2 0
+  Vertex 202: 2 2 0
+  Edge 27 (201 202)
+  Vertex 205: 1 3 0
+  Edge 28 (201 205)
+  Vertex 217: 1 2 1
+  Edge 29 (201 217)
+Vertex 202: 2 2 0
+  Vertex 203: 3 2 0
+  Edge 30 (202 203)
+  Vertex 206: 2 3 0
+  Edge 31 (202 206)
+  Vertex 218: 2 2 1
+  Edge 32 (202 218)
+Vertex 203: 3 2 0
+  Vertex 200: 0 2 0
+  Edge 33 (203 200)
+  Vertex 207: 3 3 0
+  Edge 34 (203 207)
+  Vertex 219: 3 2 1
+  Edge 35 (203 219)
+Vertex 204: 0 3 0
+  Vertex 205: 1 3 0
+  Edge 36 (204 205)
+  Vertex 192: 0 0 0
+  Edge 37 (204 192)
+  Vertex 220: 0 3 1
+  Edge 38 (204 220)
+Vertex 205: 1 3 0
+  Vertex 206: 2 3 0
+  Edge 39 (205 206)
+  Vertex 193: 1 0 0
+  Edge 40 (205 193)
+  Vertex 221: 1 3 1
+  Edge 41 (205 221)
+Vertex 206: 2 3 0
+  Vertex 207: 3 3 0
+  Edge 42 (206 207)
+  Vertex 194: 2 0 0
+  Edge 43 (206 194)
+  Vertex 222: 2 3 1
+  Edge 44 (206 222)
+Vertex 207: 3 3 0
+  Vertex 204: 0 3 0
+  Edge 45 (207 204)
+  Vertex 195: 3 0 0
+  Edge 46 (207 195)
+  Vertex 223: 3 3 1
+  Edge 47 (207 223)
+Vertex 208: 0 0 1
+  Vertex 209: 1 0 1
+  Edge 48 (208 209)
+  Vertex 212: 0 1 1
+  Edge 49 (208 212)
+  Vertex 224: 0 0 2
+  Edge 50 (208 224)
+Vertex 209: 1 0 1
+  Vertex 210: 2 0 1
+  Edge 51 (209 210)
+  Vertex 213: 1 1 1
+  Edge 52 (209 213)
+  Vertex 225: 1 0 2
+  Edge 53 (209 225)
+Vertex 210: 2 0 1
+  Vertex 211: 3 0 1
+  Edge 54 (210 211)
+  Vertex 214: 2 1 1
+  Edge 55 (210 214)
+  Vertex 226: 2 0 2
+  Edge 56 (210 226)
+Vertex 211: 3 0 1
+  Vertex 208: 0 0 1
+  Edge 57 (211 208)
+  Vertex 215: 3 1 1
+  Edge 58 (211 215)
+  Vertex 227: 3 0 2
+  Edge 59 (211 227)
+Vertex 212: 0 1 1
+  Vertex 213: 1 1 1
+  Edge 60 (212 213)
+  Vertex 216: 0 2 1
+  Edge 61 (212 216)
+  Vertex 228: 0 1 2
+  Edge 62 (212 228)
+Vertex 213: 1 1 1
+  Vertex 214: 2 1 1
+  Edge 63 (213 214)
+  Vertex 217: 1 2 1
+  Edge 64 (213 217)
+  Vertex 229: 1 1 2
+  Edge 65 (213 229)
+Vertex 214: 2 1 1
+  Vertex 215: 3 1 1
+  Edge 66 (214 215)
+  Vertex 218: 2 2 1
+  Edge 67 (214 218)
+  Vertex 230: 2 1 2
+  Edge 68 (214 230)
+Vertex 215: 3 1 1
+  Vertex 212: 0 1 1
+  Edge 69 (215 212)
+  Vertex 219: 3 2 1
+  Edge 70 (215 219)
+  Vertex 231: 3 1 2
+  Edge 71 (215 231)
+Vertex 216: 0 2 1
+  Vertex 217: 1 2 1
+  Edge 72 (216 217)
+  Vertex 220: 0 3 1
+  Edge 73 (216 220)
+  Vertex 232: 0 2 2
+  Edge 74 (216 232)
+Vertex 217: 1 2 1
+  Vertex 218: 2 2 1
+  Edge 75 (217 218)
+  Vertex 221: 1 3 1
+  Edge 76 (217 221)
+  Vertex 233: 1 2 2
+  Edge 77 (217 233)
+Vertex 218: 2 2 1
+  Vertex 219: 3 2 1
+  Edge 78 (218 219)
+  Vertex 222: 2 3 1
+  Edge 79 (218 222)
+  Vertex 234: 2 2 2
+  Edge 80 (218 234)
+Vertex 219: 3 2 1
+  Vertex 216: 0 2 1
+  Edge 81 (219 216)
+  Vertex 223: 3 3 1
+  Edge 82 (219 223)
+  Vertex 235: 3 2 2
+  Edge 83 (219 235)
+Vertex 220: 0 3 1
+  Vertex 221: 1 3 1
+  Edge 84 (220 221)
+  Vertex 208: 0 0 1
+  Edge 85 (220 208)
+  Vertex 236: 0 3 2
+  Edge 86 (220 236)
+Vertex 221: 1 3 1
+  Vertex 222: 2 3 1
+  Edge 87 (221 222)
+  Vertex 209: 1 0 1
+  Edge 88 (221 209)
+  Vertex 237: 1 3 2
+  Edge 89 (221 237)
+Vertex 222: 2 3 1
+  Vertex 223: 3 3 1
+  Edge 90 (222 223)
+  Vertex 210: 2 0 1
+  Edge 91 (222 210)
+  Vertex 238: 2 3 2
+  Edge 92 (222 238)
+Vertex 223: 3 3 1
+  Vertex 220: 0 3 1
+  Edge 93 (223 220)
+  Vertex 211: 3 0 1
+  Edge 94 (223 211)
+  Vertex 239: 3 3 2
+  Edge 95 (223 239)
+Vertex 224: 0 0 2
+  Vertex 225: 1 0 2
+  Edge 96 (224 225)
+  Vertex 228: 0 1 2
+  Edge 97 (224 228)
+  Vertex 240: 0 0 3
+  Edge 98 (224 240)
+Vertex 225: 1 0 2
+  Vertex 226: 2 0 2
+  Edge 99 (225 226)
+  Vertex 229: 1 1 2
+  Edge 100 (225 229)
+  Vertex 241: 1 0 3
+  Edge 101 (225 241)
+Vertex 226: 2 0 2
+  Vertex 227: 3 0 2
+  Edge 102 (226 227)
+  Vertex 230: 2 1 2
+  Edge 103 (226 230)
+  Vertex 242: 2 0 3
+  Edge 104 (226 242)
+Vertex 227: 3 0 2
+  Vertex 224: 0 0 2
+  Edge 105 (227 224)
+  Vertex 231: 3 1 2
+  Edge 106 (227 231)
+  Vertex 243: 3 0 3
+  Edge 107 (227 243)
+Vertex 228: 0 1 2
+  Vertex 229: 1 1 2
+  Edge 108 (228 229)
+  Vertex 232: 0 2 2
+  Edge 109 (228 232)
+  Vertex 244: 0 1 3
+  Edge 110 (228 244)
+Vertex 229: 1 1 2
+  Vertex 230: 2 1 2
+  Edge 111 (229 230)
+  Vertex 233: 1 2 2
+  Edge 112 (229 233)
+  Vertex 245: 1 1 3
+  Edge 113 (229 245)
+Vertex 230: 2 1 2
+  Vertex 231: 3 1 2
+  Edge 114 (230 231)
+  Vertex 234: 2 2 2
+  Edge 115 (230 234)
+  Vertex 246: 2 1 3
+  Edge 116 (230 246)
+Vertex 231: 3 1 2
+  Vertex 228: 0 1 2
+  Edge 117 (231 228)
+  Vertex 235: 3 2 2
+  Edge 118 (231 235)
+  Vertex 247: 3 1 3
+  Edge 119 (231 247)
+Vertex 232: 0 2 2
+  Vertex 233: 1 2 2
+  Edge 120 (232 233)
+  Vertex 236: 0 3 2
+  Edge 121 (232 236)
+  Vertex 248: 0 2 3
+  Edge 122 (232 248)
+Vertex 233: 1 2 2
+  Vertex 234: 2 2 2
+  Edge 123 (233 234)
+  Vertex 237: 1 3 2
+  Edge 124 (233 237)
+  Vertex 249: 1 2 3
+  Edge 125 (233 249)
+Vertex 234: 2 2 2
+  Vertex 235: 3 2 2
+  Edge 126 (234 235)
+  Vertex 238: 2 3 2
+  Edge 127 (234 238)
+  Vertex 250: 2 2 3
+  Edge 128 (234 250)
+Vertex 235: 3 2 2
+  Vertex 232: 0 2 2
+  Edge 129 (235 232)
+  Vertex 239: 3 3 2
+  Edge 130 (235 239)
+  Vertex 251: 3 2 3
+  Edge 131 (235 251)
+Vertex 236: 0 3 2
+  Vertex 237: 1 3 2
+  Edge 132 (236 237)
+  Vertex 224: 0 0 2
+  Edge 133 (236 224)
+  Vertex 252: 0 3 3
+  Edge 134 (236 252)
+Vertex 237: 1 3 2
+  Vertex 238: 2 3 2
+  Edge 135 (237 238)
+  Vertex 225: 1 0 2
+  Edge 136 (237 225)
+  Vertex 253: 1 3 3
+  Edge 137 (237 253)
+Vertex 238: 2 3 2
+  Vertex 239: 3 3 2
+  Edge 138 (238 239)
+  Vertex 226: 2 0 2
+  Edge 139 (238 226)
+  Vertex 254: 2 3 3
+  Edge 140 (238 254)
+Vertex 239: 3 3 2
+  Vertex 236: 0 3 2
+  Edge 141 (239 236)
+  Vertex 227: 3 0 2
+  Edge 142 (239 227)
+  Vertex 255: 3 3 3
+  Edge 143 (239 255)
+Vertex 240: 0 0 3
+  Vertex 241: 1 0 3
+  Edge 144 (240 241)
+  Vertex 244: 0 1 3
+  Edge 145 (240 244)
+  Vertex 192: 0 0 0
+  Edge 146 (240 192)
+Vertex 241: 1 0 3
+  Vertex 242: 2 0 3
+  Edge 147 (241 242)
+  Vertex 245: 1 1 3
+  Edge 148 (241 245)
+  Vertex 193: 1 0 0
+  Edge 149 (241 193)
+Vertex 242: 2 0 3
+  Vertex 243: 3 0 3
+  Edge 150 (242 243)
+  Vertex 246: 2 1 3
+  Edge 151 (242 246)
+  Vertex 194: 2 0 0
+  Edge 152 (242 194)
+Vertex 243: 3 0 3
+  Vertex 240: 0 0 3
+  Edge 153 (243 240)
+  Vertex 247: 3 1 3
+  Edge 154 (243 247)
+  Vertex 195: 3 0 0
+  Edge 155 (243 195)
+Vertex 244: 0 1 3
+  Vertex 245: 1 1 3
+  Edge 156 (244 245)
+  Vertex 248: 0 2 3
+  Edge 157 (244 248)
+  Vertex 196: 0 1 0
+  Edge 158 (244 196)
+Vertex 245: 1 1 3
+  Vertex 246: 2 1 3
+  Edge 159 (245 246)
+  Vertex 249: 1 2 3
+  Edge 160 (245 249)
+  Vertex 197: 1 1 0
+  Edge 161 (245 197)
+Vertex 246: 2 1 3
+  Vertex 247: 3 1 3
+  Edge 162 (246 247)
+  Vertex 250: 2 2 3
+  Edge 163 (246 250)
+  Vertex 198: 2 1 0
+  Edge 164 (246 198)
+Vertex 247: 3 1 3
+  Vertex 244: 0 1 3
+  Edge 165 (247 244)
+  Vertex 251: 3 2 3
+  Edge 166 (247 251)
+  Vertex 199: 3 1 0
+  Edge 167 (247 199)
+Vertex 248: 0 2 3
+  Vertex 249: 1 2 3
+  Edge 168 (248 249)
+  Vertex 252: 0 3 3
+  Edge 169 (248 252)
+  Vertex 200: 0 2 0
+  Edge 170 (248 200)
+Vertex 249: 1 2 3
+  Vertex 250: 2 2 3
+  Edge 171 (249 250)
+  Vertex 253: 1 3 3
+  Edge 172 (249 253)
+  Vertex 201: 1 2 0
+  Edge 173 (249 201)
+Vertex 250: 2 2 3
+  Vertex 251: 3 2 3
+  Edge 174 (250 251)
+  Vertex 254: 2 3 3
+  Edge 175 (250 254)
+  Vertex 202: 2 2 0
+  Edge 176 (250 202)
+Vertex 251: 3 2 3
+  Vertex 248: 0 2 3
+  Edge 177 (251 248)
+  Vertex 255: 3 3 3
+  Edge 178 (251 255)
+  Vertex 203: 3 2 0
+  Edge 179 (251 203)
+Vertex 252: 0 3 3
+  Vertex 253: 1 3 3
+  Edge 180 (252 253)
+  Vertex 240: 0 0 3
+  Edge 181 (252 240)
+  Vertex 204: 0 3 0
+  Edge 182 (252 204)
+Vertex 253: 1 3 3
+  Vertex 254: 2 3 3
+  Edge 183 (253 254)
+  Vertex 241: 1 0 3
+  Edge 184 (253 241)
+  Vertex 205: 1 3 0
+  Edge 185 (253 205)
+Vertex 254: 2 3 3
+  Vertex 255: 3 3 3
+  Edge 186 (254 255)
+  Vertex 242: 2 0 3
+  Edge 187 (254 242)
+  Vertex 206: 2 3 0
+  Edge 188 (254 206)
+Vertex 255: 3 3 3
+  Vertex 252: 0 3 3
+  Edge 189 (255 252)
+  Vertex 243: 3 0 3
+  Edge 190 (255 243)
+  Vertex 207: 3 3 0
+  Edge 191 (255 207)
+Topology for rank 7:
+Vertex 192: 0 0 0
+  Vertex 193: 1 0 0
+  Edge 0 (192 193)
+  Vertex 196: 0 1 0
+  Edge 1 (192 196)
+  Vertex 208: 0 0 1
+  Edge 2 (192 208)
+Vertex 193: 1 0 0
+  Vertex 194: 2 0 0
+  Edge 3 (193 194)
+  Vertex 197: 1 1 0
+  Edge 4 (193 197)
+  Vertex 209: 1 0 1
+  Edge 5 (193 209)
+Vertex 194: 2 0 0
+  Vertex 195: 3 0 0
+  Edge 6 (194 195)
+  Vertex 198: 2 1 0
+  Edge 7 (194 198)
+  Vertex 210: 2 0 1
+  Edge 8 (194 210)
+Vertex 195: 3 0 0
+  Vertex 192: 0 0 0
+  Edge 9 (195 192)
+  Vertex 199: 3 1 0
+  Edge 10 (195 199)
+  Vertex 211: 3 0 1
+  Edge 11 (195 211)
+Vertex 196: 0 1 0
+  Vertex 197: 1 1 0
+  Edge 12 (196 197)
+  Vertex 200: 0 2 0
+  Edge 13 (196 200)
+  Vertex 212: 0 1 1
+  Edge 14 (196 212)
+Vertex 197: 1 1 0
+  Vertex 198: 2 1 0
+  Edge 15 (197 198)
+  Vertex 201: 1 2 0
+  Edge 16 (197 201)
+  Vertex 213: 1 1 1
+  Edge 17 (197 213)
+Vertex 198: 2 1 0
+  Vertex 199: 3 1 0
+  Edge 18 (198 199)
+  Vertex 202: 2 2 0
+  Edge 19 (198 202)
+  Vertex 214: 2 1 1
+  Edge 20 (198 214)
+Vertex 199: 3 1 0
+  Vertex 196: 0 1 0
+  Edge 21 (199 196)
+  Vertex 203: 3 2 0
+  Edge 22 (199 203)
+  Vertex 215: 3 1 1
+  Edge 23 (199 215)
+Vertex 200: 0 2 0
+  Vertex 201: 1 2 0
+  Edge 24 (200 201)
+  Vertex 204: 0 3 0
+  Edge 25 (200 204)
+  Vertex 216: 0 2 1
+  Edge 26 (200 216)
+Vertex 201: 1 2 0
+  Vertex 202: 2 2 0
+  Edge 27 (201 202)
+  Vertex 205: 1 3 0
+  Edge 28 (201 205)
+  Vertex 217: 1 2 1
+  Edge 29 (201 217)
+Vertex 202: 2 2 0
+  Vertex 203: 3 2 0
+  Edge 30 (202 203)
+  Vertex 206: 2 3 0
+  Edge 31 (202 206)
+  Vertex 218: 2 2 1
+  Edge 32 (202 218)
+Vertex 203: 3 2 0
+  Vertex 200: 0 2 0
+  Edge 33 (203 200)
+  Vertex 207: 3 3 0
+  Edge 34 (203 207)
+  Vertex 219: 3 2 1
+  Edge 35 (203 219)
+Vertex 204: 0 3 0
+  Vertex 205: 1 3 0
+  Edge 36 (204 205)
+  Vertex 192: 0 0 0
+  Edge 37 (204 192)
+  Vertex 220: 0 3 1
+  Edge 38 (204 220)
+Vertex 205: 1 3 0
+  Vertex 206: 2 3 0
+  Edge 39 (205 206)
+  Vertex 193: 1 0 0
+  Edge 40 (205 193)
+  Vertex 221: 1 3 1
+  Edge 41 (205 221)
+Vertex 206: 2 3 0
+  Vertex 207: 3 3 0
+  Edge 42 (206 207)
+  Vertex 194: 2 0 0
+  Edge 43 (206 194)
+  Vertex 222: 2 3 1
+  Edge 44 (206 222)
+Vertex 207: 3 3 0
+  Vertex 204: 0 3 0
+  Edge 45 (207 204)
+  Vertex 195: 3 0 0
+  Edge 46 (207 195)
+  Vertex 223: 3 3 1
+  Edge 47 (207 223)
+Vertex 208: 0 0 1
+  Vertex 209: 1 0 1
+  Edge 48 (208 209)
+  Vertex 212: 0 1 1
+  Edge 49 (208 212)
+  Vertex 224: 0 0 2
+  Edge 50 (208 224)
+Vertex 209: 1 0 1
+  Vertex 210: 2 0 1
+  Edge 51 (209 210)
+  Vertex 213: 1 1 1
+  Edge 52 (209 213)
+  Vertex 225: 1 0 2
+  Edge 53 (209 225)
+Vertex 210: 2 0 1
+  Vertex 211: 3 0 1
+  Edge 54 (210 211)
+  Vertex 214: 2 1 1
+  Edge 55 (210 214)
+  Vertex 226: 2 0 2
+  Edge 56 (210 226)
+Vertex 211: 3 0 1
+  Vertex 208: 0 0 1
+  Edge 57 (211 208)
+  Vertex 215: 3 1 1
+  Edge 58 (211 215)
+  Vertex 227: 3 0 2
+  Edge 59 (211 227)
+Vertex 212: 0 1 1
+  Vertex 213: 1 1 1
+  Edge 60 (212 213)
+  Vertex 216: 0 2 1
+  Edge 61 (212 216)
+  Vertex 228: 0 1 2
+  Edge 62 (212 228)
+Vertex 213: 1 1 1
+  Vertex 214: 2 1 1
+  Edge 63 (213 214)
+  Vertex 217: 1 2 1
+  Edge 64 (213 217)
+  Vertex 229: 1 1 2
+  Edge 65 (213 229)
+Vertex 214: 2 1 1
+  Vertex 215: 3 1 1
+  Edge 66 (214 215)
+  Vertex 218: 2 2 1
+  Edge 67 (214 218)
+  Vertex 230: 2 1 2
+  Edge 68 (214 230)
+Vertex 215: 3 1 1
+  Vertex 212: 0 1 1
+  Edge 69 (215 212)
+  Vertex 219: 3 2 1
+  Edge 70 (215 219)
+  Vertex 231: 3 1 2
+  Edge 71 (215 231)
+Vertex 216: 0 2 1
+  Vertex 217: 1 2 1
+  Edge 72 (216 217)
+  Vertex 220: 0 3 1
+  Edge 73 (216 220)
+  Vertex 232: 0 2 2
+  Edge 74 (216 232)
+Vertex 217: 1 2 1
+  Vertex 218: 2 2 1
+  Edge 75 (217 218)
+  Vertex 221: 1 3 1
+  Edge 76 (217 221)
+  Vertex 233: 1 2 2
+  Edge 77 (217 233)
+Vertex 218: 2 2 1
+  Vertex 219: 3 2 1
+  Edge 78 (218 219)
+  Vertex 222: 2 3 1
+  Edge 79 (218 222)
+  Vertex 234: 2 2 2
+  Edge 80 (218 234)
+Vertex 219: 3 2 1
+  Vertex 216: 0 2 1
+  Edge 81 (219 216)
+  Vertex 223: 3 3 1
+  Edge 82 (219 223)
+  Vertex 235: 3 2 2
+  Edge 83 (219 235)
+Vertex 220: 0 3 1
+  Vertex 221: 1 3 1
+  Edge 84 (220 221)
+  Vertex 208: 0 0 1
+  Edge 85 (220 208)
+  Vertex 236: 0 3 2
+  Edge 86 (220 236)
+Vertex 221: 1 3 1
+  Vertex 222: 2 3 1
+  Edge 87 (221 222)
+  Vertex 209: 1 0 1
+  Edge 88 (221 209)
+  Vertex 237: 1 3 2
+  Edge 89 (221 237)
+Vertex 222: 2 3 1
+  Vertex 223: 3 3 1
+  Edge 90 (222 223)
+  Vertex 210: 2 0 1
+  Edge 91 (222 210)
+  Vertex 238: 2 3 2
+  Edge 92 (222 238)
+Vertex 223: 3 3 1
+  Vertex 220: 0 3 1
+  Edge 93 (223 220)
+  Vertex 211: 3 0 1
+  Edge 94 (223 211)
+  Vertex 239: 3 3 2
+  Edge 95 (223 239)
+Vertex 224: 0 0 2
+  Vertex 225: 1 0 2
+  Edge 96 (224 225)
+  Vertex 228: 0 1 2
+  Edge 97 (224 228)
+  Vertex 240: 0 0 3
+  Edge 98 (224 240)
+Vertex 225: 1 0 2
+  Vertex 226: 2 0 2
+  Edge 99 (225 226)
+  Vertex 229: 1 1 2
+  Edge 100 (225 229)
+  Vertex 241: 1 0 3
+  Edge 101 (225 241)
+Vertex 226: 2 0 2
+  Vertex 227: 3 0 2
+  Edge 102 (226 227)
+  Vertex 230: 2 1 2
+  Edge 103 (226 230)
+  Vertex 242: 2 0 3
+  Edge 104 (226 242)
+Vertex 227: 3 0 2
+  Vertex 224: 0 0 2
+  Edge 105 (227 224)
+  Vertex 231: 3 1 2
+  Edge 106 (227 231)
+  Vertex 243: 3 0 3
+  Edge 107 (227 243)
+Vertex 228: 0 1 2
+  Vertex 229: 1 1 2
+  Edge 108 (228 229)
+  Vertex 232: 0 2 2
+  Edge 109 (228 232)
+  Vertex 244: 0 1 3
+  Edge 110 (228 244)
+Vertex 229: 1 1 2
+  Vertex 230: 2 1 2
+  Edge 111 (229 230)
+  Vertex 233: 1 2 2
+  Edge 112 (229 233)
+  Vertex 245: 1 1 3
+  Edge 113 (229 245)
+Vertex 230: 2 1 2
+  Vertex 231: 3 1 2
+  Edge 114 (230 231)
+  Vertex 234: 2 2 2
+  Edge 115 (230 234)
+  Vertex 246: 2 1 3
+  Edge 116 (230 246)
+Vertex 231: 3 1 2
+  Vertex 228: 0 1 2
+  Edge 117 (231 228)
+  Vertex 235: 3 2 2
+  Edge 118 (231 235)
+  Vertex 247: 3 1 3
+  Edge 119 (231 247)
+Vertex 232: 0 2 2
+  Vertex 233: 1 2 2
+  Edge 120 (232 233)
+  Vertex 236: 0 3 2
+  Edge 121 (232 236)
+  Vertex 248: 0 2 3
+  Edge 122 (232 248)
+Vertex 233: 1 2 2
+  Vertex 234: 2 2 2
+  Edge 123 (233 234)
+  Vertex 237: 1 3 2
+  Edge 124 (233 237)
+  Vertex 249: 1 2 3
+  Edge 125 (233 249)
+Vertex 234: 2 2 2
+  Vertex 235: 3 2 2
+  Edge 126 (234 235)
+  Vertex 238: 2 3 2
+  Edge 127 (234 238)
+  Vertex 250: 2 2 3
+  Edge 128 (234 250)
+Vertex 235: 3 2 2
+  Vertex 232: 0 2 2
+  Edge 129 (235 232)
+  Vertex 239: 3 3 2
+  Edge 130 (235 239)
+  Vertex 251: 3 2 3
+  Edge 131 (235 251)
+Vertex 236: 0 3 2
+  Vertex 237: 1 3 2
+  Edge 132 (236 237)
+  Vertex 224: 0 0 2
+  Edge 133 (236 224)
+  Vertex 252: 0 3 3
+  Edge 134 (236 252)
+Vertex 237: 1 3 2
+  Vertex 238: 2 3 2
+  Edge 135 (237 238)
+  Vertex 225: 1 0 2
+  Edge 136 (237 225)
+  Vertex 253: 1 3 3
+  Edge 137 (237 253)
+Vertex 238: 2 3 2
+  Vertex 239: 3 3 2
+  Edge 138 (238 239)
+  Vertex 226: 2 0 2
+  Edge 139 (238 226)
+  Vertex 254: 2 3 3
+  Edge 140 (238 254)
+Vertex 239: 3 3 2
+  Vertex 236: 0 3 2
+  Edge 141 (239 236)
+  Vertex 227: 3 0 2
+  Edge 142 (239 227)
+  Vertex 255: 3 3 3
+  Edge 143 (239 255)
+Vertex 240: 0 0 3
+  Vertex 241: 1 0 3
+  Edge 144 (240 241)
+  Vertex 244: 0 1 3
+  Edge 145 (240 244)
+  Vertex 192: 0 0 0
+  Edge 146 (240 192)
+Vertex 241: 1 0 3
+  Vertex 242: 2 0 3
+  Edge 147 (241 242)
+  Vertex 245: 1 1 3
+  Edge 148 (241 245)
+  Vertex 193: 1 0 0
+  Edge 149 (241 193)
+Vertex 242: 2 0 3
+  Vertex 243: 3 0 3
+  Edge 150 (242 243)
+  Vertex 246: 2 1 3
+  Edge 151 (242 246)
+  Vertex 194: 2 0 0
+  Edge 152 (242 194)
+Vertex 243: 3 0 3
+  Vertex 240: 0 0 3
+  Edge 153 (243 240)
+  Vertex 247: 3 1 3
+  Edge 154 (243 247)
+  Vertex 195: 3 0 0
+  Edge 155 (243 195)
+Vertex 244: 0 1 3
+  Vertex 245: 1 1 3
+  Edge 156 (244 245)
+  Vertex 248: 0 2 3
+  Edge 157 (244 248)
+  Vertex 196: 0 1 0
+  Edge 158 (244 196)
+Vertex 245: 1 1 3
+  Vertex 246: 2 1 3
+  Edge 159 (245 246)
+  Vertex 249: 1 2 3
+  Edge 160 (245 249)
+  Vertex 197: 1 1 0
+  Edge 161 (245 197)
+Vertex 246: 2 1 3
+  Vertex 247: 3 1 3
+  Edge 162 (246 247)
+  Vertex 250: 2 2 3
+  Edge 163 (246 250)
+  Vertex 198: 2 1 0
+  Edge 164 (246 198)
+Vertex 247: 3 1 3
+  Vertex 244: 0 1 3
+  Edge 165 (247 244)
+  Vertex 251: 3 2 3
+  Edge 166 (247 251)
+  Vertex 199: 3 1 0
+  Edge 167 (247 199)
+Vertex 248: 0 2 3
+  Vertex 249: 1 2 3
+  Edge 168 (248 249)
+  Vertex 252: 0 3 3
+  Edge 169 (248 252)
+  Vertex 200: 0 2 0
+  Edge 170 (248 200)
+Vertex 249: 1 2 3
+  Vertex 250: 2 2 3
+  Edge 171 (249 250)
+  Vertex 253: 1 3 3
+  Edge 172 (249 253)
+  Vertex 201: 1 2 0
+  Edge 173 (249 201)
+Vertex 250: 2 2 3
+  Vertex 251: 3 2 3
+  Edge 174 (250 251)
+  Vertex 254: 2 3 3
+  Edge 175 (250 254)
+  Vertex 202: 2 2 0
+  Edge 176 (250 202)
+Vertex 251: 3 2 3
+  Vertex 248: 0 2 3
+  Edge 177 (251 248)
+  Vertex 255: 3 3 3
+  Edge 178 (251 255)
+  Vertex 203: 3 2 0
+  Edge 179 (251 203)
+Vertex 252: 0 3 3
+  Vertex 253: 1 3 3
+  Edge 180 (252 253)
+  Vertex 240: 0 0 3
+  Edge 181 (252 240)
+  Vertex 204: 0 3 0
+  Edge 182 (252 204)
+Vertex 253: 1 3 3
+  Vertex 254: 2 3 3
+  Edge 183 (253 254)
+  Vertex 241: 1 0 3
+  Edge 184 (253 241)
+  Vertex 205: 1 3 0
+  Edge 185 (253 205)
+Vertex 254: 2 3 3
+  Vertex 255: 3 3 3
+  Edge 186 (254 255)
+  Vertex 242: 2 0 3
+  Edge 187 (254 242)
+  Vertex 206: 2 3 0
+  Edge 188 (254 206)
+Vertex 255: 3 3 3
+  Vertex 252: 0 3 3
+  Edge 189 (255 252)
+  Vertex 243: 3 0 3
+  Edge 190 (255 243)
+  Vertex 207: 3 3 0
+  Edge 191 (255 207)
+Geometry for rank 0:
+Shared Vertex 192 (7, 42)
+Vertex 0: -1 -1 -1 -0.25 -0.25 -0.25
+Shared Vertex 193 (6, 41)
+Vertex 1: 0 -1 -1 0. -0.25 -0.25
+Shared Vertex 194 (6, 42)
+Vertex 2: 1 -1 -1 0.25 -0.25 -0.25
+Shared Vertex 195 (7, 41)
+Vertex 3: 2 -1 -1 0.5 -0.25 -0.25
+Shared Vertex 196 (5, 38)
+Vertex 4: -1 0 -1 -0.25 0. -0.25
+Shared Vertex 197 (4, 37)
+Vertex 5: 0 0 -1 0. 0. -0.25
+Shared Vertex 198 (4, 38)
+Vertex 6: 1 0 -1 0.25 0. -0.25
+Shared Vertex 199 (5, 37)
+Vertex 7: 2 0 -1 0.5 0. -0.25
+Shared Vertex 200 (5, 42)
+Vertex 8: -1 1 -1 -0.25 0.25 -0.25
+Shared Vertex 201 (4, 41)
+Vertex 9: 0 1 -1 0. 0.25 -0.25
+Shared Vertex 202 (4, 42)
+Vertex 10: 1 1 -1 0.25 0.25 -0.25
+Shared Vertex 203 (5, 41)
+Vertex 11: 2 1 -1 0.5 0.25 -0.25
+Shared Vertex 204 (7, 38)
+Vertex 12: -1 2 -1 -0.25 0.5 -0.25
+Shared Vertex 205 (6, 37)
+Vertex 13: 0 2 -1 0. 0.5 -0.25
+Shared Vertex 206 (6, 38)
+Vertex 14: 1 2 -1 0.25 0.5 -0.25
+Shared Vertex 207 (7, 37)
+Vertex 15: 2 2 -1 0.5 0.5 -0.25
+Shared Vertex 208 (3, 26)
+Vertex 16: -1 -1 0 -0.25 -0.25 0.
+Shared Vertex 209 (2, 25)
+Vertex 17: 0 -1 0 0. -0.25 0.
+Shared Vertex 210 (2, 26)
+Vertex 18: 1 -1 0 0.25 -0.25 0.
+Shared Vertex 211 (3, 25)
+Vertex 19: 2 -1 0 0.5 -0.25 0.
+Shared Vertex 212 (1, 22)
+Vertex 20: -1 0 0 -0.25 0. 0.
+Vertex 21: 0 0 0 0. 0. 0.
+Vertex 22: 1 0 0 0.25 0. 0.
+Shared Vertex 215 (1, 21)
+Vertex 23: 2 0 0 0.5 0. 0.
+Shared Vertex 216 (1, 26)
+Vertex 24: -1 1 0 -0.25 0.25 0.
+Vertex 25: 0 1 0 0. 0.25 0.
+Vertex 26: 1 1 0 0.25 0.25 0.
+Shared Vertex 219 (1, 25)
+Vertex 27: 2 1 0 0.5 0.25 0.
+Shared Vertex 220 (3, 22)
+Vertex 28: -1 2 0 -0.25 0.5 0.
+Shared Vertex 221 (2, 21)
+Vertex 29: 0 2 0 0. 0.5 0.
+Shared Vertex 222 (2, 22)
+Vertex 30: 1 2 0 0.25 0.5 0.
+Shared Vertex 223 (3, 21)
+Vertex 31: 2 2 0 0.5 0.5 0.
+Shared Vertex 224 (3, 42)
+Vertex 32: -1 -1 1 -0.25 -0.25 0.25
+Shared Vertex 225 (2, 41)
+Vertex 33: 0 -1 1 0. -0.25 0.25
+Shared Vertex 226 (2, 42)
+Vertex 34: 1 -1 1 0.25 -0.25 0.25
+Shared Vertex 227 (3, 41)
+Vertex 35: 2 -1 1 0.5 -0.25 0.25
+Shared Vertex 228 (1, 38)
+Vertex 36: -1 0 1 -0.25 0. 0.25
+Vertex 37: 0 0 1 0. 0. 0.25
+Vertex 38: 1 0 1 0.25 0. 0.25
+Shared Vertex 231 (1, 37)
+Vertex 39: 2 0 1 0.5 0. 0.25
+Shared Vertex 232 (1, 42)
+Vertex 40: -1 1 1 -0.25 0.25 0.25
+Vertex 41: 0 1 1 0. 0.25 0.25
+Vertex 42: 1 1 1 0.25 0.25 0.25
+Shared Vertex 235 (1, 41)
+Vertex 43: 2 1 1 0.5 0.25 0.25
+Shared Vertex 236 (3, 38)
+Vertex 44: -1 2 1 -0.25 0.5 0.25
+Shared Vertex 237 (2, 37)
+Vertex 45: 0 2 1 0. 0.5 0.25
+Shared Vertex 238 (2, 38)
+Vertex 46: 1 2 1 0.25 0.5 0.25
+Shared Vertex 239 (3, 37)
+Vertex 47: 2 2 1 0.5 0.5 0.25
+Shared Vertex 240 (7, 26)
+Vertex 48: -1 -1 2 -0.25 -0.25 0.5
+Shared Vertex 241 (6, 25)
+Vertex 49: 0 -1 2 0. -0.25 0.5
+Shared Vertex 242 (6, 26)
+Vertex 50: 1 -1 2 0.25 -0.25 0.5
+Shared Vertex 243 (7, 25)
+Vertex 51: 2 -1 2 0.5 -0.25 0.5
+Shared Vertex 244 (5, 22)
+Vertex 52: -1 0 2 -0.25 0. 0.5
+Shared Vertex 245 (4, 21)
+Vertex 53: 0 0 2 0. 0. 0.5
+Shared Vertex 246 (4, 22)
+Vertex 54: 1 0 2 0.25 0. 0.5
+Shared Vertex 247 (5, 21)
+Vertex 55: 2 0 2 0.5 0. 0.5
+Shared Vertex 248 (5, 26)
+Vertex 56: -1 1 2 -0.25 0.25 0.5
+Shared Vertex 249 (4, 25)
+Vertex 57: 0 1 2 0. 0.25 0.5
+Shared Vertex 250 (4, 26)
+Vertex 58: 1 1 2 0.25 0.25 0.5
+Shared Vertex 251 (5, 25)
+Vertex 59: 2 1 2 0.5 0.25 0.5
+Shared Vertex 252 (7, 22)
+Vertex 60: -1 2 2 -0.25 0.5 0.5
+Shared Vertex 253 (6, 21)
+Vertex 61: 0 2 2 0. 0.5 0.5
+Shared Vertex 254 (6, 22)
+Vertex 62: 1 2 2 0.25 0.5 0.5
+Shared Vertex 255 (7, 21)
+Vertex 63: 2 2 2 0.5 0.5 0.5
+Geometry for rank 1:
+Shared Vertex 192 (6, 42)
+Vertex 0: 1 -1 -1 0.25 -0.25 -0.25
+Shared Vertex 193 (7, 41)
+Vertex 1: 2 -1 -1 0.5 -0.25 -0.25
+Shared Vertex 194 (7, 42)
+Vertex 2: 3 -1 -1 0.75 -0.25 -0.25
+Shared Vertex 195 (6, 41)
+Vertex 3: 4 -1 -1 1. -0.25 -0.25
+Shared Vertex 196 (4, 38)
+Vertex 4: 1 0 -1 0.25 0. -0.25
+Shared Vertex 197 (5, 37)
+Vertex 5: 2 0 -1 0.5 0. -0.25
+Shared Vertex 198 (5, 38)
+Vertex 6: 3 0 -1 0.75 0. -0.25
+Shared Vertex 199 (4, 37)
+Vertex 7: 4 0 -1 1. 0. -0.25
+Shared Vertex 200 (4, 42)
+Vertex 8: 1 1 -1 0.25 0.25 -0.25
+Shared Vertex 201 (5, 41)
+Vertex 9: 2 1 -1 0.5 0.25 -0.25
+Shared Vertex 202 (5, 42)
+Vertex 10: 3 1 -1 0.75 0.25 -0.25
+Shared Vertex 203 (4, 41)
+Vertex 11: 4 1 -1 1. 0.25 -0.25
+Shared Vertex 204 (6, 38)
+Vertex 12: 1 2 -1 0.25 0.5 -0.25
+Shared Vertex 205 (7, 37)
+Vertex 13: 2 2 -1 0.5 0.5 -0.25
+Shared Vertex 206 (7, 38)
+Vertex 14: 3 2 -1 0.75 0.5 -0.25
+Shared Vertex 207 (6, 37)
+Vertex 15: 4 2 -1 1. 0.5 -0.25
+Shared Vertex 208 (2, 26)
+Vertex 16: 1 -1 0 0.25 -0.25 0.
+Shared Vertex 209 (3, 25)
+Vertex 17: 2 -1 0 0.5 -0.25 0.
+Shared Vertex 210 (3, 26)
+Vertex 18: 3 -1 0 0.75 -0.25 0.
+Shared Vertex 211 (2, 25)
+Vertex 19: 4 -1 0 1. -0.25 0.
+Shared Vertex 212 (0, 22)
+Vertex 20: 1 0 0 0.25 0. 0.
+Vertex 21: 2 0 0 0.5 0. 0.
+Vertex 22: 3 0 0 0.75 0. 0.
+Shared Vertex 215 (0, 21)
+Vertex 23: 4 0 0 1. 0. 0.
+Shared Vertex 216 (0, 26)
+Vertex 24: 1 1 0 0.25 0.25 0.
+Vertex 25: 2 1 0 0.5 0.25 0.
+Vertex 26: 3 1 0 0.75 0.25 0.
+Shared Vertex 219 (0, 25)
+Vertex 27: 4 1 0 1. 0.25 0.
+Shared Vertex 220 (2, 22)
+Vertex 28: 1 2 0 0.25 0.5 0.
+Shared Vertex 221 (3, 21)
+Vertex 29: 2 2 0 0.5 0.5 0.
+Shared Vertex 222 (3, 22)
+Vertex 30: 3 2 0 0.75 0.5 0.
+Shared Vertex 223 (2, 21)
+Vertex 31: 4 2 0 1. 0.5 0.
+Shared Vertex 224 (2, 42)
+Vertex 32: 1 -1 1 0.25 -0.25 0.25
+Shared Vertex 225 (3, 41)
+Vertex 33: 2 -1 1 0.5 -0.25 0.25
+Shared Vertex 226 (3, 42)
+Vertex 34: 3 -1 1 0.75 -0.25 0.25
+Shared Vertex 227 (2, 41)
+Vertex 35: 4 -1 1 1. -0.25 0.25
+Shared Vertex 228 (0, 38)
+Vertex 36: 1 0 1 0.25 0. 0.25
+Vertex 37: 2 0 1 0.5 0. 0.25
+Vertex 38: 3 0 1 0.75 0. 0.25
+Shared Vertex 231 (0, 37)
+Vertex 39: 4 0 1 1. 0. 0.25
+Shared Vertex 232 (0, 42)
+Vertex 40: 1 1 1 0.25 0.25 0.25
+Vertex 41: 2 1 1 0.5 0.25 0.25
+Vertex 42: 3 1 1 0.75 0.25 0.25
+Shared Vertex 235 (0, 41)
+Vertex 43: 4 1 1 1. 0.25 0.25
+Shared Vertex 236 (2, 38)
+Vertex 44: 1 2 1 0.25 0.5 0.25
+Shared Vertex 237 (3, 37)
+Vertex 45: 2 2 1 0.5 0.5 0.25
+Shared Vertex 238 (3, 38)
+Vertex 46: 3 2 1 0.75 0.5 0.25
+Shared Vertex 239 (2, 37)
+Vertex 47: 4 2 1 1. 0.5 0.25
+Shared Vertex 240 (6, 26)
+Vertex 48: 1 -1 2 0.25 -0.25 0.5
+Shared Vertex 241 (7, 25)
+Vertex 49: 2 -1 2 0.5 -0.25 0.5
+Shared Vertex 242 (7, 26)
+Vertex 50: 3 -1 2 0.75 -0.25 0.5
+Shared Vertex 243 (6, 25)
+Vertex 51: 4 -1 2 1. -0.25 0.5
+Shared Vertex 244 (4, 22)
+Vertex 52: 1 0 2 0.25 0. 0.5
+Shared Vertex 245 (5, 21)
+Vertex 53: 2 0 2 0.5 0. 0.5
+Shared Vertex 246 (5, 22)
+Vertex 54: 3 0 2 0.75 0. 0.5
+Shared Vertex 247 (4, 21)
+Vertex 55: 4 0 2 1. 0. 0.5
+Shared Vertex 248 (4, 26)
+Vertex 56: 1 1 2 0.25 0.25 0.5
+Shared Vertex 249 (5, 25)
+Vertex 57: 2 1 2 0.5 0.25 0.5
+Shared Vertex 250 (5, 26)
+Vertex 58: 3 1 2 0.75 0.25 0.5
+Shared Vertex 251 (4, 25)
+Vertex 59: 4 1 2 1. 0.25 0.5
+Shared Vertex 252 (6, 22)
+Vertex 60: 1 2 2 0.25 0.5 0.5
+Shared Vertex 253 (7, 21)
+Vertex 61: 2 2 2 0.5 0.5 0.5
+Shared Vertex 254 (7, 22)
+Vertex 62: 3 2 2 0.75 0.5 0.5
+Shared Vertex 255 (6, 21)
+Vertex 63: 4 2 2 1. 0.5 0.5
+Geometry for rank 2:
+Shared Vertex 192 (5, 42)
+Vertex 0: -1 1 -1 -0.25 0.25 -0.25
+Shared Vertex 193 (4, 41)
+Vertex 1: 0 1 -1 0. 0.25 -0.25
+Shared Vertex 194 (4, 42)
+Vertex 2: 1 1 -1 0.25 0.25 -0.25
+Shared Vertex 195 (5, 41)
+Vertex 3: 2 1 -1 0.5 0.25 -0.25
+Shared Vertex 196 (7, 38)
+Vertex 4: -1 2 -1 -0.25 0.5 -0.25
+Shared Vertex 197 (6, 37)
+Vertex 5: 0 2 -1 0. 0.5 -0.25
+Shared Vertex 198 (6, 38)
+Vertex 6: 1 2 -1 0.25 0.5 -0.25
+Shared Vertex 199 (7, 37)
+Vertex 7: 2 2 -1 0.5 0.5 -0.25
+Shared Vertex 200 (7, 42)
+Vertex 8: -1 3 -1 -0.25 0.75 -0.25
+Shared Vertex 201 (6, 41)
+Vertex 9: 0 3 -1 0. 0.75 -0.25
+Shared Vertex 202 (6, 42)
+Vertex 10: 1 3 -1 0.25 0.75 -0.25
+Shared Vertex 203 (7, 41)
+Vertex 11: 2 3 -1 0.5 0.75 -0.25
+Shared Vertex 204 (5, 38)
+Vertex 12: -1 4 -1 -0.25 1. -0.25
+Shared Vertex 205 (4, 37)
+Vertex 13: 0 4 -1 0. 1. -0.25
+Shared Vertex 206 (4, 38)
+Vertex 14: 1 4 -1 0.25 1. -0.25
+Shared Vertex 207 (5, 37)
+Vertex 15: 2 4 -1 0.5 1. -0.25
+Shared Vertex 208 (1, 26)
+Vertex 16: -1 1 0 -0.25 0.25 0.
+Shared Vertex 209 (0, 25)
+Vertex 17: 0 1 0 0. 0.25 0.
+Shared Vertex 210 (0, 26)
+Vertex 18: 1 1 0 0.25 0.25 0.
+Shared Vertex 211 (1, 25)
+Vertex 19: 2 1 0 0.5 0.25 0.
+Shared Vertex 212 (3, 22)
+Vertex 20: -1 2 0 -0.25 0.5 0.
+Vertex 21: 0 2 0 0. 0.5 0.
+Vertex 22: 1 2 0 0.25 0.5 0.
+Shared Vertex 215 (3, 21)
+Vertex 23: 2 2 0 0.5 0.5 0.
+Shared Vertex 216 (3, 26)
+Vertex 24: -1 3 0 -0.25 0.75 0.
+Vertex 25: 0 3 0 0. 0.75 0.
+Vertex 26: 1 3 0 0.25 0.75 0.
+Shared Vertex 219 (3, 25)
+Vertex 27: 2 3 0 0.5 0.75 0.
+Shared Vertex 220 (1, 22)
+Vertex 28: -1 4 0 -0.25 1. 0.
+Shared Vertex 221 (0, 21)
+Vertex 29: 0 4 0 0. 1. 0.
+Shared Vertex 222 (0, 22)
+Vertex 30: 1 4 0 0.25 1. 0.
+Shared Vertex 223 (1, 21)
+Vertex 31: 2 4 0 0.5 1. 0.
+Shared Vertex 224 (1, 42)
+Vertex 32: -1 1 1 -0.25 0.25 0.25
+Shared Vertex 225 (0, 41)
+Vertex 33: 0 1 1 0. 0.25 0.25
+Shared Vertex 226 (0, 42)
+Vertex 34: 1 1 1 0.25 0.25 0.25
+Shared Vertex 227 (1, 41)
+Vertex 35: 2 1 1 0.5 0.25 0.25
+Shared Vertex 228 (3, 38)
+Vertex 36: -1 2 1 -0.25 0.5 0.25
+Vertex 37: 0 2 1 0. 0.5 0.25
+Vertex 38: 1 2 1 0.25 0.5 0.25
+Shared Vertex 231 (3, 37)
+Vertex 39: 2 2 1 0.5 0.5 0.25
+Shared Vertex 232 (3, 42)
+Vertex 40: -1 3 1 -0.25 0.75 0.25
+Vertex 41: 0 3 1 0. 0.75 0.25
+Vertex 42: 1 3 1 0.25 0.75 0.25
+Shared Vertex 235 (3, 41)
+Vertex 43: 2 3 1 0.5 0.75 0.25
+Shared Vertex 236 (1, 38)
+Vertex 44: -1 4 1 -0.25 1. 0.25
+Shared Vertex 237 (0, 37)
+Vertex 45: 0 4 1 0. 1. 0.25
+Shared Vertex 238 (0, 38)
+Vertex 46: 1 4 1 0.25 1. 0.25
+Shared Vertex 239 (1, 37)
+Vertex 47: 2 4 1 0.5 1. 0.25
+Shared Vertex 240 (5, 26)
+Vertex 48: -1 1 2 -0.25 0.25 0.5
+Shared Vertex 241 (4, 25)
+Vertex 49: 0 1 2 0. 0.25 0.5
+Shared Vertex 242 (4, 26)
+Vertex 50: 1 1 2 0.25 0.25 0.5
+Shared Vertex 243 (5, 25)
+Vertex 51: 2 1 2 0.5 0.25 0.5
+Shared Vertex 244 (7, 22)
+Vertex 52: -1 2 2 -0.25 0.5 0.5
+Shared Vertex 245 (6, 21)
+Vertex 53: 0 2 2 0. 0.5 0.5
+Shared Vertex 246 (6, 22)
+Vertex 54: 1 2 2 0.25 0.5 0.5
+Shared Vertex 247 (7, 21)
+Vertex 55: 2 2 2 0.5 0.5 0.5
+Shared Vertex 248 (7, 26)
+Vertex 56: -1 3 2 -0.25 0.75 0.5
+Shared Vertex 249 (6, 25)
+Vertex 57: 0 3 2 0. 0.75 0.5
+Shared Vertex 250 (6, 26)
+Vertex 58: 1 3 2 0.25 0.75 0.5
+Shared Vertex 251 (7, 25)
+Vertex 59: 2 3 2 0.5 0.75 0.5
+Shared Vertex 252 (5, 22)
+Vertex 60: -1 4 2 -0.25 1. 0.5
+Shared Vertex 253 (4, 21)
+Vertex 61: 0 4 2 0. 1. 0.5
+Shared Vertex 254 (4, 22)
+Vertex 62: 1 4 2 0.25 1. 0.5
+Shared Vertex 255 (5, 21)
+Vertex 63: 2 4 2 0.5 1. 0.5
+Geometry for rank 3:
+Shared Vertex 192 (4, 42)
+Vertex 0: 1 1 -1 0.25 0.25 -0.25
+Shared Vertex 193 (5, 41)
+Vertex 1: 2 1 -1 0.5 0.25 -0.25
+Shared Vertex 194 (5, 42)
+Vertex 2: 3 1 -1 0.75 0.25 -0.25
+Shared Vertex 195 (4, 41)
+Vertex 3: 4 1 -1 1. 0.25 -0.25
+Shared Vertex 196 (6, 38)
+Vertex 4: 1 2 -1 0.25 0.5 -0.25
+Shared Vertex 197 (7, 37)
+Vertex 5: 2 2 -1 0.5 0.5 -0.25
+Shared Vertex 198 (7, 38)
+Vertex 6: 3 2 -1 0.75 0.5 -0.25
+Shared Vertex 199 (6, 37)
+Vertex 7: 4 2 -1 1. 0.5 -0.25
+Shared Vertex 200 (6, 42)
+Vertex 8: 1 3 -1 0.25 0.75 -0.25
+Shared Vertex 201 (7, 41)
+Vertex 9: 2 3 -1 0.5 0.75 -0.25
+Shared Vertex 202 (7, 42)
+Vertex 10: 3 3 -1 0.75 0.75 -0.25
+Shared Vertex 203 (6, 41)
+Vertex 11: 4 3 -1 1. 0.75 -0.25
+Shared Vertex 204 (4, 38)
+Vertex 12: 1 4 -1 0.25 1. -0.25
+Shared Vertex 205 (5, 37)
+Vertex 13: 2 4 -1 0.5 1. -0.25
+Shared Vertex 206 (5, 38)
+Vertex 14: 3 4 -1 0.75 1. -0.25
+Shared Vertex 207 (4, 37)
+Vertex 15: 4 4 -1 1. 1. -0.25
+Shared Vertex 208 (0, 26)
+Vertex 16: 1 1 0 0.25 0.25 0.
+Shared Vertex 209 (1, 25)
+Vertex 17: 2 1 0 0.5 0.25 0.
+Shared Vertex 210 (1, 26)
+Vertex 18: 3 1 0 0.75 0.25 0.
+Shared Vertex 211 (0, 25)
+Vertex 19: 4 1 0 1. 0.25 0.
+Shared Vertex 212 (2, 22)
+Vertex 20: 1 2 0 0.25 0.5 0.
+Vertex 21: 2 2 0 0.5 0.5 0.
+Vertex 22: 3 2 0 0.75 0.5 0.
+Shared Vertex 215 (2, 21)
+Vertex 23: 4 2 0 1. 0.5 0.
+Shared Vertex 216 (2, 26)
+Vertex 24: 1 3 0 0.25 0.75 0.
+Vertex 25: 2 3 0 0.5 0.75 0.
+Vertex 26: 3 3 0 0.75 0.75 0.
+Shared Vertex 219 (2, 25)
+Vertex 27: 4 3 0 1. 0.75 0.
+Shared Vertex 220 (0, 22)
+Vertex 28: 1 4 0 0.25 1. 0.
+Shared Vertex 221 (1, 21)
+Vertex 29: 2 4 0 0.5 1. 0.
+Shared Vertex 222 (1, 22)
+Vertex 30: 3 4 0 0.75 1. 0.
+Shared Vertex 223 (0, 21)
+Vertex 31: 4 4 0 1. 1. 0.
+Shared Vertex 224 (0, 42)
+Vertex 32: 1 1 1 0.25 0.25 0.25
+Shared Vertex 225 (1, 41)
+Vertex 33: 2 1 1 0.5 0.25 0.25
+Shared Vertex 226 (1, 42)
+Vertex 34: 3 1 1 0.75 0.25 0.25
+Shared Vertex 227 (0, 41)
+Vertex 35: 4 1 1 1. 0.25 0.25
+Shared Vertex 228 (2, 38)
+Vertex 36: 1 2 1 0.25 0.5 0.25
+Vertex 37: 2 2 1 0.5 0.5 0.25
+Vertex 38: 3 2 1 0.75 0.5 0.25
+Shared Vertex 231 (2, 37)
+Vertex 39: 4 2 1 1. 0.5 0.25
+Shared Vertex 232 (2, 42)
+Vertex 40: 1 3 1 0.25 0.75 0.25
+Vertex 41: 2 3 1 0.5 0.75 0.25
+Vertex 42: 3 3 1 0.75 0.75 0.25
+Shared Vertex 235 (2, 41)
+Vertex 43: 4 3 1 1. 0.75 0.25
+Shared Vertex 236 (0, 38)
+Vertex 44: 1 4 1 0.25 1. 0.25
+Shared Vertex 237 (1, 37)
+Vertex 45: 2 4 1 0.5 1. 0.25
+Shared Vertex 238 (1, 38)
+Vertex 46: 3 4 1 0.75 1. 0.25
+Shared Vertex 239 (0, 37)
+Vertex 47: 4 4 1 1. 1. 0.25
+Shared Vertex 240 (4, 26)
+Vertex 48: 1 1 2 0.25 0.25 0.5
+Shared Vertex 241 (5, 25)
+Vertex 49: 2 1 2 0.5 0.25 0.5
+Shared Vertex 242 (5, 26)
+Vertex 50: 3 1 2 0.75 0.25 0.5
+Shared Vertex 243 (4, 25)
+Vertex 51: 4 1 2 1. 0.25 0.5
+Shared Vertex 244 (6, 22)
+Vertex 52: 1 2 2 0.25 0.5 0.5
+Shared Vertex 245 (7, 21)
+Vertex 53: 2 2 2 0.5 0.5 0.5
+Shared Vertex 246 (7, 22)
+Vertex 54: 3 2 2 0.75 0.5 0.5
+Shared Vertex 247 (6, 21)
+Vertex 55: 4 2 2 1. 0.5 0.5
+Shared Vertex 248 (6, 26)
+Vertex 56: 1 3 2 0.25 0.75 0.5
+Shared Vertex 249 (7, 25)
+Vertex 57: 2 3 2 0.5 0.75 0.5
+Shared Vertex 250 (7, 26)
+Vertex 58: 3 3 2 0.75 0.75 0.5
+Shared Vertex 251 (6, 25)
+Vertex 59: 4 3 2 1. 0.75 0.5
+Shared Vertex 252 (4, 22)
+Vertex 60: 1 4 2 0.25 1. 0.5
+Shared Vertex 253 (5, 21)
+Vertex 61: 2 4 2 0.5 1. 0.5
+Shared Vertex 254 (5, 22)
+Vertex 62: 3 4 2 0.75 1. 0.5
+Shared Vertex 255 (4, 21)
+Vertex 63: 4 4 2 1. 1. 0.5
+Geometry for rank 4:
+Shared Vertex 192 (3, 42)
+Vertex 0: -1 -1 1 -0.25 -0.25 0.25
+Shared Vertex 193 (2, 41)
+Vertex 1: 0 -1 1 0. -0.25 0.25
+Shared Vertex 194 (2, 42)
+Vertex 2: 1 -1 1 0.25 -0.25 0.25
+Shared Vertex 195 (3, 41)
+Vertex 3: 2 -1 1 0.5 -0.25 0.25
+Shared Vertex 196 (1, 38)
+Vertex 4: -1 0 1 -0.25 0. 0.25
+Shared Vertex 197 (0, 37)
+Vertex 5: 0 0 1 0. 0. 0.25
+Shared Vertex 198 (0, 38)
+Vertex 6: 1 0 1 0.25 0. 0.25
+Shared Vertex 199 (1, 37)
+Vertex 7: 2 0 1 0.5 0. 0.25
+Shared Vertex 200 (1, 42)
+Vertex 8: -1 1 1 -0.25 0.25 0.25
+Shared Vertex 201 (0, 41)
+Vertex 9: 0 1 1 0. 0.25 0.25
+Shared Vertex 202 (0, 42)
+Vertex 10: 1 1 1 0.25 0.25 0.25
+Shared Vertex 203 (1, 41)
+Vertex 11: 2 1 1 0.5 0.25 0.25
+Shared Vertex 204 (3, 38)
+Vertex 12: -1 2 1 -0.25 0.5 0.25
+Shared Vertex 205 (2, 37)
+Vertex 13: 0 2 1 0. 0.5 0.25
+Shared Vertex 206 (2, 38)
+Vertex 14: 1 2 1 0.25 0.5 0.25
+Shared Vertex 207 (3, 37)
+Vertex 15: 2 2 1 0.5 0.5 0.25
+Shared Vertex 208 (7, 26)
+Vertex 16: -1 -1 2 -0.25 -0.25 0.5
+Shared Vertex 209 (6, 25)
+Vertex 17: 0 -1 2 0. -0.25 0.5
+Shared Vertex 210 (6, 26)
+Vertex 18: 1 -1 2 0.25 -0.25 0.5
+Shared Vertex 211 (7, 25)
+Vertex 19: 2 -1 2 0.5 -0.25 0.5
+Shared Vertex 212 (5, 22)
+Vertex 20: -1 0 2 -0.25 0. 0.5
+Vertex 21: 0 0 2 0. 0. 0.5
+Vertex 22: 1 0 2 0.25 0. 0.5
+Shared Vertex 215 (5, 21)
+Vertex 23: 2 0 2 0.5 0. 0.5
+Shared Vertex 216 (5, 26)
+Vertex 24: -1 1 2 -0.25 0.25 0.5
+Vertex 25: 0 1 2 0. 0.25 0.5
+Vertex 26: 1 1 2 0.25 0.25 0.5
+Shared Vertex 219 (5, 25)
+Vertex 27: 2 1 2 0.5 0.25 0.5
+Shared Vertex 220 (7, 22)
+Vertex 28: -1 2 2 -0.25 0.5 0.5
+Shared Vertex 221 (6, 21)
+Vertex 29: 0 2 2 0. 0.5 0.5
+Shared Vertex 222 (6, 22)
+Vertex 30: 1 2 2 0.25 0.5 0.5
+Shared Vertex 223 (7, 21)
+Vertex 31: 2 2 2 0.5 0.5 0.5
+Shared Vertex 224 (7, 42)
+Vertex 32: -1 -1 3 -0.25 -0.25 0.75
+Shared Vertex 225 (6, 41)
+Vertex 33: 0 -1 3 0. -0.25 0.75
+Shared Vertex 226 (6, 42)
+Vertex 34: 1 -1 3 0.25 -0.25 0.75
+Shared Vertex 227 (7, 41)
+Vertex 35: 2 -1 3 0.5 -0.25 0.75
+Shared Vertex 228 (5, 38)
+Vertex 36: -1 0 3 -0.25 0. 0.75
+Vertex 37: 0 0 3 0. 0. 0.75
+Vertex 38: 1 0 3 0.25 0. 0.75
+Shared Vertex 231 (5, 37)
+Vertex 39: 2 0 3 0.5 0. 0.75
+Shared Vertex 232 (5, 42)
+Vertex 40: -1 1 3 -0.25 0.25 0.75
+Vertex 41: 0 1 3 0. 0.25 0.75
+Vertex 42: 1 1 3 0.25 0.25 0.75
+Shared Vertex 235 (5, 41)
+Vertex 43: 2 1 3 0.5 0.25 0.75
+Shared Vertex 236 (7, 38)
+Vertex 44: -1 2 3 -0.25 0.5 0.75
+Shared Vertex 237 (6, 37)
+Vertex 45: 0 2 3 0. 0.5 0.75
+Shared Vertex 238 (6, 38)
+Vertex 46: 1 2 3 0.25 0.5 0.75
+Shared Vertex 239 (7, 37)
+Vertex 47: 2 2 3 0.5 0.5 0.75
+Shared Vertex 240 (3, 26)
+Vertex 48: -1 -1 4 -0.25 -0.25 1.
+Shared Vertex 241 (2, 25)
+Vertex 49: 0 -1 4 0. -0.25 1.
+Shared Vertex 242 (2, 26)
+Vertex 50: 1 -1 4 0.25 -0.25 1.
+Shared Vertex 243 (3, 25)
+Vertex 51: 2 -1 4 0.5 -0.25 1.
+Shared Vertex 244 (1, 22)
+Vertex 52: -1 0 4 -0.25 0. 1.
+Shared Vertex 245 (0, 21)
+Vertex 53: 0 0 4 0. 0. 1.
+Shared Vertex 246 (0, 22)
+Vertex 54: 1 0 4 0.25 0. 1.
+Shared Vertex 247 (1, 21)
+Vertex 55: 2 0 4 0.5 0. 1.
+Shared Vertex 248 (1, 26)
+Vertex 56: -1 1 4 -0.25 0.25 1.
+Shared Vertex 249 (0, 25)
+Vertex 57: 0 1 4 0. 0.25 1.
+Shared Vertex 250 (0, 26)
+Vertex 58: 1 1 4 0.25 0.25 1.
+Shared Vertex 251 (1, 25)
+Vertex 59: 2 1 4 0.5 0.25 1.
+Shared Vertex 252 (3, 22)
+Vertex 60: -1 2 4 -0.25 0.5 1.
+Shared Vertex 253 (2, 21)
+Vertex 61: 0 2 4 0. 0.5 1.
+Shared Vertex 254 (2, 22)
+Vertex 62: 1 2 4 0.25 0.5 1.
+Shared Vertex 255 (3, 21)
+Vertex 63: 2 2 4 0.5 0.5 1.
+Geometry for rank 5:
+Shared Vertex 192 (2, 42)
+Vertex 0: 1 -1 1 0.25 -0.25 0.25
+Shared Vertex 193 (3, 41)
+Vertex 1: 2 -1 1 0.5 -0.25 0.25
+Shared Vertex 194 (3, 42)
+Vertex 2: 3 -1 1 0.75 -0.25 0.25
+Shared Vertex 195 (2, 41)
+Vertex 3: 4 -1 1 1. -0.25 0.25
+Shared Vertex 196 (0, 38)
+Vertex 4: 1 0 1 0.25 0. 0.25
+Shared Vertex 197 (1, 37)
+Vertex 5: 2 0 1 0.5 0. 0.25
+Shared Vertex 198 (1, 38)
+Vertex 6: 3 0 1 0.75 0. 0.25
+Shared Vertex 199 (0, 37)
+Vertex 7: 4 0 1 1. 0. 0.25
+Shared Vertex 200 (0, 42)
+Vertex 8: 1 1 1 0.25 0.25 0.25
+Shared Vertex 201 (1, 41)
+Vertex 9: 2 1 1 0.5 0.25 0.25
+Shared Vertex 202 (1, 42)
+Vertex 10: 3 1 1 0.75 0.25 0.25
+Shared Vertex 203 (0, 41)
+Vertex 11: 4 1 1 1. 0.25 0.25
+Shared Vertex 204 (2, 38)
+Vertex 12: 1 2 1 0.25 0.5 0.25
+Shared Vertex 205 (3, 37)
+Vertex 13: 2 2 1 0.5 0.5 0.25
+Shared Vertex 206 (3, 38)
+Vertex 14: 3 2 1 0.75 0.5 0.25
+Shared Vertex 207 (2, 37)
+Vertex 15: 4 2 1 1. 0.5 0.25
+Shared Vertex 208 (6, 26)
+Vertex 16: 1 -1 2 0.25 -0.25 0.5
+Shared Vertex 209 (7, 25)
+Vertex 17: 2 -1 2 0.5 -0.25 0.5
+Shared Vertex 210 (7, 26)
+Vertex 18: 3 -1 2 0.75 -0.25 0.5
+Shared Vertex 211 (6, 25)
+Vertex 19: 4 -1 2 1. -0.25 0.5
+Shared Vertex 212 (4, 22)
+Vertex 20: 1 0 2 0.25 0. 0.5
+Vertex 21: 2 0 2 0.5 0. 0.5
+Vertex 22: 3 0 2 0.75 0. 0.5
+Shared Vertex 215 (4, 21)
+Vertex 23: 4 0 2 1. 0. 0.5
+Shared Vertex 216 (4, 26)
+Vertex 24: 1 1 2 0.25 0.25 0.5
+Vertex 25: 2 1 2 0.5 0.25 0.5
+Vertex 26: 3 1 2 0.75 0.25 0.5
+Shared Vertex 219 (4, 25)
+Vertex 27: 4 1 2 1. 0.25 0.5
+Shared Vertex 220 (6, 22)
+Vertex 28: 1 2 2 0.25 0.5 0.5
+Shared Vertex 221 (7, 21)
+Vertex 29: 2 2 2 0.5 0.5 0.5
+Shared Vertex 222 (7, 22)
+Vertex 30: 3 2 2 0.75 0.5 0.5
+Shared Vertex 223 (6, 21)
+Vertex 31: 4 2 2 1. 0.5 0.5
+Shared Vertex 224 (6, 42)
+Vertex 32: 1 -1 3 0.25 -0.25 0.75
+Shared Vertex 225 (7, 41)
+Vertex 33: 2 -1 3 0.5 -0.25 0.75
+Shared Vertex 226 (7, 42)
+Vertex 34: 3 -1 3 0.75 -0.25 0.75
+Shared Vertex 227 (6, 41)
+Vertex 35: 4 -1 3 1. -0.25 0.75
+Shared Vertex 228 (4, 38)
+Vertex 36: 1 0 3 0.25 0. 0.75
+Vertex 37: 2 0 3 0.5 0. 0.75
+Vertex 38: 3 0 3 0.75 0. 0.75
+Shared Vertex 231 (4, 37)
+Vertex 39: 4 0 3 1. 0. 0.75
+Shared Vertex 232 (4, 42)
+Vertex 40: 1 1 3 0.25 0.25 0.75
+Vertex 41: 2 1 3 0.5 0.25 0.75
+Vertex 42: 3 1 3 0.75 0.25 0.75
+Shared Vertex 235 (4, 41)
+Vertex 43: 4 1 3 1. 0.25 0.75
+Shared Vertex 236 (6, 38)
+Vertex 44: 1 2 3 0.25 0.5 0.75
+Shared Vertex 237 (7, 37)
+Vertex 45: 2 2 3 0.5 0.5 0.75
+Shared Vertex 238 (7, 38)
+Vertex 46: 3 2 3 0.75 0.5 0.75
+Shared Vertex 239 (6, 37)
+Vertex 47: 4 2 3 1. 0.5 0.75
+Shared Vertex 240 (2, 26)
+Vertex 48: 1 -1 4 0.25 -0.25 1.
+Shared Vertex 241 (3, 25)
+Vertex 49: 2 -1 4 0.5 -0.25 1.
+Shared Vertex 242 (3, 26)
+Vertex 50: 3 -1 4 0.75 -0.25 1.
+Shared Vertex 243 (2, 25)
+Vertex 51: 4 -1 4 1. -0.25 1.
+Shared Vertex 244 (0, 22)
+Vertex 52: 1 0 4 0.25 0. 1.
+Shared Vertex 245 (1, 21)
+Vertex 53: 2 0 4 0.5 0. 1.
+Shared Vertex 246 (1, 22)
+Vertex 54: 3 0 4 0.75 0. 1.
+Shared Vertex 247 (0, 21)
+Vertex 55: 4 0 4 1. 0. 1.
+Shared Vertex 248 (0, 26)
+Vertex 56: 1 1 4 0.25 0.25 1.
+Shared Vertex 249 (1, 25)
+Vertex 57: 2 1 4 0.5 0.25 1.
+Shared Vertex 250 (1, 26)
+Vertex 58: 3 1 4 0.75 0.25 1.
+Shared Vertex 251 (0, 25)
+Vertex 59: 4 1 4 1. 0.25 1.
+Shared Vertex 252 (2, 22)
+Vertex 60: 1 2 4 0.25 0.5 1.
+Shared Vertex 253 (3, 21)
+Vertex 61: 2 2 4 0.5 0.5 1.
+Shared Vertex 254 (3, 22)
+Vertex 62: 3 2 4 0.75 0.5 1.
+Shared Vertex 255 (2, 21)
+Vertex 63: 4 2 4 1. 0.5 1.
+Geometry for rank 6:
+Shared Vertex 192 (1, 42)
+Vertex 0: -1 1 1 -0.25 0.25 0.25
+Shared Vertex 193 (0, 41)
+Vertex 1: 0 1 1 0. 0.25 0.25
+Shared Vertex 194 (0, 42)
+Vertex 2: 1 1 1 0.25 0.25 0.25
+Shared Vertex 195 (1, 41)
+Vertex 3: 2 1 1 0.5 0.25 0.25
+Shared Vertex 196 (3, 38)
+Vertex 4: -1 2 1 -0.25 0.5 0.25
+Shared Vertex 197 (2, 37)
+Vertex 5: 0 2 1 0. 0.5 0.25
+Shared Vertex 198 (2, 38)
+Vertex 6: 1 2 1 0.25 0.5 0.25
+Shared Vertex 199 (3, 37)
+Vertex 7: 2 2 1 0.5 0.5 0.25
+Shared Vertex 200 (3, 42)
+Vertex 8: -1 3 1 -0.25 0.75 0.25
+Shared Vertex 201 (2, 41)
+Vertex 9: 0 3 1 0. 0.75 0.25
+Shared Vertex 202 (2, 42)
+Vertex 10: 1 3 1 0.25 0.75 0.25
+Shared Vertex 203 (3, 41)
+Vertex 11: 2 3 1 0.5 0.75 0.25
+Shared Vertex 204 (1, 38)
+Vertex 12: -1 4 1 -0.25 1. 0.25
+Shared Vertex 205 (0, 37)
+Vertex 13: 0 4 1 0. 1. 0.25
+Shared Vertex 206 (0, 38)
+Vertex 14: 1 4 1 0.25 1. 0.25
+Shared Vertex 207 (1, 37)
+Vertex 15: 2 4 1 0.5 1. 0.25
+Shared Vertex 208 (5, 26)
+Vertex 16: -1 1 2 -0.25 0.25 0.5
+Shared Vertex 209 (4, 25)
+Vertex 17: 0 1 2 0. 0.25 0.5
+Shared Vertex 210 (4, 26)
+Vertex 18: 1 1 2 0.25 0.25 0.5
+Shared Vertex 211 (5, 25)
+Vertex 19: 2 1 2 0.5 0.25 0.5
+Shared Vertex 212 (7, 22)
+Vertex 20: -1 2 2 -0.25 0.5 0.5
+Vertex 21: 0 2 2 0. 0.5 0.5
+Vertex 22: 1 2 2 0.25 0.5 0.5
+Shared Vertex 215 (7, 21)
+Vertex 23: 2 2 2 0.5 0.5 0.5
+Shared Vertex 216 (7, 26)
+Vertex 24: -1 3 2 -0.25 0.75 0.5
+Vertex 25: 0 3 2 0. 0.75 0.5
+Vertex 26: 1 3 2 0.25 0.75 0.5
+Shared Vertex 219 (7, 25)
+Vertex 27: 2 3 2 0.5 0.75 0.5
+Shared Vertex 220 (5, 22)
+Vertex 28: -1 4 2 -0.25 1. 0.5
+Shared Vertex 221 (4, 21)
+Vertex 29: 0 4 2 0. 1. 0.5
+Shared Vertex 222 (4, 22)
+Vertex 30: 1 4 2 0.25 1. 0.5
+Shared Vertex 223 (5, 21)
+Vertex 31: 2 4 2 0.5 1. 0.5
+Shared Vertex 224 (5, 42)
+Vertex 32: -1 1 3 -0.25 0.25 0.75
+Shared Vertex 225 (4, 41)
+Vertex 33: 0 1 3 0. 0.25 0.75
+Shared Vertex 226 (4, 42)
+Vertex 34: 1 1 3 0.25 0.25 0.75
+Shared Vertex 227 (5, 41)
+Vertex 35: 2 1 3 0.5 0.25 0.75
+Shared Vertex 228 (7, 38)
+Vertex 36: -1 2 3 -0.25 0.5 0.75
+Vertex 37: 0 2 3 0. 0.5 0.75
+Vertex 38: 1 2 3 0.25 0.5 0.75
+Shared Vertex 231 (7, 37)
+Vertex 39: 2 2 3 0.5 0.5 0.75
+Shared Vertex 232 (7, 42)
+Vertex 40: -1 3 3 -0.25 0.75 0.75
+Vertex 41: 0 3 3 0. 0.75 0.75
+Vertex 42: 1 3 3 0.25 0.75 0.75
+Shared Vertex 235 (7, 41)
+Vertex 43: 2 3 3 0.5 0.75 0.75
+Shared Vertex 236 (5, 38)
+Vertex 44: -1 4 3 -0.25 1. 0.75
+Shared Vertex 237 (4, 37)
+Vertex 45: 0 4 3 0. 1. 0.75
+Shared Vertex 238 (4, 38)
+Vertex 46: 1 4 3 0.25 1. 0.75
+Shared Vertex 239 (5, 37)
+Vertex 47: 2 4 3 0.5 1. 0.75
+Shared Vertex 240 (1, 26)
+Vertex 48: -1 1 4 -0.25 0.25 1.
+Shared Vertex 241 (0, 25)
+Vertex 49: 0 1 4 0. 0.25 1.
+Shared Vertex 242 (0, 26)
+Vertex 50: 1 1 4 0.25 0.25 1.
+Shared Vertex 243 (1, 25)
+Vertex 51: 2 1 4 0.5 0.25 1.
+Shared Vertex 244 (3, 22)
+Vertex 52: -1 2 4 -0.25 0.5 1.
+Shared Vertex 245 (2, 21)
+Vertex 53: 0 2 4 0. 0.5 1.
+Shared Vertex 246 (2, 22)
+Vertex 54: 1 2 4 0.25 0.5 1.
+Shared Vertex 247 (3, 21)
+Vertex 55: 2 2 4 0.5 0.5 1.
+Shared Vertex 248 (3, 26)
+Vertex 56: -1 3 4 -0.25 0.75 1.
+Shared Vertex 249 (2, 25)
+Vertex 57: 0 3 4 0. 0.75 1.
+Shared Vertex 250 (2, 26)
+Vertex 58: 1 3 4 0.25 0.75 1.
+Shared Vertex 251 (3, 25)
+Vertex 59: 2 3 4 0.5 0.75 1.
+Shared Vertex 252 (1, 22)
+Vertex 60: -1 4 4 -0.25 1. 1.
+Shared Vertex 253 (0, 21)
+Vertex 61: 0 4 4 0. 1. 1.
+Shared Vertex 254 (0, 22)
+Vertex 62: 1 4 4 0.25 1. 1.
+Shared Vertex 255 (1, 21)
+Vertex 63: 2 4 4 0.5 1. 1.
+Geometry for rank 7:
+Shared Vertex 192 (0, 42)
+Vertex 0: 1 1 1 0.25 0.25 0.25
+Shared Vertex 193 (1, 41)
+Vertex 1: 2 1 1 0.5 0.25 0.25
+Shared Vertex 194 (1, 42)
+Vertex 2: 3 1 1 0.75 0.25 0.25
+Shared Vertex 195 (0, 41)
+Vertex 3: 4 1 1 1. 0.25 0.25
+Shared Vertex 196 (2, 38)
+Vertex 4: 1 2 1 0.25 0.5 0.25
+Shared Vertex 197 (3, 37)
+Vertex 5: 2 2 1 0.5 0.5 0.25
+Shared Vertex 198 (3, 38)
+Vertex 6: 3 2 1 0.75 0.5 0.25
+Shared Vertex 199 (2, 37)
+Vertex 7: 4 2 1 1. 0.5 0.25
+Shared Vertex 200 (2, 42)
+Vertex 8: 1 3 1 0.25 0.75 0.25
+Shared Vertex 201 (3, 41)
+Vertex 9: 2 3 1 0.5 0.75 0.25
+Shared Vertex 202 (3, 42)
+Vertex 10: 3 3 1 0.75 0.75 0.25
+Shared Vertex 203 (2, 41)
+Vertex 11: 4 3 1 1. 0.75 0.25
+Shared Vertex 204 (0, 38)
+Vertex 12: 1 4 1 0.25 1. 0.25
+Shared Vertex 205 (1, 37)
+Vertex 13: 2 4 1 0.5 1. 0.25
+Shared Vertex 206 (1, 38)
+Vertex 14: 3 4 1 0.75 1. 0.25
+Shared Vertex 207 (0, 37)
+Vertex 15: 4 4 1 1. 1. 0.25
+Shared Vertex 208 (4, 26)
+Vertex 16: 1 1 2 0.25 0.25 0.5
+Shared Vertex 209 (5, 25)
+Vertex 17: 2 1 2 0.5 0.25 0.5
+Shared Vertex 210 (5, 26)
+Vertex 18: 3 1 2 0.75 0.25 0.5
+Shared Vertex 211 (4, 25)
+Vertex 19: 4 1 2 1. 0.25 0.5
+Shared Vertex 212 (6, 22)
+Vertex 20: 1 2 2 0.25 0.5 0.5
+Vertex 21: 2 2 2 0.5 0.5 0.5
+Vertex 22: 3 2 2 0.75 0.5 0.5
+Shared Vertex 215 (6, 21)
+Vertex 23: 4 2 2 1. 0.5 0.5
+Shared Vertex 216 (6, 26)
+Vertex 24: 1 3 2 0.25 0.75 0.5
+Vertex 25: 2 3 2 0.5 0.75 0.5
+Vertex 26: 3 3 2 0.75 0.75 0.5
+Shared Vertex 219 (6, 25)
+Vertex 27: 4 3 2 1. 0.75 0.5
+Shared Vertex 220 (4, 22)
+Vertex 28: 1 4 2 0.25 1. 0.5
+Shared Vertex 221 (5, 21)
+Vertex 29: 2 4 2 0.5 1. 0.5
+Shared Vertex 222 (5, 22)
+Vertex 30: 3 4 2 0.75 1. 0.5
+Shared Vertex 223 (4, 21)
+Vertex 31: 4 4 2 1. 1. 0.5
+Shared Vertex 224 (4, 42)
+Vertex 32: 1 1 3 0.25 0.25 0.75
+Shared Vertex 225 (5, 41)
+Vertex 33: 2 1 3 0.5 0.25 0.75
+Shared Vertex 226 (5, 42)
+Vertex 34: 3 1 3 0.75 0.25 0.75
+Shared Vertex 227 (4, 41)
+Vertex 35: 4 1 3 1. 0.25 0.75
+Shared Vertex 228 (6, 38)
+Vertex 36: 1 2 3 0.25 0.5 0.75
+Vertex 37: 2 2 3 0.5 0.5 0.75
+Vertex 38: 3 2 3 0.75 0.5 0.75
+Shared Vertex 231 (6, 37)
+Vertex 39: 4 2 3 1. 0.5 0.75
+Shared Vertex 232 (6, 42)
+Vertex 40: 1 3 3 0.25 0.75 0.75
+Vertex 41: 2 3 3 0.5 0.75 0.75
+Vertex 42: 3 3 3 0.75 0.75 0.75
+Shared Vertex 235 (6, 41)
+Vertex 43: 4 3 3 1. 0.75 0.75
+Shared Vertex 236 (4, 38)
+Vertex 44: 1 4 3 0.25 1. 0.75
+Shared Vertex 237 (5, 37)
+Vertex 45: 2 4 3 0.5 1. 0.75
+Shared Vertex 238 (5, 38)
+Vertex 46: 3 4 3 0.75 1. 0.75
+Shared Vertex 239 (4, 37)
+Vertex 47: 4 4 3 1. 1. 0.75
+Shared Vertex 240 (0, 26)
+Vertex 48: 1 1 4 0.25 0.25 1.
+Shared Vertex 241 (1, 25)
+Vertex 49: 2 1 4 0.5 0.25 1.
+Shared Vertex 242 (1, 26)
+Vertex 50: 3 1 4 0.75 0.25 1.
+Shared Vertex 243 (0, 25)
+Vertex 51: 4 1 4 1. 0.25 1.
+Shared Vertex 244 (2, 22)
+Vertex 52: 1 2 4 0.25 0.5 1.
+Shared Vertex 245 (3, 21)
+Vertex 53: 2 2 4 0.5 0.5 1.
+Shared Vertex 246 (3, 22)
+Vertex 54: 3 2 4 0.75 0.5 1.
+Shared Vertex 247 (2, 21)
+Vertex 55: 4 2 4 1. 0.5 1.
+Shared Vertex 248 (2, 26)
+Vertex 56: 1 3 4 0.25 0.75 1.
+Shared Vertex 249 (3, 25)
+Vertex 57: 2 3 4 0.5 0.75 1.
+Shared Vertex 250 (3, 26)
+Vertex 58: 3 3 4 0.75 0.75 1.
+Shared Vertex 251 (2, 25)
+Vertex 59: 4 3 4 1. 0.75 1.
+Shared Vertex 252 (0, 22)
+Vertex 60: 1 4 4 0.25 1. 1.
+Shared Vertex 253 (1, 21)
+Vertex 61: 2 4 4 0.5 1. 1.
+Shared Vertex 254 (1, 22)
+Vertex 62: 3 4 4 0.75 1. 1.
+Shared Vertex 255 (0, 21)
+Vertex 63: 4 4 4 1. 1. 1.
+PetscSF Object: 8 MPI processes
+  type: basic
+  [0] Number of roots=256, leaves=56, remote ranks=7
+  [0] 192 <- (7,42)
+  [0] 193 <- (6,41)
+  [0] 194 <- (6,42)
+  [0] 195 <- (7,41)
+  [0] 196 <- (5,38)
+  [0] 197 <- (4,37)
+  [0] 198 <- (4,38)
+  [0] 199 <- (5,37)
+  [0] 200 <- (5,42)
+  [0] 201 <- (4,41)
+  [0] 202 <- (4,42)
+  [0] 203 <- (5,41)
+  [0] 204 <- (7,38)
+  [0] 205 <- (6,37)
+  [0] 206 <- (6,38)
+  [0] 207 <- (7,37)
+  [0] 208 <- (3,26)
+  [0] 209 <- (2,25)
+  [0] 210 <- (2,26)
+  [0] 211 <- (3,25)
+  [0] 212 <- (1,22)
+  [0] 215 <- (1,21)
+  [0] 216 <- (1,26)
+  [0] 219 <- (1,25)
+  [0] 220 <- (3,22)
+  [0] 221 <- (2,21)
+  [0] 222 <- (2,22)
+  [0] 223 <- (3,21)
+  [0] 224 <- (3,42)
+  [0] 225 <- (2,41)
+  [0] 226 <- (2,42)
+  [0] 227 <- (3,41)
+  [0] 228 <- (1,38)
+  [0] 231 <- (1,37)
+  [0] 232 <- (1,42)
+  [0] 235 <- (1,41)
+  [0] 236 <- (3,38)
+  [0] 237 <- (2,37)
+  [0] 238 <- (2,38)
+  [0] 239 <- (3,37)
+  [0] 240 <- (7,26)
+  [0] 241 <- (6,25)
+  [0] 242 <- (6,26)
+  [0] 243 <- (7,25)
+  [0] 244 <- (5,22)
+  [0] 245 <- (4,21)
+  [0] 246 <- (4,22)
+  [0] 247 <- (5,21)
+  [0] 248 <- (5,26)
+  [0] 249 <- (4,25)
+  [0] 250 <- (4,26)
+  [0] 251 <- (5,25)
+  [0] 252 <- (7,22)
+  [0] 253 <- (6,21)
+  [0] 254 <- (6,22)
+  [0] 255 <- (7,21)
+  [1] Number of roots=256, leaves=56, remote ranks=7
+  [1] 192 <- (6,42)
+  [1] 193 <- (7,41)
+  [1] 194 <- (7,42)
+  [1] 195 <- (6,41)
+  [1] 196 <- (4,38)
+  [1] 197 <- (5,37)
+  [1] 198 <- (5,38)
+  [1] 199 <- (4,37)
+  [1] 200 <- (4,42)
+  [1] 201 <- (5,41)
+  [1] 202 <- (5,42)
+  [1] 203 <- (4,41)
+  [1] 204 <- (6,38)
+  [1] 205 <- (7,37)
+  [1] 206 <- (7,38)
+  [1] 207 <- (6,37)
+  [1] 208 <- (2,26)
+  [1] 209 <- (3,25)
+  [1] 210 <- (3,26)
+  [1] 211 <- (2,25)
+  [1] 212 <- (0,22)
+  [1] 215 <- (0,21)
+  [1] 216 <- (0,26)
+  [1] 219 <- (0,25)
+  [1] 220 <- (2,22)
+  [1] 221 <- (3,21)
+  [1] 222 <- (3,22)
+  [1] 223 <- (2,21)
+  [1] 224 <- (2,42)
+  [1] 225 <- (3,41)
+  [1] 226 <- (3,42)
+  [1] 227 <- (2,41)
+  [1] 228 <- (0,38)
+  [1] 231 <- (0,37)
+  [1] 232 <- (0,42)
+  [1] 235 <- (0,41)
+  [1] 236 <- (2,38)
+  [1] 237 <- (3,37)
+  [1] 238 <- (3,38)
+  [1] 239 <- (2,37)
+  [1] 240 <- (6,26)
+  [1] 241 <- (7,25)
+  [1] 242 <- (7,26)
+  [1] 243 <- (6,25)
+  [1] 244 <- (4,22)
+  [1] 245 <- (5,21)
+  [1] 246 <- (5,22)
+  [1] 247 <- (4,21)
+  [1] 248 <- (4,26)
+  [1] 249 <- (5,25)
+  [1] 250 <- (5,26)
+  [1] 251 <- (4,25)
+  [1] 252 <- (6,22)
+  [1] 253 <- (7,21)
+  [1] 254 <- (7,22)
+  [1] 255 <- (6,21)
+  [2] Number of roots=256, leaves=56, remote ranks=7
+  [2] 192 <- (5,42)
+  [2] 193 <- (4,41)
+  [2] 194 <- (4,42)
+  [2] 195 <- (5,41)
+  [2] 196 <- (7,38)
+  [2] 197 <- (6,37)
+  [2] 198 <- (6,38)
+  [2] 199 <- (7,37)
+  [2] 200 <- (7,42)
+  [2] 201 <- (6,41)
+  [2] 202 <- (6,42)
+  [2] 203 <- (7,41)
+  [2] 204 <- (5,38)
+  [2] 205 <- (4,37)
+  [2] 206 <- (4,38)
+  [2] 207 <- (5,37)
+  [2] 208 <- (1,26)
+  [2] 209 <- (0,25)
+  [2] 210 <- (0,26)
+  [2] 211 <- (1,25)
+  [2] 212 <- (3,22)
+  [2] 215 <- (3,21)
+  [2] 216 <- (3,26)
+  [2] 219 <- (3,25)
+  [2] 220 <- (1,22)
+  [2] 221 <- (0,21)
+  [2] 222 <- (0,22)
+  [2] 223 <- (1,21)
+  [2] 224 <- (1,42)
+  [2] 225 <- (0,41)
+  [2] 226 <- (0,42)
+  [2] 227 <- (1,41)
+  [2] 228 <- (3,38)
+  [2] 231 <- (3,37)
+  [2] 232 <- (3,42)
+  [2] 235 <- (3,41)
+  [2] 236 <- (1,38)
+  [2] 237 <- (0,37)
+  [2] 238 <- (0,38)
+  [2] 239 <- (1,37)
+  [2] 240 <- (5,26)
+  [2] 241 <- (4,25)
+  [2] 242 <- (4,26)
+  [2] 243 <- (5,25)
+  [2] 244 <- (7,22)
+  [2] 245 <- (6,21)
+  [2] 246 <- (6,22)
+  [2] 247 <- (7,21)
+  [2] 248 <- (7,26)
+  [2] 249 <- (6,25)
+  [2] 250 <- (6,26)
+  [2] 251 <- (7,25)
+  [2] 252 <- (5,22)
+  [2] 253 <- (4,21)
+  [2] 254 <- (4,22)
+  [2] 255 <- (5,21)
+  [3] Number of roots=256, leaves=56, remote ranks=7
+  [3] 192 <- (4,42)
+  [3] 193 <- (5,41)
+  [3] 194 <- (5,42)
+  [3] 195 <- (4,41)
+  [3] 196 <- (6,38)
+  [3] 197 <- (7,37)
+  [3] 198 <- (7,38)
+  [3] 199 <- (6,37)
+  [3] 200 <- (6,42)
+  [3] 201 <- (7,41)
+  [3] 202 <- (7,42)
+  [3] 203 <- (6,41)
+  [3] 204 <- (4,38)
+  [3] 205 <- (5,37)
+  [3] 206 <- (5,38)
+  [3] 207 <- (4,37)
+  [3] 208 <- (0,26)
+  [3] 209 <- (1,25)
+  [3] 210 <- (1,26)
+  [3] 211 <- (0,25)
+  [3] 212 <- (2,22)
+  [3] 215 <- (2,21)
+  [3] 216 <- (2,26)
+  [3] 219 <- (2,25)
+  [3] 220 <- (0,22)
+  [3] 221 <- (1,21)
+  [3] 222 <- (1,22)
+  [3] 223 <- (0,21)
+  [3] 224 <- (0,42)
+  [3] 225 <- (1,41)
+  [3] 226 <- (1,42)
+  [3] 227 <- (0,41)
+  [3] 228 <- (2,38)
+  [3] 231 <- (2,37)
+  [3] 232 <- (2,42)
+  [3] 235 <- (2,41)
+  [3] 236 <- (0,38)
+  [3] 237 <- (1,37)
+  [3] 238 <- (1,38)
+  [3] 239 <- (0,37)
+  [3] 240 <- (4,26)
+  [3] 241 <- (5,25)
+  [3] 242 <- (5,26)
+  [3] 243 <- (4,25)
+  [3] 244 <- (6,22)
+  [3] 245 <- (7,21)
+  [3] 246 <- (7,22)
+  [3] 247 <- (6,21)
+  [3] 248 <- (6,26)
+  [3] 249 <- (7,25)
+  [3] 250 <- (7,26)
+  [3] 251 <- (6,25)
+  [3] 252 <- (4,22)
+  [3] 253 <- (5,21)
+  [3] 254 <- (5,22)
+  [3] 255 <- (4,21)
+  [4] Number of roots=256, leaves=56, remote ranks=7
+  [4] 192 <- (3,42)
+  [4] 193 <- (2,41)
+  [4] 194 <- (2,42)
+  [4] 195 <- (3,41)
+  [4] 196 <- (1,38)
+  [4] 197 <- (0,37)
+  [4] 198 <- (0,38)
+  [4] 199 <- (1,37)
+  [4] 200 <- (1,42)
+  [4] 201 <- (0,41)
+  [4] 202 <- (0,42)
+  [4] 203 <- (1,41)
+  [4] 204 <- (3,38)
+  [4] 205 <- (2,37)
+  [4] 206 <- (2,38)
+  [4] 207 <- (3,37)
+  [4] 208 <- (7,26)
+  [4] 209 <- (6,25)
+  [4] 210 <- (6,26)
+  [4] 211 <- (7,25)
+  [4] 212 <- (5,22)
+  [4] 215 <- (5,21)
+  [4] 216 <- (5,26)
+  [4] 219 <- (5,25)
+  [4] 220 <- (7,22)
+  [4] 221 <- (6,21)
+  [4] 222 <- (6,22)
+  [4] 223 <- (7,21)
+  [4] 224 <- (7,42)
+  [4] 225 <- (6,41)
+  [4] 226 <- (6,42)
+  [4] 227 <- (7,41)
+  [4] 228 <- (5,38)
+  [4] 231 <- (5,37)
+  [4] 232 <- (5,42)
+  [4] 235 <- (5,41)
+  [4] 236 <- (7,38)
+  [4] 237 <- (6,37)
+  [4] 238 <- (6,38)
+  [4] 239 <- (7,37)
+  [4] 240 <- (3,26)
+  [4] 241 <- (2,25)
+  [4] 242 <- (2,26)
+  [4] 243 <- (3,25)
+  [4] 244 <- (1,22)
+  [4] 245 <- (0,21)
+  [4] 246 <- (0,22)
+  [4] 247 <- (1,21)
+  [4] 248 <- (1,26)
+  [4] 249 <- (0,25)
+  [4] 250 <- (0,26)
+  [4] 251 <- (1,25)
+  [4] 252 <- (3,22)
+  [4] 253 <- (2,21)
+  [4] 254 <- (2,22)
+  [4] 255 <- (3,21)
+  [5] Number of roots=256, leaves=56, remote ranks=7
+  [5] 192 <- (2,42)
+  [5] 193 <- (3,41)
+  [5] 194 <- (3,42)
+  [5] 195 <- (2,41)
+  [5] 196 <- (0,38)
+  [5] 197 <- (1,37)
+  [5] 198 <- (1,38)
+  [5] 199 <- (0,37)
+  [5] 200 <- (0,42)
+  [5] 201 <- (1,41)
+  [5] 202 <- (1,42)
+  [5] 203 <- (0,41)
+  [5] 204 <- (2,38)
+  [5] 205 <- (3,37)
+  [5] 206 <- (3,38)
+  [5] 207 <- (2,37)
+  [5] 208 <- (6,26)
+  [5] 209 <- (7,25)
+  [5] 210 <- (7,26)
+  [5] 211 <- (6,25)
+  [5] 212 <- (4,22)
+  [5] 215 <- (4,21)
+  [5] 216 <- (4,26)
+  [5] 219 <- (4,25)
+  [5] 220 <- (6,22)
+  [5] 221 <- (7,21)
+  [5] 222 <- (7,22)
+  [5] 223 <- (6,21)
+  [5] 224 <- (6,42)
+  [5] 225 <- (7,41)
+  [5] 226 <- (7,42)
+  [5] 227 <- (6,41)
+  [5] 228 <- (4,38)
+  [5] 231 <- (4,37)
+  [5] 232 <- (4,42)
+  [5] 235 <- (4,41)
+  [5] 236 <- (6,38)
+  [5] 237 <- (7,37)
+  [5] 238 <- (7,38)
+  [5] 239 <- (6,37)
+  [5] 240 <- (2,26)
+  [5] 241 <- (3,25)
+  [5] 242 <- (3,26)
+  [5] 243 <- (2,25)
+  [5] 244 <- (0,22)
+  [5] 245 <- (1,21)
+  [5] 246 <- (1,22)
+  [5] 247 <- (0,21)
+  [5] 248 <- (0,26)
+  [5] 249 <- (1,25)
+  [5] 250 <- (1,26)
+  [5] 251 <- (0,25)
+  [5] 252 <- (2,22)
+  [5] 253 <- (3,21)
+  [5] 254 <- (3,22)
+  [5] 255 <- (2,21)
+  [6] Number of roots=256, leaves=56, remote ranks=7
+  [6] 192 <- (1,42)
+  [6] 193 <- (0,41)
+  [6] 194 <- (0,42)
+  [6] 195 <- (1,41)
+  [6] 196 <- (3,38)
+  [6] 197 <- (2,37)
+  [6] 198 <- (2,38)
+  [6] 199 <- (3,37)
+  [6] 200 <- (3,42)
+  [6] 201 <- (2,41)
+  [6] 202 <- (2,42)
+  [6] 203 <- (3,41)
+  [6] 204 <- (1,38)
+  [6] 205 <- (0,37)
+  [6] 206 <- (0,38)
+  [6] 207 <- (1,37)
+  [6] 208 <- (5,26)
+  [6] 209 <- (4,25)
+  [6] 210 <- (4,26)
+  [6] 211 <- (5,25)
+  [6] 212 <- (7,22)
+  [6] 215 <- (7,21)
+  [6] 216 <- (7,26)
+  [6] 219 <- (7,25)
+  [6] 220 <- (5,22)
+  [6] 221 <- (4,21)
+  [6] 222 <- (4,22)
+  [6] 223 <- (5,21)
+  [6] 224 <- (5,42)
+  [6] 225 <- (4,41)
+  [6] 226 <- (4,42)
+  [6] 227 <- (5,41)
+  [6] 228 <- (7,38)
+  [6] 231 <- (7,37)
+  [6] 232 <- (7,42)
+  [6] 235 <- (7,41)
+  [6] 236 <- (5,38)
+  [6] 237 <- (4,37)
+  [6] 238 <- (4,38)
+  [6] 239 <- (5,37)
+  [6] 240 <- (1,26)
+  [6] 241 <- (0,25)
+  [6] 242 <- (0,26)
+  [6] 243 <- (1,25)
+  [6] 244 <- (3,22)
+  [6] 245 <- (2,21)
+  [6] 246 <- (2,22)
+  [6] 247 <- (3,21)
+  [6] 248 <- (3,26)
+  [6] 249 <- (2,25)
+  [6] 250 <- (2,26)
+  [6] 251 <- (3,25)
+  [6] 252 <- (1,22)
+  [6] 253 <- (0,21)
+  [6] 254 <- (0,22)
+  [6] 255 <- (1,21)
+  [7] Number of roots=256, leaves=56, remote ranks=7
+  [7] 192 <- (0,42)
+  [7] 193 <- (1,41)
+  [7] 194 <- (1,42)
+  [7] 195 <- (0,41)
+  [7] 196 <- (2,38)
+  [7] 197 <- (3,37)
+  [7] 198 <- (3,38)
+  [7] 199 <- (2,37)
+  [7] 200 <- (2,42)
+  [7] 201 <- (3,41)
+  [7] 202 <- (3,42)
+  [7] 203 <- (2,41)
+  [7] 204 <- (0,38)
+  [7] 205 <- (1,37)
+  [7] 206 <- (1,38)
+  [7] 207 <- (0,37)
+  [7] 208 <- (4,26)
+  [7] 209 <- (5,25)
+  [7] 210 <- (5,26)
+  [7] 211 <- (4,25)
+  [7] 212 <- (6,22)
+  [7] 215 <- (6,21)
+  [7] 216 <- (6,26)
+  [7] 219 <- (6,25)
+  [7] 220 <- (4,22)
+  [7] 221 <- (5,21)
+  [7] 222 <- (5,22)
+  [7] 223 <- (4,21)
+  [7] 224 <- (4,42)
+  [7] 225 <- (5,41)
+  [7] 226 <- (5,42)
+  [7] 227 <- (4,41)
+  [7] 228 <- (6,38)
+  [7] 231 <- (6,37)
+  [7] 232 <- (6,42)
+  [7] 235 <- (6,41)
+  [7] 236 <- (4,38)
+  [7] 237 <- (5,37)
+  [7] 238 <- (5,38)
+  [7] 239 <- (4,37)
+  [7] 240 <- (0,26)
+  [7] 241 <- (1,25)
+  [7] 242 <- (1,26)
+  [7] 243 <- (0,25)
+  [7] 244 <- (2,22)
+  [7] 245 <- (3,21)
+  [7] 246 <- (3,22)
+  [7] 247 <- (2,21)
+  [7] 248 <- (2,26)
+  [7] 249 <- (3,25)
+  [7] 250 <- (3,26)
+  [7] 251 <- (2,25)
+  [7] 252 <- (0,22)
+  [7] 253 <- (1,21)
+  [7] 254 <- (1,22)
+  [7] 255 <- (0,21)
+  MultiSF sort=rank-order
+DM Object: Generated Mesh 8 MPI processes
+  type: plex
+Generated Mesh in 3 dimensions:
+  Number of 0-cells per rank: 64 64 64 64 64 64 64 64
+  Number of 3-cells per rank: 192 192 192 192 192 192 192 192
+Labels:
+  marker: 0 strata with value/size ()
+  celltype: 2 strata with value/size (0 (64), 1 (192))
+  depth: 2 strata with value/size (0 (64), 1 (192))
