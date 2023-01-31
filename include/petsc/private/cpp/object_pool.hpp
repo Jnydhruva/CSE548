@@ -105,6 +105,8 @@ private:
 
 class PoolAllocator::AllocationHeader {
 public:
+  constexpr AllocationHeader(size_type, align_type) noexcept;
+
   PETSC_NODISCARD static constexpr align_type max_alignment() noexcept;
   PETSC_NODISCARD static constexpr size_type  header_size() noexcept;
   PETSC_NODISCARD static constexpr size_type  buffer_zone_size() noexcept;
@@ -116,6 +118,11 @@ public:
 // ==========================================================================================
 // PoolAllocator -- Private API -- AllocationHeader -- Public API
 // ==========================================================================================
+
+/*
+  PoolAlocator::AllocationHeader::AllocationHeader
+*/
+inline constexpr PoolAllocator::AllocationHeader::AllocationHeader(size_type size, align_type align) noexcept : size(size), align(align) { }
 
 /*
   PoolAllocator::AllocationHeader::max_alignment
