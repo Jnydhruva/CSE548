@@ -336,8 +336,8 @@ cdef class DMDA(DM):
 
     #
 
-    def getVecArray(self, Vec vec):
-        return _DMDA_Vec_array(self, vec)
+    def getVecArray(self, Vec vec, bint readonly = 0):
+        return _DMDA_Vec_array(self, vec, readonly = readonly)
 
     #
 
