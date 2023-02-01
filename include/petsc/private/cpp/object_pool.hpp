@@ -390,7 +390,7 @@ inline PetscErrorCode PoolAllocator::allocate_ptr_(size_type size, align_type al
   //
   base_ptr = ::new (std::nothrow_t{}) unsigned char[total_size];
   PetscAssert(base_ptr, PETSC_COMM_SELF, PETSC_ERR_MEM, "operator new() failed to allocate %zu bytes", total_size);
-  PetscCallCXX(util::construct_at(reinterpret_cast<AllocationHeader *>(base_ptr), size, align));
+  PetscCallCXX(base_ptr = reinterpret_cast<unsigned char *>(util::construct_at(reinterpret_cast<AllocationHeader *>(base_ptr), size, align)));
   aligned_ptr = base_ptr + header_size;
   // storing to ret_ptr and not aligned_ptr is deliberate! std::align() returns nullptr if it
   // fails, so we do not want to clobber aligned_ptr
@@ -406,7 +406,7 @@ inline PetscErrorCode PoolAllocator::allocate_ptr_(size_type size, align_type al
     if (PetscDefined(USE_DEBUG)) {
       const auto computed_aligned_ptr = base_ptr + header_size + alignment_offset;
 
-      PetscCheck(computed_aligned_ptr == aligned_ptr, PETSC_COMM_SELF, PETSC_ERR_PLIB, "Base pointer %p + header size %zu + alignment offset %zu = %p != aligned pointer %p", reinterpret_cast<void *>(base_ptr), header_size, alignment_offset, reinterpret_cast<void *>(computed_aligned_ptr), aligned_ptr);
+      PetscCheck(computed_aligned_ptr == aligned_ptr, PETSC_COMM_SELF, PETSC_ERR_PLIB, "Base pointer %p + header size %zu + alignment offset %zu = %p != aligned pointer %p", static_cast<void *>(base_ptr), header_size, alignment_offset, static_cast<void *>(computed_aligned_ptr), aligned_ptr);
     }
   }
   // Poison the entire region first, then unpoison only the user region. This ensures that
@@ -919,7 +919,7 @@ inline PetscErrorCode ObjectPool<T, Constructor>::finalize_() noexcept
   PetscFunctionBegin;
   // clang-format off
   PetscCall(
-    this->allocator().for_each([&](void *ptr)
+    this->allocator().for_each([&, this](void *ptr)
     {
       PetscFunctionBegin;
       PetscCall(this->constructor().destroy(static_cast<value_type *>(ptr)));
@@ -959,14 +959,17 @@ template <typename T, typename Constructor>
 template <typename... Args>
 inline PetscErrorCode ObjectPool<T, Constructor>::allocate(value_type **obj, Args &&...args) noexcept
 {
-  auto allocated_from_pool = true;
+  auto  allocated_from_pool = true;
+  void *mem                 = nullptr;
 
   PetscFunctionBegin;
   PetscValidPointer(obj, 1);
   // order is deliberate! We register our finalizer before the pool does so since we need to
   // destroy the objects within it before it deletes their memory.
   PetscCall(this->register_finalize());
-  PetscCall(this->allocator().allocate(reinterpret_cast<void **>(obj), sizeof(value_type), static_cast<align_type>(alignof(value_type)), &allocated_from_pool));
+  PetscCall(this->allocator().allocate(&mem, sizeof(value_type), static_cast<align_type>(alignof(value_type)), &allocated_from_pool));
+  //*obj = std::launder(static_cast<value_type *>(mem));
+  *obj = static_cast<value_type *>(mem);
   if (allocated_from_pool) {
     // if the allocation reused memory from the pool then this indicates the object is resettable.
     PetscCall(this->constructor().reset(*obj, std::forward<Args>(args)...));

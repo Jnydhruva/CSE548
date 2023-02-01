@@ -118,7 +118,6 @@ static PetscErrorCode PCDeflationSetCorrectionFactor_Deflation(PC pc, PetscScala
   /* TODO PETSC_DETERMINE -> compute max eigenvalue with power method */
   def->correct     = PETSC_TRUE;
   def->correctfact = fact;
-  if (def->correct == 0.0) def->correct = PETSC_FALSE;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 

@@ -242,7 +242,7 @@ PetscErrorCode MatLUFactorNumeric_SeqBAIJ_4(Mat B, Mat A, const MatFactorInfo *i
   PetscCall(ISGetIndices(isrow, &r));
   PetscCall(ISGetIndices(isicol, &ic));
 
-  if (info->shifttype == MAT_SHIFT_NONE) {
+  if (info->shifttype == (PetscReal)MAT_SHIFT_NONE) {
     shift = 0;
   } else { /* info->shifttype == MAT_SHIFT_INBLOCKS */
     shift = info->shiftamount;
@@ -559,7 +559,7 @@ PetscErrorCode MatLUFactorNumeric_SeqBAIJ_4_NaturalOrdering(Mat B, Mat A, const 
   PetscCall(PetscMalloc2(bs2 * n, &rtmp, bs2, &mwork));
   PetscCall(PetscArrayzero(rtmp, bs2 * n));
 
-  if (info->shifttype == MAT_SHIFT_NONE) {
+  if (info->shifttype == (PetscReal)MAT_SHIFT_NONE) {
     shift = 0;
   } else { /* info->shifttype == MAT_SHIFT_INBLOCKS */
     shift = info->shiftamount;
