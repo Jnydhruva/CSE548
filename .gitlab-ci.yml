@@ -194,7 +194,7 @@ petsc4py-pip:
 
 checksource:
   extends: .test-basic
-  stage: .pre
+  stage: stage-1
   tags:
     - gce-u22-stage1
   script:
@@ -539,7 +539,7 @@ linux-cuda112-omp:
     - cuda-stage3
   variables:
     TEST_ARCH: arch-ci-linux-cuda112-omp
-    TEST_OPTS: -j4 query=requires queryval=kokkos_kernels
+    TEST_OPTS: -j15 query=requires queryval=cuda
     LOAD_MODULES: cuda/11.2.2 u-gcc-9/9.4.0
     OMP_PROC_BIND: "false"
     OMP_NUM_THREADS: 1
