@@ -543,6 +543,7 @@ linux-cuda112-omp:
     LOAD_MODULES: cuda/11.2.2 u-gcc-9/9.4.0
     OMP_PROC_BIND: "false"
     OMP_NUM_THREADS: 1
+    MPIR_CVAR_CH4_MAX_NUM_PACK_BUFFERS: 16384
 
 linux-cuda-cmplx:
   extends:
