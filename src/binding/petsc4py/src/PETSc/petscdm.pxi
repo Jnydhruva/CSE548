@@ -303,4 +303,26 @@ cdef class _DM_VecLocalForm:
 
     def __exit__(self, *exc):
         self.dm.restoreLocalVec(self.lvec)
+
+cdef class _DM_VecLocalFormGlobalToLocal:
+
+    "Context manager for `DM` globalToLocal"
+
+    cdef Vec lvec,gvec
+    cdef DM  dm
+    cdef addv
+
+    def __init__(self,DM dm,Vec gvec,addv):
+        self.dm = dm
+        self.addv = addv
+        self.gvec = gvec
+
+    def __enter__(self):
+        self.lvec = self.dm.getLocalVec()
+        self.dm.globalToLocal(self.gvec,self.lvec,self.addv)
+        return self.lvec
+
+    def __exit__(self, *exc):
+        self.dm.restoreLocalVec(self.lvec)
+
 # --------------------------------------------------------------------
