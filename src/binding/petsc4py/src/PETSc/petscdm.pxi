@@ -286,3 +286,21 @@ cdef int DM_PyRestrictHook(
         hookop(Fine, Mrestrict, Rscale, Inject, Coarse, *args, **kargs)
     return 0
 # -----------------------------------------------------------------------------
+
+cdef class _DM_VecLocalForm:
+
+    "Context manager for `DM` localVec"
+
+    cdef Vec lvec
+    cdef DM  dm
+
+    def __init__(self,DM dm):
+        self.dm = dm
+
+    def __enter__(self):
+        self.lvec = self.dm.getLocalVec()
+        return self.lvec
+
+    def __exit__(self, *exc):
+        self.dm.restoreLocalVec(self.lvec)
+# --------------------------------------------------------------------

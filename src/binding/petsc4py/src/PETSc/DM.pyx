@@ -305,6 +305,17 @@ cdef class DM(Object):
         CHKERR( PetscObjectDereference(<PetscObject>vl.vec) )
         CHKERR( DMRestoreLocalVector(self.dm, &vl.vec) )
 
+    def localVec(self):
+        """
+        Intended for use in context manager::
+
+            with dm.localVec() as lf:
+                use(lf)
+
+        As replacement for getLocalVec()/restoreLocalVec()
+        """
+        return _DM_VecLocalForm(self)
+
     def globalToLocal(self, Vec vg, Vec vl, addv=None):
         cdef PetscInsertMode im = insertmode(addv)
         CHKERR( DMGlobalToLocalBegin(self.dm, vg.vec, im, vl.vec) )
