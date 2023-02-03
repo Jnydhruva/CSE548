@@ -33,7 +33,7 @@ typedef int LandauIdx;
     #error "LANDAU_MAX_NQ but not LANDAU_MAX_Q. Use -DLANDAU_MAX_Q=4 for Q3 elements"
   #endif
   #if defined(PETSC_USE_DMLANDAU_2D)
-    #define LANDAU_MAX_Q 5
+    #define LANDAU_MAX_Q 6
   #else
     // 3D CUDA fails with > 3 (KK-CUDA is OK)
     #define LANDAU_MAX_Q 3

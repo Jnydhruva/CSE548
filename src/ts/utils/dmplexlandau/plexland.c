@@ -970,16 +970,20 @@ static PetscErrorCode maxwellian(PetscInt dim, PetscReal time, const PetscReal x
 {
   MaxwellianCtx *mctx = (MaxwellianCtx *)actx;
   PetscInt       i;
-  PetscReal      v2 = 0, theta = 2 * mctx->kT_m / (mctx->v_0 * mctx->v_0); /* theta = 2kT/mc^2 */
+  PetscReal      v2 = 0, theta = 2 * mctx->kT_m / (mctx->v_0 * mctx->v_0), shift; /* theta = 2kT/mc^2 */
   PetscFunctionBegin;
   /* compute the exponents, v^2 */
   for (i = 0; i < dim; ++i) v2 += x[i] * x[i];
   /* evaluate the Maxwellian */
-  u[0] = mctx->n * PetscPowReal(PETSC_PI * theta, -1.5) * (PetscExpReal(-v2 / theta));
-  if (mctx->shift != 0.) {
+  if (mctx->shift < 0) shift = -mctx->shift;
+  else {
+    u[0]  = mctx->n * PetscPowReal(PETSC_PI * theta, -1.5) * (PetscExpReal(-v2 / theta));
+    shift = mctx->shift;
+  }
+  if (shift != 0.) {
     v2 = 0;
     for (i = 0; i < dim - 1; ++i) v2 += x[i] * x[i];
-    v2 += (x[dim - 1] - mctx->shift) * (x[dim - 1] - mctx->shift);
+    v2 += (x[dim - 1] - shift) * (x[dim - 1] - shift);
     /* evaluate the shifted Maxwellian */
     u[0] += mctx->n * PetscPowReal(PETSC_PI * theta, -1.5) * (PetscExpReal(-v2 / theta));
   }
@@ -1021,9 +1025,9 @@ PetscErrorCode DMPlexLandauAddMaxwellians(DM dm, Vec X, PetscReal time, PetscRea
   if (!ctx) PetscCall(DMGetApplicationContext(dm, &ctx));
   for (PetscInt ii = ctx->species_offset[grid], i0 = 0; ii < ctx->species_offset[grid + 1]; ii++, i0++) {
     mctxs[i0]      = &data[i0];
-    data[i0].v_0   = ctx->v_0;                                            // v_0 same for all grids
-    data[i0].kT_m  = ctx->k * temps[ii] / ctx->masses[ii];                /* kT/m */
-    data[i0].n     = ns[ii] * (1 + 0.1 * (double)b_id / (double)n_batch); // ramp density up 10% to mimic application, n[0] use for Conner-Hastie
+    data[i0].v_0   = ctx->v_0;                             // v_0 same for all grids
+    data[i0].kT_m  = ctx->k * temps[ii] / ctx->masses[ii]; /* kT/m */
+    data[i0].n     = ns[ii];
     initu[i0]      = maxwellian;
     data[i0].shift = 0;
   }
