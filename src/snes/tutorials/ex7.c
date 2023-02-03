@@ -345,9 +345,13 @@ static PetscErrorCode ComputeFFT(Mat FT, PetscInt Nc, Vec x, Vec p)
   PetscCall(MatCreateVecsFFTW(FT, &xTmp, &pTmp, NULL));
   PetscCall(VecStrideGatherAll(x, xComp, INSERT_VALUES));
   for (PetscInt i = 0; i < Nc; ++i) {
+#if 1
+    PetscCall(MatMult(FT, xComp[i], pComp[i]));
+#else
     PetscCall(VecScatterPetscToFFTW(FT, xComp[i], xTmp));
     PetscCall(MatMult(FT, xTmp, pTmp));
     PetscCall(VecScatterFFTWToPetsc(FT, pTmp, pComp[i]));
+#endif
   }
   PetscCall(VecStrideScatterAll(pComp, p, INSERT_VALUES));
   for (PetscInt i = 0; i < Nc; ++i) {
