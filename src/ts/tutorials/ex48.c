@@ -325,7 +325,7 @@ static PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void
   PetscCall(TSGetSNES(ts, &snes));
   PetscCall(SNESGetConvergedReason(snes, &reason));
   if (reason < 0) {
-    PetscPrintf(PetscObjectComm((PetscObject)ts), "\t\t ***************** Monitor: SNES diverged with reason %d.\n", (int)reason);
+    PetscCall(PetscPrintf(PetscObjectComm((PetscObject)ts), "\t\t ***************** Monitor: SNES diverged with reason %d.\n", (int)reason));
     PetscFunctionReturn(PETSC_SUCCESS);
   }
   if (stepi > ctx->plotStep && ctx->plotting) {
@@ -343,7 +343,7 @@ static PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void
     if (!ctx->plotting) { /* first step of possible backtracks */
       ctx->plotting = PETSC_TRUE;
     } else {
-      PetscPrintf(PETSC_COMM_WORLD, "\t\t ?????? ------\n");
+      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\t\t ?????? ------\n"));
       ctx->plotting = PETSC_TRUE;
     }
     ctx->plotStep = stepi;
