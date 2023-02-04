@@ -213,7 +213,7 @@ PetscErrorCode go(TS ts, Vec X, const PetscInt NUserV, const PetscInt a_Np, cons
   KSP            t_ksp[LANDAU_MAX_GRIDS][MAX_NUM_THRDS];
   Vec            t_fhat[LANDAU_MAX_GRIDS][MAX_NUM_THRDS];
   PetscInt       nDMs, glb_b_id, nTargetP = 0;
-  PetscErrorCode ierr = 0;
+  PetscErrorCode ierr = 0; // used for inside thread loops
 #if defined(PETSC_HAVE_OPENMP) && defined(PETSC_HAVE_THREADSAFETY)
   PetscInt numthreads = PetscNumOMPThreads;
 #else
@@ -236,6 +236,7 @@ PetscErrorCode go(TS ts, Vec X, const PetscInt NUserV, const PetscInt a_Np, cons
   PetscCall(PetscMalloc(sizeof(*globSwarmArray) * nDMs, &globSwarmArray));
   PetscCall(DMViewFromOptions(ctx->plex[g_target], NULL, "-ex30_dm_view"));
   // create mass matrices
+  PetscCall(VecZeroEntries(X));
   PetscCall(DMCompositeGetAccessArray(pack, X, nDMs, NULL, globXArray)); // just to duplicate
   for (PetscInt grid = 0; grid < ctx->num_grids; grid++) {               // add same particels for all grids
     Vec          subX = globXArray[LAND_PACK_IDX(0, grid)];
@@ -259,13 +260,9 @@ PetscErrorCode go(TS ts, Vec X, const PetscInt NUserV, const PetscInt a_Np, cons
   for (int i = 0; i < 3; i++) moments_0[i] = moments_1[i] = 0;
   PetscCall(TSGetTimeStep(ts, &dt_init)); // we could have an adaptive time stepper
   for (PetscInt global_batch_id = 0; global_batch_id < NUserV; global_batch_id += ctx->batch_sz) {
-    ierr = TSSetTime(ts, 0);
-    CHKERRQ(ierr);
-    ierr = TSSetStepNumber(ts, 0);
-    CHKERRQ(ierr);
-    ierr = TSSetTimeStep(ts, dt_init);
-    CHKERRQ(ierr);
-    PetscCall(VecZeroEntries(X));
+    PetscCall(TSSetTime(ts, 0));
+    PetscCall(TSSetStepNumber(ts, 0));
+    PetscCall(TSSetTimeStep(ts, dt_init));
     PetscCall(DMCompositeGetAccessArray(pack, X, nDMs, NULL, globXArray));
     if (b_target >= global_batch_id && b_target < global_batch_id + ctx->batch_sz) PetscCall(PetscObjectSetName((PetscObject)globXArray[LAND_PACK_IDX(b_target % ctx->batch_sz, g_target)], "rho"));
     // create fake particles
@@ -348,7 +345,7 @@ PetscErrorCode go(TS ts, Vec X, const PetscInt NUserV, const PetscInt a_Np, cons
         } // active
       }
       PetscCheck(ierr != 9999, PETSC_COMM_WORLD, PETSC_ERR_ARG_OUTOFRANGE, "Only support one species per grid");
-      PetscCall(ierr);
+      PetscCheck(!ierr, PETSC_COMM_WORLD, PETSC_ERR_ARG_OUTOFRANGE, "Error in OMP loop. ierr = %d", (int)ierr);
       // p --> g: make globMpArray & set X
       PetscPragmaOMP(parallel for)
         for (int tid=0; tid<numthreads; tid++)
@@ -370,7 +367,7 @@ PetscErrorCode go(TS ts, Vec X, const PetscInt NUserV, const PetscInt a_Np, cons
           }
         }
       }
-      PetscCall(ierr);
+      PetscCheck(!ierr, PETSC_COMM_WORLD, PETSC_ERR_ARG_OUTOFRANGE, "Error in OMP loop. ierr = %d", (int)ierr);
       /* Cleanup */
       for (int tid = 0; tid < numthreads; tid++) {
         const PetscInt b_id = b_id_0 + tid;
@@ -381,7 +378,7 @@ PetscErrorCode go(TS ts, Vec X, const PetscInt NUserV, const PetscInt a_Np, cons
           }
         } // active
       }
-    } // Landau
+    } // batches
     if (b_target >= global_batch_id && b_target < global_batch_id + ctx->batch_sz) PetscCall(VecViewFromOptions(globXArray[LAND_PACK_IDX(b_target % ctx->batch_sz, g_target)], NULL, "-ex30_vec_view"));
     PetscCall(DMCompositeRestoreAccessArray(pack, X, nDMs, NULL, globXArray));
     PetscCall(DMPlexLandauPrintNorms(X, 0));
@@ -407,7 +404,7 @@ PetscErrorCode go(TS ts, Vec X, const PetscInt NUserV, const PetscInt a_Np, cons
           }
         }
       }
-      PetscCall(ierr);
+      PetscCheck(!ierr, PETSC_COMM_WORLD, PETSC_ERR_ARG_OUTOFRANGE, "Error in OMP loop. ierr = %d", (int)ierr);
       /* Cleanup, and get data */
       PetscCall(PetscInfo(pack, "Cleanup batches %" PetscInt_FMT " to %" PetscInt_FMT "\n", b_id_0, b_id_0 + numthreads));
       for (int tid = 0; tid < numthreads; tid++) {
@@ -464,9 +461,6 @@ int main(int argc, char **argv)
   TS         ts;
   Mat        J;
   LandauCtx *ctx;
-#if defined(PETSC_USE_LOG)
-  PetscLogStage stage;
-#endif
 
   PetscFunctionBeginUser;
   PetscCall(PetscInitialize(&argc, &argv, NULL, help));
@@ -494,14 +488,9 @@ int main(int argc, char **argv)
   PetscCall(TSSetExactFinalTime(ts, TS_EXACTFINALTIME_STEPOVER));
   PetscCall(TSSetFromOptions(ts));
   PetscCall(PetscObjectSetName((PetscObject)X, "X"));
-  // do particle advance, warmup
+  // do particle advance
   PetscCall(go(ts, X, nvert, Np, dim, btarget, gtarget));
   PetscCall(MatZeroEntries(J)); // need to zero out so as to not reuse it in Landau's logic
-  // hot
-  PetscCall(PetscLogStageRegister("ex30 hot solve", &stage));
-  PetscCall(PetscLogStagePush(stage));
-  PetscCall(go(ts, X, nvert, Np, dim, btarget, gtarget));
-  PetscCall(PetscLogStagePop());
   /* clean up */
   PetscCall(DMPlexLandauDestroyVelocitySpace(&pack));
   PetscCall(TSDestroy(&ts));
