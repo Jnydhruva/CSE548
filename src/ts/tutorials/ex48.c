@@ -598,9 +598,6 @@ int main(int argc, char **argv)
   PetscReal   t        = 0.0;
   AppCtx     *ctxarr[] = {&ctx, &ctx, &ctx, &ctx}; // each variable could have a different context
   PetscMPIInt rank;
-#if defined(PETSC_USE_LOG)
-  PetscLogStage stage;
-#endif
 
   PetscCall(PetscInitialize(&argc, &argv, NULL, help));
   PetscCall(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
