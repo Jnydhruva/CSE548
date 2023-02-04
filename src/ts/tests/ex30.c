@@ -523,7 +523,7 @@ int main(int argc, char **argv)
           -dm_landau_batch_size 2 -number_spatial_vertices 3 -dm_landau_batch_view_idx 1 -view_vertex_target 2 -view_grid_target 1 \
           -dm_landau_n 1.000018,1,1e-6 -dm_landau_thermal_temps 2,1,1 -dm_landau_ion_masses 2,180 -dm_landau_ion_charges 1,18 \
           -ftop_ksp_converged_reason -ftop_ksp_rtol 1e-10 -ftop_ksp_type lsqr -ftop_pc_type bjacobi -ftop_sub_pc_factor_shift_type nonzero -ftop_sub_pc_type lu \
-          -ksp_type preonly -pc_type lu \
+          -ksp_type preonly -pc_type lu -dm_landau_verbose 4 \
           -ptof_ksp_type cg -ptof_pc_type jacobi -ptof_ksp_converged_reason -ptof_ksp_rtol 1e-12\
           -snes_converged_reason -snes_monitor -snes_rtol 1e-14 -snes_stol 1e-14\
           -ts_dt 0.01 -ts_rtol 1e-1 -ts_exact_final_time stepover -ts_max_snes_failures -1 -ts_max_steps 1 -ts_monitor -ts_type beuler -info :vec
