@@ -333,7 +333,7 @@ static PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void
     ctx->plotIdx++;
   }
   PetscCall(TSGetTime(ts, &time));
-  TSGetConvergedReason(ts, &tsreason);
+  PetscCall(TSGetConvergedReason(ts, &tsreason));
   if (((time - ctx->plotStartTime) / ctx->plotDt >= (PetscReal)ctx->plotIdx && time >= ctx->plotStartTime) || (tsreason == TS_CONVERGED_TIME || tsreason == TS_CONVERGED_ITS) || ctx->plotIdx == 0) {
     DM          dm, plex;
     Vec         X;
@@ -600,7 +600,7 @@ int main(int argc, char **argv)
   PetscMPIInt rank;
 
   PetscCall(PetscInitialize(&argc, &argv, NULL, help));
-  PetscCall(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
+  PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
   PetscCall(ProcessOptions(PETSC_COMM_WORLD, &ctx)); // dim is not set
   /* create mesh and problem */
   PetscCall(CreateMesh(PETSC_COMM_WORLD, &ctx, &dm));
