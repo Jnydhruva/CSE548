@@ -224,7 +224,6 @@ static PetscErrorCode LandauFormJacobian_Internal(Vec a_X, Mat JacP, const Petsc
     PetscInt         ip_offset[LANDAU_MAX_GRIDS + 1], ipf_offset[LANDAU_MAX_GRIDS + 1], elem_offset[LANDAU_MAX_GRIDS + 1], IPf_sz_glb, IPf_sz_tot, num_grids = ctx->num_grids, Nf[LANDAU_MAX_GRIDS];
     PetscReal       *ff, *dudx, *dudy, *dudz, *invJ_a = (PetscReal *)ctx->SData_d.invJ, *xx = (PetscReal *)ctx->SData_d.x, *yy = (PetscReal *)ctx->SData_d.y, *zz = (PetscReal *)ctx->SData_d.z, *ww = (PetscReal *)ctx->SData_d.w;
     PetscReal       *nu_alpha = (PetscReal *)ctx->SData_d.alpha, *nu_beta = (PetscReal *)ctx->SData_d.beta, *invMass = (PetscReal *)ctx->SData_d.invMass;
-    PetscReal        Eq_m[LANDAU_MAX_SPECIES];
     PetscSection     section[LANDAU_MAX_GRIDS], globsection[LANDAU_MAX_GRIDS];
     PetscScalar     *coo_vals = NULL;
     for (PetscInt grid = 0; grid < ctx->num_grids; grid++) {
@@ -255,10 +254,6 @@ static PetscErrorCode LandauFormJacobian_Internal(Vec a_X, Mat JacP, const Petsc
       starttime = MPI_Wtime();
 #endif
       PetscCall(PetscLogEventBegin(ctx->events[8], 0, 0, 0, 0));
-      for (PetscInt fieldA = 0; fieldA < ctx->num_species; fieldA++) {
-        Eq_m[fieldA] = ctx->Ez * ctx->t_0 * ctx->charges[fieldA] / (ctx->v_0 * ctx->masses[fieldA]); /* normalize dimensionless */
-        if (dim == 2) Eq_m[fieldA] *= 2 * PETSC_PI;                                                  /* add the 2pi term that is not in Landau */
-      }
       PetscCall(PetscMalloc4(IPf_sz_tot, &ff, IPf_sz_tot, &dudx, IPf_sz_tot, &dudy, dim == 3 ? IPf_sz_tot : 0, &dudz));
       // F df/dx
       for (PetscInt tid = 0; tid < ctx->batch_sz * elem_offset[num_grids]; tid++) {                        // for each element
