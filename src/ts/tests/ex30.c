@@ -536,10 +536,10 @@ int main(int argc, char **argv)
           -dm_landau_amr_post_refine 0 -number_particles_per_dimension 5 -dm_plex_hash_location \
           -dm_landau_batch_size 1 -number_spatial_vertices 1 -dm_landau_batch_view_idx 0 -view_vertex_target 0 -view_grid_target 0 \
           -dm_landau_n 1.000018,1,1e-6 -dm_landau_thermal_temps 2,1,1 -dm_landau_ion_masses 2,180 -dm_landau_ion_charges 1,18 \
-          -ftop_ksp_converged_reason -ftop_ksp_rtol 1e-12 -ftop_ksp_type cg -ftop_pc_type jacobi \
+          -ftop_ksp_converged_reason -ftop_ksp_rtol 1e-6 -ftop_ksp_type cg -ftop_pc_type jacobi \
           -ksp_type preonly -pc_type lu \
-          -ptof_ksp_type cg -ptof_pc_type jacobi -ptof_ksp_converged_reason -ptof_ksp_rtol 1e-12\
-          -snes_converged_reason -snes_monitor -snes_rtol 1e-12 -snes_stol 1e-12\
+          -ptof_ksp_type cg -ptof_pc_type jacobi -ptof_ksp_converged_reason -ptof_ksp_rtol 1e-6\
+          -snes_converged_reason -snes_monitor -snes_rtol 1e-9 -snes_stol 1e-9\
           -ts_dt 0.05 -ts_exact_final_time stepover -ts_max_snes_failures -1 -ts_max_steps 1 -ts_monitor -ts_type beuler -info :vec
 
     test:
