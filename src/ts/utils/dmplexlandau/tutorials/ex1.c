@@ -118,76 +118,196 @@ static PetscErrorCode SetMaxwellians(DM dm, Vec X, PetscReal time, PetscReal tem
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void *actx)
+typedef enum {E_PAR_IDX, E_PERP_IDX, I_PAR_IDX, I_PERP_IDX, NUM_TEMPS} TemperatureIDX;
+
+/* --------------------  Evaluate Function F(x) --------------------- */
+static PetscReal         n_cm3[2] = {0,0};
+PetscErrorCode FormFunction(TS ts, PetscReal tdummy, Vec X, Vec F, void *ptr)
 {
-  TSConvergedReason reason;
-  LandauCtx        *ctx = (LandauCtx *)actx; /* user-defined application context */
-  PetscInt          id;
-  PetscReal         t;
+  LandauCtx        *ctx = (LandauCtx *)ptr; /* user-defined application context */
+  PetscScalar        *f;
+  const PetscScalar *x;
+  const PetscReal k_B=1.6e-12,e_cgs=4.8e-10,m_cgs[2] = {9.1094e-28,9.1094e-28*ctx->masses[1]/ctx->masses[0]}; // erg/eV, e, m as per NRL;
+  PetscReal AA,sqrtA,v_abT,vTe,t1,TeDiff,Te,Ti,Tdiff;
 
   PetscFunctionBeginUser;
-  PetscCall(TSGetConvergedReason(ts, &reason));
-  PetscCall(DMGetOutputSequenceNumber(ctx->plex[0], &id, NULL));
+  PetscCall(VecGetArrayRead(X, &x));
+  Te = (2*x[E_PERP_IDX]+x[E_PAR_IDX])/3, Ti = (2*x[I_PERP_IDX]+x[I_PAR_IDX])/3;
+  v_abT = 1.8e-19 * PetscSqrtReal(m_cgs[0]*m_cgs[1]) * n_cm3[0] * ctx->lnLam * PetscPowReal(m_cgs[0]*Ti + m_cgs[1]*Te, -1.5);
+  PetscCall(VecGetArray(F, &f));
+  for (PetscInt ii=0;ii<2;ii++) {
+    TeDiff = x[2*ii+E_PERP_IDX] - x[2*ii+E_PAR_IDX];
+    AA = x[2*ii+E_PERP_IDX]/x[2*ii+E_PAR_IDX] - 1;
+    sqrtA = PetscSqrtReal(AA);
+    t1 = (-3 + (AA + 3) * PetscAtanReal(sqrtA)/sqrtA) / PetscSqr(AA);
+    //PetscReal vTeB = 8.2e-7 * n_cm3[0] * ctx->lnLam * PetscPowReal(Te, -1.5);
+    vTe = 2*PetscSqrtReal(PETSC_PI/m_cgs[ii]) * PetscSqr(PetscSqr(e_cgs)) * n_cm3[0] * ctx->lnLam * PetscPowReal(k_B*x[E_PAR_IDX], -1.5) * t1;
+    //PetscCall(PetscPrintf(PETSC_COMM_WORLD, "***** vTe=%e vTe2=%e, ratio %g\n", vTe, vTeB, vTe/vTeB));
+    // PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n*** INC: vTe= %e TeDiff= %e alpha=%g\n", vTe, TeDiff, AA));
+    t1 = vTe * TeDiff * PetscSqrtReal(PETSC_PI); // ?????
+    f[2*ii+E_PAR_IDX] = 2 * t1; // par
+    f[2*ii+E_PERP_IDX] = -t1; // perp
+    Tdiff = (ii == 0) ? (Ti - Te) : (Te - Ti);
+    f[2*ii+E_PAR_IDX]  += v_abT*Tdiff;
+    f[2*ii+E_PERP_IDX] += v_abT*Tdiff;
+  }
+  PetscCall(VecRestoreArrayRead(X, &x));
+  PetscCall(VecRestoreArray(F, &f));
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+/* --------------------  Form initial approximation ----------------- */
+PetscErrorCode createVec_NRL(LandauCtx *ctx, Vec *vec)
+{
+  PetscScalar *x;
+  Vec Temps;
+  PetscReal  T0[4] = {300,390,200,260};
+
+  PetscFunctionBeginUser;
+  PetscCall(VecCreateSeq(PETSC_COMM_SELF, NUM_TEMPS, &Temps));
+  PetscCall(VecGetArray(Temps, &x));
+  for (PetscInt i=0;i<NUM_TEMPS;i++) x[i] = T0[i];
+  PetscCall(VecRestoreArray(Temps, &x));
+  *vec = Temps;
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+PetscErrorCode createTS_NRL(LandauCtx *ctx, Vec Temps)
+{
+  TSAdapt            adapt;
+  TS ts;
+
+  PetscFunctionBeginUser;
+  PetscCall(TSCreate(PETSC_COMM_SELF, &ts));
+  ctx->data = (void*)ts; // 'data' is for applications (eg, monitors)
+  PetscCall(TSSetApplicationContext(ts, ctx));
+  PetscCall(TSSetType(ts, TSRK));
+  PetscCall(TSSetRHSFunction(ts, NULL, FormFunction, ctx));
+  PetscCall(TSSetSolution(ts, Temps));
+  PetscCall(TSRKSetType(ts, TSRK2A));
+  PetscCall(TSSetOptionsPrefix(ts, "nrl_"));
+  PetscCall(TSSetFromOptions(ts));
+  PetscCall(TSGetAdapt(ts, &adapt));
+  PetscCall(TSAdaptSetType(adapt, TSADAPTNONE));
+  PetscCall(TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP));
+  PetscCall(TSSetStepNumber(ts, 0));
+  PetscCall(TSSetTime(ts, 0));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void *actx)
+{
+
+  LandauCtx        *ctx = (LandauCtx *)actx; /* user-defined application context */
+  TS ts_nrl = (TS)ctx->data;
+  PetscInt          printing=0;
+
+  PetscFunctionBeginUser;
   if (ctx->verbose > 0) { // hacks to generate sparse data (eg, use '-dm_landau_verbose 1' and '-dm_landau_verbose -1' to get all steps printed)
-    PetscInt b = PetscFloorReal(PetscLog10Real(t = (time + 1e-8) * (ctx->t_0 / 1e-4))) + 3;
+    PetscInt b = PetscFloorReal(PetscLog10Real((time + 1e-8) * (ctx->t_0 / 1e-4))) + 3;
     if (b >= 2) ctx->verbose = (PetscInt)PetscPowReal(10, b - 1);
     else if (b == 1) ctx->verbose = 2;
   }
-  if ((ctx->verbose && stepi % ctx->verbose == 0) || reason || stepi == 1 || ctx->verbose < 0) {
-    PetscInt nDMs;
-    DM       pack;
-    Vec     *XsubArray = NULL;
-    PetscCall(TSGetDM(ts, &pack));
-    PetscCall(DMCompositeGetNumberDM(pack, &nDMs));
-    PetscCall(DMSetOutputSequenceNumber(ctx->plex[0], id + 1, time));
-    PetscCall(DMSetOutputSequenceNumber(ctx->plex[1], id + 1, time));
-    PetscCall(PetscInfo(pack, "ex1 plot step %" PetscInt_FMT ", time = %g\n", id, (double)time));
-    PetscCall(PetscMalloc(sizeof(*XsubArray) * nDMs, &XsubArray));
-    PetscCall(DMCompositeGetAccessArray(pack, X, nDMs, NULL, XsubArray)); // read only
-    PetscCall(VecViewFromOptions(XsubArray[LAND_PACK_IDX(ctx->batch_view_idx, 0)], NULL, "-ex1_vec_view_e"));
-    PetscCall(VecViewFromOptions(XsubArray[LAND_PACK_IDX(ctx->batch_view_idx, 1)], NULL, "-ex1_vec_view_i"));
-    // temps
-    for (PetscInt grid = 0; grid < ctx->num_grids; grid++) {
-      PetscDS     prob;
-      DM          dm      = ctx->plex[grid];
-      PetscScalar user[2] = {0, 0}, tt[1];
-      PetscReal   vz_0 = 0, n, energy, e_perp, e_par, m_s = ctx->masses[ctx->species_offset[grid]];
-      Vec         Xloc = XsubArray[LAND_PACK_IDX(ctx->batch_view_idx, grid)];
-      PetscCall(DMGetDS(dm, &prob));
-      /* get n */
-      PetscCall(PetscDSSetObjective(prob, 0, &f0_n));
-      PetscCall(DMPlexComputeIntegralFEM(dm, Xloc, tt, NULL));
-      n = PetscRealPart(tt[0]);
-      /* get vz */
-      PetscCall(PetscDSSetObjective(prob, 0, &f0_vz));
-      PetscCall(DMPlexComputeIntegralFEM(dm, Xloc, tt, NULL));
-      user[1] = vz_0 = PetscRealPart(tt[0]) / n; /* non-dimensional */
-      /* energy temp */
-      PetscCall(PetscDSSetConstants(prob, 2, user));
-      PetscCall(PetscDSSetObjective(prob, 0, &f0_v2_shift));
-      PetscCall(DMPlexComputeIntegralFEM(dm, Xloc, tt, ctx));
-      energy = PetscRealPart(tt[0]) * ctx->v_0 * ctx->v_0 * m_s / n / 3; // scale?
-      /* energy temp - perp */
-      user[0] = 0; // perp
-      PetscCall(PetscDSSetConstants(prob, 2, user));
-      PetscCall(PetscDSSetObjective(prob, 0, &f0_v2_1d_shift));
-      PetscCall(DMPlexComputeIntegralFEM(dm, Xloc, tt, ctx));
-      e_perp = PetscRealPart(tt[0]) * ctx->v_0 * ctx->v_0 * m_s / n / 2; // scale?
-      /* energy temp - par */
-      user[0] = 1; // par
-      PetscCall(PetscDSSetConstants(prob, 2, user));
-      PetscCall(PetscDSSetObjective(prob, 0, &f0_v2_1d_shift));
-      PetscCall(DMPlexComputeIntegralFEM(dm, Xloc, tt, ctx));
-      e_par = PetscRealPart(tt[0]) * ctx->v_0 * ctx->v_0 * m_s / n; // scale?
-      if (grid == 0) PetscCall(PetscPrintf(PETSC_COMM_WORLD, "step %4d) time= %e temperature (ev): ", (int)stepi, (double)time));
-      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "%s T= %9.4g T_par= %9.4g T_perp= %9.4g ", (grid == 0) ? "electron:" : ";ion:", (double)(energy * kev_joul * 1000), (double)(e_par * kev_joul * 1000), (double)(e_perp * kev_joul * 1000)));
+  if (ctx->verbose) {
+    TSConvergedReason reason;
+    PetscCall(TSGetConvergedReason(ts, &reason));
+PetscCall(PetscPrintf(PETSC_COMM_WORLD, "**** reason = %d\n",reason));
+    if (stepi % ctx->verbose == 0 || reason || stepi == 1 || ctx->verbose < 0) {
+      PetscInt nDMs,id;
+      DM       pack;
+      Vec     *XsubArray = NULL;
+      PetscReal         T[2];
+      printing = 1;
+      PetscCall(TSGetDM(ts, &pack));
+      PetscCall(DMCompositeGetNumberDM(pack, &nDMs));
+      PetscCall(DMGetOutputSequenceNumber(ctx->plex[0], &id, NULL));
+      PetscCall(DMSetOutputSequenceNumber(ctx->plex[0], id + 1, time));
+      PetscCall(DMSetOutputSequenceNumber(ctx->plex[1], id + 1, time));
+      PetscCall(PetscInfo(pack, "ex1 plot step %" PetscInt_FMT ", time = %g\n", id, (double)time));
+      PetscCall(PetscMalloc(sizeof(*XsubArray) * nDMs, &XsubArray));
+      PetscCall(DMCompositeGetAccessArray(pack, X, nDMs, NULL, XsubArray)); // read only
+      PetscCall(VecViewFromOptions(XsubArray[LAND_PACK_IDX(ctx->batch_view_idx, 0)], NULL, "-ex1_vec_view_e"));
+      PetscCall(VecViewFromOptions(XsubArray[LAND_PACK_IDX(ctx->batch_view_idx, 1)], NULL, "-ex1_vec_view_i"));
+      // temps
+      for (PetscInt grid = 0; grid < ctx->num_grids; grid++) {
+        PetscDS     prob;
+        DM          dm      = ctx->plex[grid];
+        PetscScalar user[2] = {0, 0}, tt[1];
+        PetscReal   vz_0 = 0, n, energy, e_perp, e_par, m_s = ctx->masses[ctx->species_offset[grid]];
+        Vec         Xloc = XsubArray[LAND_PACK_IDX(ctx->batch_view_idx, grid)];
+        PetscCall(DMGetDS(dm, &prob));
+        /* get n */
+        PetscCall(PetscDSSetObjective(prob, 0, &f0_n));
+        PetscCall(DMPlexComputeIntegralFEM(dm, Xloc, tt, NULL));
+        n = PetscRealPart(tt[0]);
+        /* get vz */
+        PetscCall(PetscDSSetObjective(prob, 0, &f0_vz));
+        PetscCall(DMPlexComputeIntegralFEM(dm, Xloc, tt, NULL));
+        user[1] = vz_0 = PetscRealPart(tt[0]) / n; /* non-dimensional */
+        /* energy temp */
+        PetscCall(PetscDSSetConstants(prob, 2, user));
+        PetscCall(PetscDSSetObjective(prob, 0, &f0_v2_shift));
+        PetscCall(DMPlexComputeIntegralFEM(dm, Xloc, tt, ctx));
+        energy = PetscRealPart(tt[0]) * ctx->v_0 * ctx->v_0 * m_s / n / 3; // scale?
+        energy *= kev_joul * 1000; // eV
+        /* energy temp - par */
+        user[0] = 1; // par
+        PetscCall(PetscDSSetConstants(prob, 2, user));
+        PetscCall(PetscDSSetObjective(prob, 0, &f0_v2_1d_shift));
+        PetscCall(DMPlexComputeIntegralFEM(dm, Xloc, tt, ctx));
+        e_par = PetscRealPart(tt[0]) * ctx->v_0 * ctx->v_0 * m_s / n;
+        e_par *= kev_joul * 1000; // eV
+        /* energy temp - perp */
+        user[0] = 0; // perp
+        PetscCall(PetscDSSetConstants(prob, 2, user));
+        PetscCall(PetscDSSetObjective(prob, 0, &f0_v2_1d_shift));
+        PetscCall(DMPlexComputeIntegralFEM(dm, Xloc, tt, ctx));
+        e_perp = PetscRealPart(tt[0]) * ctx->v_0 * ctx->v_0 * m_s / n / 2;
+        e_perp *= kev_joul * 1000; // eV
+        if (grid == 0) PetscCall(PetscPrintf(PETSC_COMM_WORLD, "step %4d) time= %e temperature (eV): ", (int)stepi, (double)time));
+        PetscCall(PetscPrintf(PETSC_COMM_WORLD, "%s T= %9.4e T_par= %9.4e T_perp= %9.4e ", (grid == 0) ? "electron:" : ";ion:", (double)energy, (double)e_par, (double)e_perp));
+        if (n_cm3[grid]==0) n_cm3[grid] = ctx->n_0 * n * 1e-6; // does not change m^3 --> cm^3
+        T[grid] = energy;
+      }
+      // cleanup
+      PetscCall(DMCompositeRestoreAccessArray(pack, X, nDMs, NULL, XsubArray));
+      PetscCall(PetscFree(XsubArray));
     }
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n"));
-    PetscCall(DMCompositeRestoreAccessArray(pack, X, nDMs, NULL, XsubArray));
-    PetscCall(PetscFree(XsubArray));
-
-    PetscCall(DMPlexLandauPrintNorms(X, id + 1));
   }
+  /* evolve NRL data */
+  if (n_cm3[NUM_TEMPS/2-1] < 0 && ts_nrl) {
+    PetscCall(TSDestroy(&ts_nrl));
+    ctx->data = NULL;
+    if (printing) PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\nSTOP printing NRL Ts\n"));
+  } else if (ts_nrl) {
+    const PetscScalar *x;
+    PetscReal dt_real, dt, TPerp_par[2];
+    Vec U;
+    PetscCall(TSGetTimeStep(ts, &dt)); // dt for NEXT time step
+    dt_real = dt * ctx->t_0;
+    PetscCall(TSGetSolution(ts_nrl, &U));
+    if (printing) {
+      PetscCall(VecGetArrayRead(U, &x));
+      PetscCall(PetscPrintf(PETSC_COMM_WORLD,"NRL_i_par= %9.4e NRL_i_perp= %9.4e ",PetscRealPart(x[I_PAR_IDX]), PetscRealPart(x[I_PERP_IDX])));
+      TPerp_par[1] = x[I_PERP_IDX] - x[I_PAR_IDX];
+      if (n_cm3[0] > 0) {
+        PetscCall(PetscPrintf(PETSC_COMM_WORLD, "NRL_e_par= %9.4e NRL_e_perp= %9.4e\n", PetscRealPart(x[E_PAR_IDX]), PetscRealPart(x[E_PERP_IDX])));
+        TPerp_par[0] = x[E_PERP_IDX] - x[E_PAR_IDX];
+      } else PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n"));
+      PetscCall(VecRestoreArrayRead(U, &x));
+    }
+    // we have the next time step, so need to advance now
+    PetscCall(TSSetTimeStep(ts_nrl, dt_real));
+    PetscCall(TSSetMaxSteps(ts_nrl, stepi+1)); // next step
+    PetscCall(TSSolve(ts_nrl, NULL));
+    //if (printing && n_cm3[0] > 0 && TPerp_par[0] < 1) n_cm3[0] = -1; // this will stop next one
+    //if (printing && n_cm3[1] > 0 && TPerp_par[1] < 1) n_cm3[1] = -1; // this will stop next one
+  } else if (printing) PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n"));
+  if (printing) {
+    PetscCall(DMPlexLandauPrintNorms(X, stepi /*id + 1*/));
+  }
+
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -196,7 +316,7 @@ int main(int argc, char **argv)
   DM          pack;
   Vec         X;
   PetscInt    dim = 2, nDMs;
-  TS          ts;
+  TS          ts,ts_nrl=NULL;
   Mat         J;
   Vec        *XsubArray = NULL;
   LandauCtx  *ctx;
@@ -227,7 +347,6 @@ int main(int argc, char **argv)
   PetscCheck(ctx->num_grids == 2, PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Must have two grids: use '-dm_landau_num_species_grid 1,1'");
   PetscCheck(ctx->num_species == 2, PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Must have two species: use '-dm_landau_num_species_grid 1,1'");
   PetscCall(DMCompositeGetNumberDM(pack, &nDMs));
-  //PetscCall(DMPlexLandauPrintNorms(X, 0));
   /* output plot names */
   PetscCall(PetscMalloc(sizeof(*XsubArray) * nDMs, &XsubArray));
   PetscCall(DMCompositeGetAccessArray(pack, X, nDMs, NULL, XsubArray)); // read only
@@ -256,15 +375,24 @@ int main(int argc, char **argv)
   PetscCall(TSSetFromOptions(ts));
   PetscCall(TSSetSolution(ts, X));
   PetscCall(TSMonitorSet(ts, Monitor, ctx, NULL));
+  /* Create NRL timestepping */
+  if (ctx->verbose) {
+    Vec      NRL_vec;
+    PetscCall(createVec_NRL(ctx, &NRL_vec));
+    PetscCall(createTS_NRL(ctx,NRL_vec));
+    PetscCall(VecDestroy(&NRL_vec));
+  }
   /* solve */
   PetscCall(TSSolve(ts, X));
   /* test add field method & output */
   PetscCall(DMPlexLandauAccess(pack, X, landau_field_print_access_callback, NULL));
   //PetscCall(Monitor(ts, -1, 1.0, X, ctx));
   /* clean up */
-  PetscCall(DMPlexLandauDestroyVelocitySpace(&pack));
   PetscCall(TSDestroy(&ts));
+  ts_nrl = (TS)ctx->data;
+  PetscCall(TSDestroy(&ts_nrl));
   PetscCall(VecDestroy(&X));
+  PetscCall(DMPlexLandauDestroyVelocitySpace(&pack));
   PetscCall(PetscFinalize());
   return 0;
 }
