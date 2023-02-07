@@ -138,18 +138,20 @@ PetscErrorCode FormFunction(TS ts, PetscReal tdummy, Vec X, Vec F, void *ptr)
   for (PetscInt ii=0;ii<2;ii++) {
     TeDiff = x[2*ii+E_PERP_IDX] - x[2*ii+E_PAR_IDX];
     AA = x[2*ii+E_PERP_IDX]/x[2*ii+E_PAR_IDX] - 1;
-    sqrtA = PetscSqrtReal(AA);
-    t1 = (-3 + (AA + 3) * PetscAtanReal(sqrtA)/sqrtA) / PetscSqr(AA);
-    //PetscReal vTeB = 8.2e-7 * n_cm3[0] * ctx->lnLam * PetscPowReal(Te, -1.5);
-    vTe = 2*PetscSqrtReal(PETSC_PI/m_cgs[ii]) * PetscSqr(PetscSqr(e_cgs)) * n_cm3[0] * ctx->lnLam * PetscPowReal(k_B*x[E_PAR_IDX], -1.5) * t1;
-    //PetscCall(PetscPrintf(PETSC_COMM_WORLD, "***** vTe=%e vTe2=%e, ratio %g\n", vTe, vTeB, vTe/vTeB));
-    // PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n*** INC: vTe= %e TeDiff= %e alpha=%g\n", vTe, TeDiff, AA));
-    t1 = vTe * TeDiff * PetscSqrtReal(PETSC_PI); // ?????
+    if (AA<1e-6) t1 = 0;
+    else {
+      sqrtA = PetscSqrtReal(AA);
+      t1 = (-3 + (AA + 3) * PetscAtanReal(sqrtA)/sqrtA) / PetscSqr(AA);
+      //PetscReal vTeB = 8.2e-7 * n_cm3[0] * ctx->lnLam * PetscPowReal(Te, -1.5);
+      vTe = 2*PetscSqrtReal(PETSC_PI/m_cgs[ii]) * PetscSqr(PetscSqr(e_cgs)) * n_cm3[0] * ctx->lnLam * PetscPowReal(k_B*x[E_PAR_IDX], -1.5) * t1;
+      t1 = vTe * TeDiff * PetscSqrtReal(PETSC_PI); // ?????
+    }
     f[2*ii+E_PAR_IDX] = 2 * t1; // par
     f[2*ii+E_PERP_IDX] = -t1; // perp
     Tdiff = (ii == 0) ? (Ti - Te) : (Te - Ti);
     f[2*ii+E_PAR_IDX]  += v_abT*Tdiff;
     f[2*ii+E_PERP_IDX] += v_abT*Tdiff;
+    //PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n*** %d) INC: vTe= %e TeDiff= %e alpha=%g v_abT=%g\n", ii, vTe, TeDiff, AA, v_abT));
   }
   PetscCall(VecRestoreArrayRead(X, &x));
   PetscCall(VecRestoreArray(F, &f));
