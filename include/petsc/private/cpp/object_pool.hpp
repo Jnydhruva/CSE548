@@ -13,6 +13,7 @@
   #include <cstddef> // std::max_align_t
   #include <limits>  // std::numeric_limits
   #include <deque>   // std::take_a_wild_guess
+  #include <new>     // std::nothrow
 
 namespace Petsc
 {
@@ -380,13 +381,14 @@ inline PetscErrorCode PoolAllocator::allocate_ptr_(size_type size, align_type al
   // ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ...
   //                       total_size_()
   //
-  PetscCallCXX(base_ptr = ::new unsigned char[total_size]);
+  base_ptr = ::new (std::nothrow_t{}) unsigned char[total_size];
+  PetscAssert(base_ptr, PETSC_COMM_SELF, PETSC_ERR_MEM, "operator new() failed to allocate %zu bytes", total_size);
   PetscCallCXX(util::construct_at(reinterpret_cast<AllocationHeader *>(base_ptr), size, align));
   aligned_ptr = base_ptr + header_size;
   // storing to ret_ptr and not aligned_ptr is deliberate! std::align() returns nullptr if it
   // fails, so we do not want to clobber aligned_ptr
   *ret_ptr = std::align(util::to_underlying(align), size, aligned_ptr, usable_size);
-  // note usable_size is has now shrunk to by alignment_offset
+  // note usable_size is has now shrunk by alignment_offset
   PetscAssert(*ret_ptr, PETSC_COMM_SELF, PETSC_ERR_LIB, "std::align() failed to align pointer %p (size %zu, alignment %zu)", aligned_ptr, size, util::to_underlying(align));
   {
     constexpr auto max_align        = util::to_underlying(AllocationHeader::max_alignment());
