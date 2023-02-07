@@ -1248,7 +1248,7 @@ static PetscErrorCode ProcessOptions(LandauCtx *ctx, const char prefix[])
     ctx->radius[grid]             = 5.; /* thermal radius (velocity) */
     ctx->radius_perp[grid]        = 5.; /* thermal radius (velocity) */
     ctx->radius_par[grid]         = 5.; /* thermal radius (velocity) */
-    ctx->numAMRRefine[grid]       = 5;
+    ctx->numAMRRefine[grid]       = 0;
     ctx->postAMRRefine[grid]      = 0;
     ctx->species_offset[grid + 1] = 1; // one species default
     num_species_grid[grid]        = 0;
@@ -1330,6 +1330,7 @@ static PetscErrorCode ProcessOptions(LandauCtx *ctx, const char prefix[])
   PetscCall(PetscOptionsReal("-dm_landau_ln_lambda", "Cross section parameter", "plexland.c", ctx->lnLam, &ctx->lnLam, NULL));
   PetscCall(PetscOptionsBool("-dm_landau_use_mataxpy_mass", "Use fast but slightly fragile MATAXPY to add mass term", "plexland.c", ctx->use_matrix_mass, &ctx->use_matrix_mass, NULL));
   PetscCall(PetscOptionsBool("-dm_landau_use_relativistic_corrections", "Use relativistic corrections", "plexland.c", ctx->use_relativistic_corrections, &ctx->use_relativistic_corrections, NULL));
+  if (LANDAU_DIM == 2 && ctx->use_relativistic_corrections) ctx->use_relativistic_corrections   = PETSC_FALSE; // should warn
   PetscCall(PetscOptionsBool("-dm_landau_use_energy_tensor_trick", "Use Eero's trick of using grad(v^2/2) instead of v as args to Landau tensor to conserve energy with relativistic corrections and Q1 elements", "plexland.c", ctx->use_energy_tensor_trick,
                              &ctx->use_energy_tensor_trick, NULL));
 
@@ -1376,7 +1377,7 @@ static PetscErrorCode ProcessOptions(LandauCtx *ctx, const char prefix[])
              ctx->num_species);
   for (PetscInt grid = 0; grid < ctx->num_grids; grid++) {
     int iii       = ctx->species_offset[grid];                                              // normalize with first (arbitrary) species on grid
-    v0_grid[grid] = PetscSqrtReal(2 * ctx->k * ctx->thermal_temps[iii] / ctx->masses[iii]); /* arbitrary units for non-dimensionalization: mean velocity in 1D of first species on grid */
+    v0_grid[grid] = PetscSqrtReal(ctx->k * ctx->thermal_temps[iii] / ctx->masses[iii]); /* arbitrary units for non-dimensionalization: plasma formulary def */
   }
   non_dim_grid = 0;
   PetscCall(PetscOptionsInt("-dm_landau_normalization_grid", "Index of grid to use for setting v_0, m_0, t_0. (Not recommended)", "plexland.c", non_dim_grid, &non_dim_grid, NULL));
@@ -1457,12 +1458,8 @@ static PetscErrorCode ProcessOptions(LandauCtx *ctx, const char prefix[])
                           (double)ctx->thermal_temps[1], (double)((ctx->num_species > 2) ? ctx->thermal_temps[2] : 0), (int)non_dim_grid, (double)ctx->v_0, (double)(ctx->v_0 / SPEED_OF_LIGHT), (double)ctx->n_0, (double)ctx->t_0, ctx->batch_sz, ctx->batch_view_idx));
     PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Domain radius (AMR levels) grid %d: par=%10.3e perp=%10.3e (%" PetscInt_FMT ") ", 0, (double)ctx->radius_par[0], (double)ctx->radius_perp[0], ctx->numAMRRefine[0]));
     for (ii = 1; ii < ctx->num_grids; ii++) PetscCall(PetscPrintf(PETSC_COMM_WORLD, ", %" PetscInt_FMT ": par=%10.3e perp=%10.3e (%" PetscInt_FMT ") ", ii, (double)ctx->radius_par[ii], (double)ctx->radius_perp[ii], ctx->numAMRRefine[ii]));
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n"));
-    if (ctx->jacobian_field_major_order) {
-      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Using field major order for GPU Jacobian\n"));
-    } else {
-      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Using default Plex order for all matrices\n"));
-    }
+    if (ctx->use_relativistic_corrections) PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\nUse relativistic corrections\n"));
+    else  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n"));
   }
   PetscCall(DMDestroy(&dummy));
   {
@@ -2544,7 +2541,7 @@ PetscErrorCode DMPlexLandauPrintNorms(Vec X, PetscInt stepi)
                 PetscCall(VecStrideGather(Gsub, i, v1, INSERT_VALUES)); // this is not right -- TODO
                 PetscCall(VecStrideGather(Mfsub, i, v2, INSERT_VALUES));
                 PetscCall(VecDot(v1, v2, &val));
-                energy[ix] = PetscRealPart(val) * ctx->n_0 * ctx->v_0 * ctx->v_0 * ctx->masses[ix]; // * density[ii] ???
+                energy[ix] = PetscRealPart(val) * ctx->n_0 * ctx->v_0 * ctx->v_0 * ctx->masses[ix];
               }
               PetscCall(VecDestroy(&v1));
               PetscCall(VecDestroy(&v2));
