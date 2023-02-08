@@ -1,93 +1,80 @@
 masses:        e= 9.109e-31; ions in proton mass units:    2.000e+00  0.000e+00 ...
 charges:       e=-1.602e-19; charges in elementary units:  1.000e+00  0.000e+00
 n:             e:  2.000e+00                           i:  2.000e+00  0.000e+00
-thermal T (K): e= 5.802e+07 i= 5.802e+07  0.000e+00. Normalization grid 0: v_0= 4.194e+07 ( 1.399e-01c) n_0= 5.000e+19 t_0= 3.660e-04 2 batched, view batch 0
+thermal T (K): e= 5.802e+07 i= 5.802e+07  0.000e+00. Normalization grid 0: v_0= 2.965e+07 ( 9.892e-02c) n_0= 5.000e+19 t_0= 1.294e-04 2 batched, view batch 0
 Domain radius (AMR levels) grid 0: par= 5.000e+00 perp= 5.000e+00 (2) , 1: par= 8.252e-02 perp= 8.252e-02 (2) 
-Using default Plex order for all matrices
 0) FormLandau 448 IPs, 28 cells total, Nb=16, Nq=16, dim=2, Tab: Nb=16 Nf=2 Np=16 cdim=2 N=568
 0 TS dt 0.01 time 0.
-  0) species-0: charge density= -1.6018962834033e+01 z-momentum=  1.0283726656480e-19 energy=  1.2024765392899e+05
-  0) species-1: charge density=  1.6018962834033e+01 z-momentum=  3.7446935176753e-18 energy=  1.2024765392899e+05
-	  0) Total: charge density=  0.0000000000000e+00, momentum=  3.8475307842401e-18, energy=  2.4049530785798e+05 (m_i[0]/m_e = 3670.94, 14 cells on electron grid)
-    0 SNES Function norm 5.598315123893e-02 
-    1 SNES Function norm 3.400480897940e-04 
-    2 SNES Function norm 6.283154216987e-06 
-    3 SNES Function norm 1.854998248289e-07 
-    4 SNES Function norm 6.891261318891e-09 
-    5 SNES Function norm 2.641611896538e-10 
-    6 SNES Function norm 1.033513956324e-11 
-  Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 6
-    0 SNES Function norm 3.070054979356e-02 
-    1 SNES Function norm 1.380773262612e-04 
-    2 SNES Function norm 1.907555488789e-06 
-    3 SNES Function norm 3.320682114063e-08 
-    4 SNES Function norm 7.044605762151e-10 
-    5 SNES Function norm 1.446792308126e-11 
+  0) species-0: charge density= -1.6021654335867e+01 z-momentum=  1.3472644538825e-20 energy=  1.2007706778963e+05
+  0) species-1: charge density=  1.6021654335867e+01 z-momentum=  2.2695913876596e-17 energy=  1.2007706778963e+05
+	  0) Total: charge density=  3.5527136788005e-15, momentum=  2.2709386521135e-17, energy=  2.4015413557925e+05 (m_i[0]/m_e = 3670.94, 14 cells on electron grid)
+    0 SNES Function norm 3.349418773098e-02 
+    1 SNES Function norm 1.409275491646e-04 
+    2 SNES Function norm 1.097809918304e-06 
+    3 SNES Function norm 1.089630477206e-08 
+    4 SNES Function norm 1.044858624869e-10 
+    5 SNES Function norm 1.550295166144e-12 
   Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 5
-    0 SNES Function norm 3.791596795401e-02 
-    1 SNES Function norm 1.557729709437e-04 
-    2 SNES Function norm 1.861661813054e-06 
-    3 SNES Function norm 3.011214297337e-08 
-    4 SNES Function norm 6.202412697184e-10 
-    5 SNES Function norm 1.251095011772e-11 
-  Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 5
+    0 SNES Function norm 2.457533035890e-02 
+    1 SNES Function norm 3.515112943656e-05 
+    2 SNES Function norm 2.135070545427e-07 
+    3 SNES Function norm 1.500857357051e-09 
+    4 SNES Function norm 1.058932717164e-11 
+  Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 4
+    0 SNES Function norm 2.678451888206e-02 
+    1 SNES Function norm 5.075562489001e-05 
+    2 SNES Function norm 3.098395261255e-07 
+    3 SNES Function norm 2.191525198879e-09 
+    4 SNES Function norm 1.533058405805e-11 
+  Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 4
 1 TS dt 0.0125 time 0.01
-  1) species-0: charge density= -1.6018962834033e+01 z-momentum=  2.2368090416147e-19 energy=  1.2024766175916e+05
-  1) species-1: charge density=  1.6018962834033e+01 z-momentum=  5.2833397841726e-18 energy=  1.2024764609882e+05
-	  1) Total: charge density=  3.5527136788005e-15, momentum=  5.5070206883340e-18, energy=  2.4049530785798e+05 (m_i[0]/m_e = 3670.94, 14 cells on electron grid)
+  1) species-0: charge density= -1.6021654335867e+01 z-momentum=  1.2535417092646e-19 energy=  1.2007706673175e+05
+  1) species-1: charge density=  1.6021654335867e+01 z-momentum=  1.3221083805241e-17 energy=  1.2007706884751e+05
+	  1) Total: charge density=  7.1054273576010e-15, momentum=  1.3346437976168e-17, energy=  2.4015413557925e+05 (m_i[0]/m_e = 3670.94, 14 cells on electron grid)
 0 TS dt 0.01 time 0.
-  0) species-0: charge density= -1.6018962834033e+01 z-momentum=  1.0283726656480e-19 energy=  1.2024765392899e+05
-  0) species-1: charge density=  1.6018962834033e+01 z-momentum=  3.7446935176753e-18 energy=  1.2024765392899e+05
-	  0) Total: charge density=  0.0000000000000e+00, momentum=  3.8475307842401e-18, energy=  2.4049530785798e+05 (m_i[0]/m_e = 3670.94, 14 cells on electron grid)
-    0 SNES Function norm 5.598315123893e-02 
-    1 SNES Function norm 3.400480897940e-04 
-    2 SNES Function norm 6.283154216987e-06 
-    3 SNES Function norm 1.854998248289e-07 
-    4 SNES Function norm 6.891261318891e-09 
-    5 SNES Function norm 2.641611896538e-10 
-    6 SNES Function norm 1.033513956324e-11 
-  Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 6
-    0 SNES Function norm 3.070054979356e-02 
-    1 SNES Function norm 1.380773262612e-04 
-    2 SNES Function norm 1.907555488789e-06 
-    3 SNES Function norm 3.320682114063e-08 
-    4 SNES Function norm 7.044605762151e-10 
-    5 SNES Function norm 1.446792308126e-11 
+  0) species-0: charge density= -1.6021654335867e+01 z-momentum=  1.3472644538825e-20 energy=  1.2007706778963e+05
+  0) species-1: charge density=  1.6021654335867e+01 z-momentum=  2.2695913876596e-17 energy=  1.2007706778963e+05
+	  0) Total: charge density=  3.5527136788005e-15, momentum=  2.2709386521135e-17, energy=  2.4015413557925e+05 (m_i[0]/m_e = 3670.94, 14 cells on electron grid)
+    0 SNES Function norm 3.349418773098e-02 
+    1 SNES Function norm 1.409275491646e-04 
+    2 SNES Function norm 1.097809918304e-06 
+    3 SNES Function norm 1.089630477206e-08 
+    4 SNES Function norm 1.044858624869e-10 
+    5 SNES Function norm 1.550295166144e-12 
   Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 5
-    0 SNES Function norm 3.791596795401e-02 
-    1 SNES Function norm 1.557729709437e-04 
-    2 SNES Function norm 1.861661813054e-06 
-    3 SNES Function norm 3.011214297337e-08 
-    4 SNES Function norm 6.202412697184e-10 
-    5 SNES Function norm 1.251095011772e-11 
-  Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 5
+    0 SNES Function norm 2.457533035890e-02 
+    1 SNES Function norm 3.515112943656e-05 
+    2 SNES Function norm 2.135070545427e-07 
+    3 SNES Function norm 1.500857357051e-09 
+    4 SNES Function norm 1.058932717164e-11 
+  Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 4
+    0 SNES Function norm 2.678451888206e-02 
+    1 SNES Function norm 5.075562489001e-05 
+    2 SNES Function norm 3.098395261255e-07 
+    3 SNES Function norm 2.191525198879e-09 
+    4 SNES Function norm 1.533058405805e-11 
+  Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 4
 1 TS dt 0.0125 time 0.01
-    0 SNES Function norm 2.841456260364e-02 
-    1 SNES Function norm 2.995738007461e-04 
-    2 SNES Function norm 1.038227199660e-05 
-    3 SNES Function norm 4.465525276371e-07 
-    4 SNES Function norm 2.132371089472e-08 
-    5 SNES Function norm 1.017761900775e-09 
-    6 SNES Function norm 4.885616085625e-11 
-    7 SNES Function norm 2.358529680154e-12 
-  Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 7
-    0 SNES Function norm 1.875298731536e-02 
-    1 SNES Function norm 1.386870010880e-04 
-    2 SNES Function norm 2.844807335484e-06 
-    3 SNES Function norm 6.642016816772e-08 
-    4 SNES Function norm 1.754125031443e-09 
-    5 SNES Function norm 4.528310459290e-11 
-    6 SNES Function norm 1.181252289316e-12 
-  Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 6
-    0 SNES Function norm 2.190096568870e-02 
-    1 SNES Function norm 1.525997736158e-04 
-    2 SNES Function norm 3.058951008083e-06 
-    3 SNES Function norm 7.032440972163e-08 
-    4 SNES Function norm 1.855459971266e-09 
-    5 SNES Function norm 4.770050312840e-11 
-    6 SNES Function norm 1.257857336834e-12 
-  Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 6
+    0 SNES Function norm 2.407752098419e-02 
+    1 SNES Function norm 4.680083607917e-05 
+    2 SNES Function norm 4.335692764716e-07 
+    3 SNES Function norm 5.765447395764e-09 
+    4 SNES Function norm 9.947828944191e-11 
+    5 SNES Function norm 2.151700759461e-12 
+  Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 5
+    0 SNES Function norm 2.109687763713e-02 
+    1 SNES Function norm 1.624211042571e-05 
+    2 SNES Function norm 9.664215744595e-08 
+    3 SNES Function norm 7.409570911438e-10 
+    4 SNES Function norm 6.734733085550e-12 
+  Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 4
+    0 SNES Function norm 2.222619465681e-02 
+    1 SNES Function norm 1.993291502893e-05 
+    2 SNES Function norm 1.254492863150e-07 
+    3 SNES Function norm 9.669980497120e-10 
+    4 SNES Function norm 8.558751157590e-12 
+  Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 4
 2 TS dt 0.015625 time 0.0225
-  2) species-0: charge density= -1.6018962834033e+01 z-momentum=  2.5473295491567e-19 energy=  1.2024767655870e+05
-  2) species-1: charge density=  1.6018962834033e+01 z-momentum=  1.5540239127688e-17 energy=  1.2024763129928e+05
-	  2) Total: charge density=  3.5527136788005e-15, momentum=  1.5794972082603e-17, energy=  2.4049530785798e+05 (m_i[0]/m_e = 3670.94, 14 cells on electron grid)
+  2) species-0: charge density= -1.6021654335867e+01 z-momentum= -9.1672559579398e-20 energy=  1.2007706546138e+05
+  2) species-1: charge density=  1.6021654335867e+01 z-momentum=  1.5959376893239e-17 energy=  1.2007707011788e+05
+	  2) Total: charge density=  3.5527136788005e-15, momentum=  1.5867704333660e-17, energy=  2.4015413557925e+05 (m_i[0]/m_e = 3670.94, 14 cells on electron grid)
