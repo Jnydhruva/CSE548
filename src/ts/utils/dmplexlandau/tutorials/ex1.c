@@ -42,16 +42,21 @@ static const PetscReal kev_joul = 6.241506479963235e+15; /* 1/1000e */
 /* < v, n_s v_|| > */
 static void f0_vz(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar *f0)
 {
-  f0[0] = u[0] * 2. * PETSC_PI * x[0] * x[1]; /* n r v_|| */
+  if (dim == 2) f0[0] = u[0] * 2. * PETSC_PI * x[0] * x[1]; /* n r v_|| */
+  else f0[0] = u[0] * x[2];
 }
 /* < v, n (v-shift)^2 > */
-static void f0_v2_1d_shift(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar *f0)
+static void f0_v2_par_shift(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar *f0)
 {
-  PetscReal xi = PetscRealPart(constants[0]), vz = PetscRealPart(constants[1]);
-  PetscInt  dir = (xi == 0) ? 0 : 1;
+  PetscReal vz = PetscRealPart(constants[0]);
 
-  if (dir == 0) vz = 0;                                              // no perp shift
-  *f0 = u[0] * 2. * PETSC_PI * x[0] * (x[dir] - vz) * (x[dir] - vz); /* n r v^2_par|perp */
+  if (dim == 2) *f0 = u[0] * 2. * PETSC_PI * x[0] * (x[1] - vz) * (x[1] - vz); /* n r v^2_par|perp */
+  else *f0 = u[0] * (x[2] - vz) * (x[2] - vz);
+}
+static void f0_v2_perp(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar *f0)
+{
+  if (dim == 2) *f0 = u[0] * 2. * PETSC_PI * x[0] * x[0] * x[0]; /* n r v^2_perp */
+  else *f0 = u[0] * (x[0] * x[0] + x[1] * x[1]);
 }
 /* < v, n_e > */
 static void f0_n(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar *f0)
@@ -61,8 +66,9 @@ static void f0_n(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[
 }
 static void f0_v2_shift(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar *f0)
 {
-  PetscReal vz = PetscRealPart(constants[1]);
-  f0[0]        = 2. * PETSC_PI * x[0] * (x[0] * x[0] + (x[1] - vz) * (x[1] - vz)) * u[0];
+  PetscReal vz = PetscRealPart(constants[0]);
+  if (dim == 2) f0[0] = 2. * PETSC_PI * x[0] * (x[0] * x[0] + (x[1] - vz) * (x[1] - vz)) * u[0];
+  else f0[0] = (x[0] * x[0] + x[1] * x[1] + (x[2] - vz) * (x[2] - vz)) * u[0];
 }
 static PetscReal sign(PetscScalar x)
 {
@@ -93,10 +99,8 @@ static PetscErrorCode maxwellian(PetscInt dim, PetscReal time, const PetscReal x
 static PetscErrorCode SetMaxwellians(DM dm, Vec X, PetscReal time, PetscReal temps[], PetscReal ns[], PetscInt grid, PetscReal shifts[], LandauCtx *ctx)
 {
   PetscErrorCode (*initu[LANDAU_MAX_SPECIES])(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar[], void *);
-  PetscInt       dim;
   MaxwellianCtx *mctxs[LANDAU_MAX_SPECIES], data[LANDAU_MAX_SPECIES];
   PetscFunctionBegin;
-  PetscCall(DMGetDimension(dm, &dim));
   if (!ctx) PetscCall(DMGetApplicationContext(dm, &ctx));
   for (PetscInt ii = ctx->species_offset[grid], i0 = 0; ii < ctx->species_offset[grid + 1]; ii++, i0++) {
     mctxs[i0]        = &data[i0];
@@ -214,7 +218,6 @@ PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void *actx)
   if (ctx->verbose) {
     TSConvergedReason reason;
     PetscCall(TSGetConvergedReason(ts, &reason));
-PetscCall(PetscPrintf(PETSC_COMM_WORLD, "**** reason = %d\n",reason));
     if (stepi % ctx->verbose == 0 || reason || stepi == 1 || ctx->verbose < 0) {
       PetscInt nDMs,id;
       DM       pack;
@@ -246,24 +249,22 @@ PetscCall(PetscPrintf(PETSC_COMM_WORLD, "**** reason = %d\n",reason));
         /* get vz */
         PetscCall(PetscDSSetObjective(prob, 0, &f0_vz));
         PetscCall(DMPlexComputeIntegralFEM(dm, Xloc, tt, NULL));
-        user[1] = vz_0 = PetscRealPart(tt[0]) / n; /* non-dimensional */
+        user[0] = vz_0 = 0; // PetscRealPart(tt[0]) / n;
         /* energy temp */
         PetscCall(PetscDSSetConstants(prob, 2, user));
         PetscCall(PetscDSSetObjective(prob, 0, &f0_v2_shift));
         PetscCall(DMPlexComputeIntegralFEM(dm, Xloc, tt, ctx));
         energy = PetscRealPart(tt[0]) * ctx->v_0 * ctx->v_0 * m_s / n / 3; // scale?
-        energy *= kev_joul * 1000; // eV
+        energy *= kev_joul * 1000; // T eV
         /* energy temp - par */
-        user[0] = 1; // par
         PetscCall(PetscDSSetConstants(prob, 2, user));
-        PetscCall(PetscDSSetObjective(prob, 0, &f0_v2_1d_shift));
+        PetscCall(PetscDSSetObjective(prob, 0, &f0_v2_par_shift));
         PetscCall(DMPlexComputeIntegralFEM(dm, Xloc, tt, ctx));
         e_par = PetscRealPart(tt[0]) * ctx->v_0 * ctx->v_0 * m_s / n;
         e_par *= kev_joul * 1000; // eV
         /* energy temp - perp */
-        user[0] = 0; // perp
         PetscCall(PetscDSSetConstants(prob, 2, user));
-        PetscCall(PetscDSSetObjective(prob, 0, &f0_v2_1d_shift));
+        PetscCall(PetscDSSetObjective(prob, 0, &f0_v2_perp));
         PetscCall(DMPlexComputeIntegralFEM(dm, Xloc, tt, ctx));
         e_perp = PetscRealPart(tt[0]) * ctx->v_0 * ctx->v_0 * m_s / n / 2;
         e_perp *= kev_joul * 1000; // eV
