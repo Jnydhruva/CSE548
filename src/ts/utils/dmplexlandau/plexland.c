@@ -1219,7 +1219,7 @@ static PetscErrorCode adapt(PetscInt grid, LandauCtx *ctx, Vec *uu)
 static PetscErrorCode ProcessOptions(LandauCtx *ctx, const char prefix[])
 {
   PetscBool flg, sph_flg;
-  PetscInt  ii, nt, nm, nc, num_species_grid[LANDAU_MAX_GRIDS], non_dim_grid = 0;
+  PetscInt  ii, nt, nm, nc, num_species_grid[LANDAU_MAX_GRIDS], non_dim_grid;
   PetscReal v0_grid[LANDAU_MAX_GRIDS];
   DM        dummy;
 
