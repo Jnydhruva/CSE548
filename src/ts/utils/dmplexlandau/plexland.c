@@ -1063,6 +1063,7 @@ static PetscErrorCode LandauSetInitialCondition(DM dm, Vec X, PetscInt grid, Pet
 }
 
 // adapt a level once. Forest in/out
+char                 *s_refine_names[] = {"RE", "Z1", "Origin", "Z2", "Uniform"};
 static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, PetscInt grid, LandauCtx *ctx, DM *newForest)
 {
   DM              forest, plex, adaptedDM = NULL;
@@ -1086,9 +1087,9 @@ static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, Pet
   PetscCall(PetscQuadratureGetData(quad, NULL, NULL, &Nq, NULL, NULL));
   PetscCheck(Nq <= LANDAU_MAX_NQ, ctx->comm, PETSC_ERR_ARG_WRONG, "Order too high. Nq = %" PetscInt_FMT " > LANDAU_MAX_NQ (%d)", Nq, LANDAU_MAX_NQ);
   PetscCall(PetscDSGetDimensions(prob, &Nb));
+  PetscCall(PetscInfo(sol, "Refine phase: %s\n", s_refine_names[type]));
   if (type == 4) {
     for (c = cStart; c < cEnd; c++) PetscCall(DMLabelSetValue(adaptLabel, c, DM_ADAPT_REFINE));
-    PetscCall(PetscInfo(sol, "Phase:%s: Uniform refinement\n", "adaptToleranceFEM"));
   } else if (type == 2) {
     PetscInt  rCellIdx[8], eCellIdx[64], iCellIdx[64], eMaxIdx = -1, iMaxIdx = -1, nr = 0, nrmax = (dim == 3) ? 8 : 2;
     PetscReal minRad = PETSC_INFINITY, r, eMinRad = PETSC_INFINITY, iMinRad = PETSC_INFINITY;
@@ -1103,13 +1104,13 @@ static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, Pet
           minRad         = r;
           nr             = 0;
           rCellIdx[nr++] = c;
-          PetscCall(PetscInfo(sol, "\t\tPhase: adaptToleranceFEM Found first inner r=%e, cell %" PetscInt_FMT ", qp %" PetscInt_FMT "/%" PetscInt_FMT "\n", (double)r, c, qj + 1, Nq));
+          PetscCall(PetscInfo(sol, "\t\tFound first inner r=%e, cell %" PetscInt_FMT ", qp %" PetscInt_FMT "/%" PetscInt_FMT "\n", (double)r, c, qj + 1, Nq));
         } else if ((r - minRad) < PETSC_SQRT_MACHINE_EPSILON * 100. && nr < nrmax) {
           for (k = 0; k < nr; k++)
             if (c == rCellIdx[k]) break;
           if (k == nr) {
             rCellIdx[nr++] = c;
-            PetscCall(PetscInfo(sol, "\t\t\tPhase: adaptToleranceFEM Found another inner r=%e, cell %" PetscInt_FMT ", qp %" PetscInt_FMT "/%" PetscInt_FMT ", d=%e\n", (double)r, c, qj + 1, Nq, (double)(r - minRad)));
+            PetscCall(PetscInfo(sol, "\t\t\tFound another inner r=%e, cell %" PetscInt_FMT ", qp %" PetscInt_FMT "/%" PetscInt_FMT ", d=%e\n", (double)r, c, qj + 1, Nq, (double)(r - minRad)));
           }
         }
         if (ctx->sphere) {
@@ -1139,18 +1140,18 @@ static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, Pet
     if (ctx->sphere) {
       for (c = 0; c < eMaxIdx; c++) {
         PetscCall(DMLabelSetValue(adaptLabel, eCellIdx[c], DM_ADAPT_REFINE));
-        PetscCall(PetscInfo(sol, "\t\tPhase:%s: refine sphere e cell %" PetscInt_FMT " r=%g\n", "adaptToleranceFEM", eCellIdx[c], (double)eMinRad));
+        PetscCall(PetscInfo(sol, "\t\tRefine sphere e cell %" PetscInt_FMT " r=%g\n", eCellIdx[c], (double)eMinRad));
       }
       for (c = 0; c < iMaxIdx; c++) {
         PetscCall(DMLabelSetValue(adaptLabel, iCellIdx[c], DM_ADAPT_REFINE));
-        PetscCall(PetscInfo(sol, "\t\tPhase:%s: refine sphere i cell %" PetscInt_FMT " r=%g\n", "adaptToleranceFEM", iCellIdx[c], (double)iMinRad));
+        PetscCall(PetscInfo(sol, "\t\tRefine sphere i cell %" PetscInt_FMT " r=%g\n", iCellIdx[c], (double)iMinRad));
       }
     }
-    PetscCall(PetscInfo(sol, "Phase:%s: Adaptive refine origin cells %" PetscInt_FMT ",%" PetscInt_FMT " r=%g\n", "adaptToleranceFEM", rCellIdx[0], rCellIdx[1], (double)minRad));
+    PetscCall(PetscInfo(sol, "\t\t\tRefined origin cells %" PetscInt_FMT ",%" PetscInt_FMT " r=%g\n", rCellIdx[0], rCellIdx[1], (double)minRad));
   } else if (type == 0 || type == 1 || type == 3) { /* refine along r=0 axis */
     PetscScalar *coef = NULL;
     Vec          coords;
-    PetscInt     csize, Nv, d, nz;
+    PetscInt     csize, Nv, d, nz, nrefined = 0;
     DM           cdm;
     PetscSection cs;
     PetscCall(DMGetCoordinatesLocal(forest, &coords));
@@ -1163,16 +1164,19 @@ static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, Pet
       for (nz = d = 0; d < Nv; d++) {
         PetscReal z = PetscRealPart(coef[d * dim + (dim - 1)]), x = PetscSqr(PetscRealPart(coef[d * dim + 0])) + ((dim == 3) ? PetscSqr(PetscRealPart(coef[d * dim + 1])) : 0);
         x = PetscSqrtReal(x);
-        if (x < PETSC_MACHINE_EPSILON * 10. && PetscAbs(z) < PETSC_MACHINE_EPSILON * 10.) doit = 1;                              /* refine origin */
-        else if (type == 0 && (z < -PETSC_MACHINE_EPSILON * 10. || z > ctx->re_radius + PETSC_MACHINE_EPSILON * 10.)) outside++; /* first pass don't refine bottom */
-        else if (type == 1 && (z > ctx->vperp0_radius1 || z < -ctx->vperp0_radius1)) outside++;                                  /* don't refine outside electron refine radius */
-        else if (type == 3 && (z > ctx->vperp0_radius2 || z < -ctx->vperp0_radius2)) outside++;                                  /* don't refine outside ion refine radius */
+        if (type == 0 && (z < PETSC_MACHINE_EPSILON * 10. || z > ctx->re_radius - PETSC_MACHINE_EPSILON * 10.)) outside++; /* first pass don't refine bottom */
+        else if (x < PETSC_MACHINE_EPSILON * 10. && PetscAbs(z) < PETSC_MACHINE_EPSILON * 10.) doit = 1;                   /* refine origin */
+        else if (type == 1 && (z > ctx->vperp0_radius1 || z < -ctx->vperp0_radius1)) outside++;                            /* don't refine outside electron refine radius */
+        else if (type == 3 && (z > ctx->vperp0_radius2 || z < -ctx->vperp0_radius2)) outside++;                            /* don't refine outside ion refine radius */
         if (x < PETSC_MACHINE_EPSILON * 10.) nz++;
       }
       PetscCall(DMPlexVecRestoreClosure(cdm, cs, coords, c, &csize, &coef));
-      if (doit || (outside < Nv && nz)) PetscCall(DMLabelSetValue(adaptLabel, c, DM_ADAPT_REFINE));
+      if (doit || (outside < Nv && nz)) {
+        PetscCall(DMLabelSetValue(adaptLabel, c, DM_ADAPT_REFINE));
+        nrefined++;
+      }
     }
-    PetscCall(PetscInfo(sol, "Phase:%s: RE refinement\n", "adaptToleranceFEM"));
+    PetscCall(PetscInfo(sol, "\tRefined %" PetscInt_FMT " cells\n", nrefined));
   }
   PetscCall(DMDestroy(&plex));
   PetscCall(DMAdaptLabel(forest, adaptLabel, &adaptedDM));
@@ -1184,7 +1188,7 @@ static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, Pet
     } else exit(33);                                           // ???????
     PetscCall(DMConvert(adaptedDM, DMPLEX, &plex));
     PetscCall(DMPlexGetHeightStratum(plex, 0, &cStart, &cEnd));
-    PetscCall(PetscInfo(sol, "\tPhase: adaptToleranceFEM: %" PetscInt_FMT " cells, %" PetscInt_FMT " total quadrature points\n", cEnd - cStart, Nq * (cEnd - cStart)));
+    PetscCall(PetscInfo(sol, "\t\t\t\t%" PetscInt_FMT " cells, %" PetscInt_FMT " total quadrature points\n", cEnd - cStart, Nq * (cEnd - cStart)));
     PetscCall(DMDestroy(&plex));
   } else *newForest = NULL;
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -1209,7 +1213,7 @@ static PetscErrorCode adapt(PetscInt grid, LandauCtx *ctx, Vec *uu)
         PetscCall(LandauSetInitialCondition(newForest, *uu, grid, 0, 1, ctx));
         ctx->plex[grid] = newForest;
       } else {
-        exit(4); // can happen with no AMR and post refinement
+        PetscCall(PetscInfo(*uu, "No refinement\n"));
       }
     }
   }
@@ -1330,7 +1334,7 @@ static PetscErrorCode ProcessOptions(LandauCtx *ctx, const char prefix[])
   PetscCall(PetscOptionsReal("-dm_landau_ln_lambda", "Cross section parameter", "plexland.c", ctx->lnLam, &ctx->lnLam, NULL));
   PetscCall(PetscOptionsBool("-dm_landau_use_mataxpy_mass", "Use fast but slightly fragile MATAXPY to add mass term", "plexland.c", ctx->use_matrix_mass, &ctx->use_matrix_mass, NULL));
   PetscCall(PetscOptionsBool("-dm_landau_use_relativistic_corrections", "Use relativistic corrections", "plexland.c", ctx->use_relativistic_corrections, &ctx->use_relativistic_corrections, NULL));
-  if (LANDAU_DIM == 2 && ctx->use_relativistic_corrections) ctx->use_relativistic_corrections   = PETSC_FALSE; // should warn
+  if (LANDAU_DIM == 2 && ctx->use_relativistic_corrections) ctx->use_relativistic_corrections = PETSC_FALSE; // should warn
   PetscCall(PetscOptionsBool("-dm_landau_use_energy_tensor_trick", "Use Eero's trick of using grad(v^2/2) instead of v as args to Landau tensor to conserve energy with relativistic corrections and Q1 elements", "plexland.c", ctx->use_energy_tensor_trick,
                              &ctx->use_energy_tensor_trick, NULL));
 
@@ -1376,7 +1380,7 @@ static PetscErrorCode ProcessOptions(LandauCtx *ctx, const char prefix[])
   PetscCheck(ctx->species_offset[ctx->num_grids] == ctx->num_species, ctx->comm, PETSC_ERR_ARG_WRONG, "ctx->species_offset[ctx->num_grids] %" PetscInt_FMT " != ctx->num_species = %" PetscInt_FMT " ???????????", ctx->species_offset[ctx->num_grids],
              ctx->num_species);
   for (PetscInt grid = 0; grid < ctx->num_grids; grid++) {
-    int iii       = ctx->species_offset[grid];                                              // normalize with first (arbitrary) species on grid
+    int iii       = ctx->species_offset[grid];                                          // normalize with first (arbitrary) species on grid
     v0_grid[grid] = PetscSqrtReal(ctx->k * ctx->thermal_temps[iii] / ctx->masses[iii]); /* arbitrary units for non-dimensionalization: plasma formulary def */
   }
   non_dim_grid = 0;
@@ -1459,7 +1463,7 @@ static PetscErrorCode ProcessOptions(LandauCtx *ctx, const char prefix[])
     PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Domain radius (AMR levels) grid %d: par=%10.3e perp=%10.3e (%" PetscInt_FMT ") ", 0, (double)ctx->radius_par[0], (double)ctx->radius_perp[0], ctx->numAMRRefine[0]));
     for (ii = 1; ii < ctx->num_grids; ii++) PetscCall(PetscPrintf(PETSC_COMM_WORLD, ", %" PetscInt_FMT ": par=%10.3e perp=%10.3e (%" PetscInt_FMT ") ", ii, (double)ctx->radius_par[ii], (double)ctx->radius_perp[ii], ctx->numAMRRefine[ii]));
     if (ctx->use_relativistic_corrections) PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\nUse relativistic corrections\n"));
-    else  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n"));
+    else PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n"));
   }
   PetscCall(DMDestroy(&dummy));
   {
