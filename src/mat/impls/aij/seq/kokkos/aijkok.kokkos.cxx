@@ -1431,6 +1431,8 @@ static PetscErrorCode MatLUFactorNumeric_SeqAIJKOKKOSDEVICE(Mat B, Mat A, const 
               }
 #if !defined(PETSC_HAVE_SYCL)
               if (set != 1) printf("\t\t\t ERROR DID NOT SET ?????\n");
+#else
+              (void)set;
 #endif
             }
           }
