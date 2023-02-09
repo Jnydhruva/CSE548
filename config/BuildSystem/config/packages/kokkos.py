@@ -184,7 +184,8 @@ class Configure(config.package.CMakePackage):
       if not hasattr(self,'systemSyclc'):
         raise RuntimeError('SYCL error: could not find path of the sycl compiler')
       args = self.rmArgsStartsWith(args, '-DCMAKE_CXX_FLAGS')
-      args.append('-DCMAKE_CXX_FLAGS="' + syclFlags.replace('"','\\"') + '"')
+      # let Kokkos set the device flags on its own, otherwise we found it could confuse Kokkos config
+      args.append('-DCMAKE_CXX_FLAGS="' + syclFlags.replace(self.sycl.devFlags,' ').replace('"','\\"') + '"')
       args = self.rmArgsStartsWith(args,'-DCMAKE_CXX_COMPILER=')
       args.append('-DCMAKE_CXX_COMPILER='+self.systemSyclc)
       args.append('-DCMAKE_CXX_EXTENSIONS=OFF')
