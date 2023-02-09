@@ -122,39 +122,45 @@ static PetscErrorCode SetMaxwellians(DM dm, Vec X, PetscReal time, PetscReal tem
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-typedef enum {E_PAR_IDX, E_PERP_IDX, I_PAR_IDX, I_PERP_IDX, NUM_TEMPS} TemperatureIDX;
+typedef enum {
+  E_PAR_IDX,
+  E_PERP_IDX,
+  I_PAR_IDX,
+  I_PERP_IDX,
+  NUM_TEMPS
+} TemperatureIDX;
 
 /* --------------------  Evaluate Function F(x) --------------------- */
-static PetscReal         n_cm3[2] = {0,0};
-PetscErrorCode FormFunction(TS ts, PetscReal tdummy, Vec X, Vec F, void *ptr)
+static PetscReal n_cm3[2] = {0, 0};
+PetscErrorCode   FormFunction(TS ts, PetscReal tdummy, Vec X, Vec F, void *ptr)
 {
-  LandauCtx        *ctx = (LandauCtx *)ptr; /* user-defined application context */
-  PetscScalar        *f;
+  LandauCtx         *ctx = (LandauCtx *)ptr; /* user-defined application context */
+  PetscScalar       *f;
   const PetscScalar *x;
-  const PetscReal k_B=1.6e-12,e_cgs=4.8e-10,m_cgs[2] = {9.1094e-28,9.1094e-28*ctx->masses[1]/ctx->masses[0]}; // erg/eV, e, m as per NRL;
-  PetscReal AA,sqrtA,v_abT,vTe,t1,TeDiff,Te,Ti,Tdiff;
+  const PetscReal    k_B = 1.6e-12, e_cgs = 4.8e-10, m_cgs[2] = {9.1094e-28, 9.1094e-28 * ctx->masses[1] / ctx->masses[0]}; // erg/eV, e, m as per NRL;
+  PetscReal          AA, sqrtA, v_abT, vTe, t1, TeDiff, Te, Ti, Tdiff;
 
   PetscFunctionBeginUser;
   PetscCall(VecGetArrayRead(X, &x));
-  Te = (2*x[E_PERP_IDX]+x[E_PAR_IDX])/3, Ti = (2*x[I_PERP_IDX]+x[I_PAR_IDX])/3;
-  v_abT = 1.8e-19 * PetscSqrtReal(m_cgs[0]*m_cgs[1]) * n_cm3[0] * ctx->lnLam * PetscPowReal(m_cgs[0]*Ti + m_cgs[1]*Te, -1.5);
+  Te = (2 * x[E_PERP_IDX] + x[E_PAR_IDX]) / 3, Ti = (2 * x[I_PERP_IDX] + x[I_PAR_IDX]) / 3;
+  v_abT = 1.8e-19 * PetscSqrtReal(m_cgs[0] * m_cgs[1]) * n_cm3[0] * ctx->lnLam * PetscPowReal(m_cgs[0] * Ti + m_cgs[1] * Te, -1.5);
   PetscCall(VecGetArray(F, &f));
-  for (PetscInt ii=0;ii<2;ii++) {
-    TeDiff = x[2*ii+E_PERP_IDX] - x[2*ii+E_PAR_IDX];
-    AA = x[2*ii+E_PERP_IDX]/x[2*ii+E_PAR_IDX] - 1;
-    if (AA<1e-6) t1 = 0;
+  for (PetscInt ii = 0; ii < 2; ii++) {
+    TeDiff = x[2 * ii + E_PERP_IDX] - x[2 * ii + E_PAR_IDX];
+    AA     = x[2 * ii + E_PERP_IDX] / x[2 * ii + E_PAR_IDX] - 1;
+    if (AA < 1e-6) t1 = 0;
     else {
       sqrtA = PetscSqrtReal(AA);
-      t1 = (-3 + (AA + 3) * PetscAtanReal(sqrtA)/sqrtA) / PetscSqr(AA);
+      t1    = (-3 + (AA + 3) * PetscAtanReal(sqrtA) / sqrtA) / PetscSqr(AA);
       //PetscReal vTeB = 8.2e-7 * n_cm3[0] * ctx->lnLam * PetscPowReal(Te, -1.5);
-      vTe = 2*PetscSqrtReal(PETSC_PI/m_cgs[ii]) * PetscSqr(PetscSqr(e_cgs)) * n_cm3[0] * ctx->lnLam * PetscPowReal(k_B*x[E_PAR_IDX], -1.5) * t1;
-      t1 = vTe * TeDiff * PetscSqrtReal(PETSC_PI); // ?????
+      vTe = 2 * PetscSqrtReal(PETSC_PI / m_cgs[ii]) * PetscSqr(PetscSqr(e_cgs)) * n_cm3[0] * ctx->lnLam * PetscPowReal(k_B * x[E_PAR_IDX], -1.5) * t1;
+      t1  = vTe * TeDiff * PetscSqrtReal(PETSC_PI); // ?????
     }
-    f[2*ii+E_PAR_IDX] = 2 * t1; // par
-    f[2*ii+E_PERP_IDX] = -t1; // perp
-    Tdiff = (ii == 0) ? (Ti - Te) : (Te - Ti);
-    f[2*ii+E_PAR_IDX]  += v_abT*Tdiff;
-    f[2*ii+E_PERP_IDX] += v_abT*Tdiff;
+    f[2 * ii + E_PAR_IDX]  = 2 * t1; // par
+    f[2 * ii + E_PERP_IDX] = -t1;    // perp
+    Tdiff                  = (ii == 0) ? (Ti - Te) : (Te - Ti);
+    f[2 * ii + E_PAR_IDX] += v_abT * Tdiff;
+    f[2 * ii + E_PERP_IDX] += v_abT * Tdiff;
     //PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n*** %d) INC: vTe= %e TeDiff= %e alpha=%g v_abT=%g\n", ii, vTe, TeDiff, AA, v_abT));
   }
   PetscCall(VecRestoreArrayRead(X, &x));
@@ -166,13 +172,13 @@ PetscErrorCode FormFunction(TS ts, PetscReal tdummy, Vec X, Vec F, void *ptr)
 PetscErrorCode createVec_NRL(LandauCtx *ctx, Vec *vec)
 {
   PetscScalar *x;
-  Vec Temps;
-  PetscReal  T0[4] = {300,390,200,260};
+  Vec          Temps;
+  PetscReal    T0[4] = {300, 390, 200, 260};
 
   PetscFunctionBeginUser;
   PetscCall(VecCreateSeq(PETSC_COMM_SELF, NUM_TEMPS, &Temps));
   PetscCall(VecGetArray(Temps, &x));
-  for (PetscInt i=0;i<NUM_TEMPS;i++) x[i] = T0[i];
+  for (PetscInt i = 0; i < NUM_TEMPS; i++) x[i] = T0[i];
   PetscCall(VecRestoreArray(Temps, &x));
   *vec = Temps;
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -180,12 +186,12 @@ PetscErrorCode createVec_NRL(LandauCtx *ctx, Vec *vec)
 
 PetscErrorCode createTS_NRL(LandauCtx *ctx, Vec Temps)
 {
-  TSAdapt            adapt;
-  TS ts;
+  TSAdapt adapt;
+  TS      ts;
 
   PetscFunctionBeginUser;
   PetscCall(TSCreate(PETSC_COMM_SELF, &ts));
-  ctx->data = (void*)ts; // 'data' is for applications (eg, monitors)
+  ctx->data = (void *)ts; // 'data' is for applications (eg, monitors)
   PetscCall(TSSetApplicationContext(ts, ctx));
   PetscCall(TSSetType(ts, TSRK));
   PetscCall(TSSetRHSFunction(ts, NULL, FormFunction, ctx));
@@ -204,10 +210,9 @@ PetscErrorCode createTS_NRL(LandauCtx *ctx, Vec Temps)
 
 PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void *actx)
 {
-
-  LandauCtx        *ctx = (LandauCtx *)actx; /* user-defined application context */
-  TS ts_nrl = (TS)ctx->data;
-  PetscInt          printing=0;
+  LandauCtx *ctx      = (LandauCtx *)actx; /* user-defined application context */
+  TS         ts_nrl   = (TS)ctx->data;
+  PetscInt   printing = 0;
 
   PetscFunctionBeginUser;
   if (ctx->verbose > 0) { // hacks to generate sparse data (eg, use '-dm_landau_verbose 1' and '-dm_landau_verbose -1' to get all steps printed)
@@ -219,10 +224,10 @@ PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void *actx)
     TSConvergedReason reason;
     PetscCall(TSGetConvergedReason(ts, &reason));
     if (stepi % ctx->verbose == 0 || reason || stepi == 1 || ctx->verbose < 0) {
-      PetscInt nDMs,id;
-      DM       pack;
-      Vec     *XsubArray = NULL;
-      PetscReal         T[2];
+      PetscInt  nDMs, id;
+      DM        pack;
+      Vec      *XsubArray = NULL;
+      PetscReal T[2];
       printing = 1;
       PetscCall(TSGetDM(ts, &pack));
       PetscCall(DMCompositeGetNumberDM(pack, &nDMs));
@@ -249,13 +254,13 @@ PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void *actx)
         /* get vz */
         PetscCall(PetscDSSetObjective(prob, 0, &f0_vz));
         PetscCall(DMPlexComputeIntegralFEM(dm, Xloc, tt, NULL));
-        user[0] = vz_0 = 0; // PetscRealPart(tt[0]) / n;
+        user[0] = vz_0 = PetscRealPart(tt[0]) / n;
         /* energy temp */
         PetscCall(PetscDSSetConstants(prob, 2, user));
         PetscCall(PetscDSSetObjective(prob, 0, &f0_v2_shift));
         PetscCall(DMPlexComputeIntegralFEM(dm, Xloc, tt, ctx));
         energy = PetscRealPart(tt[0]) * ctx->v_0 * ctx->v_0 * m_s / n / 3; // scale?
-        energy *= kev_joul * 1000; // T eV
+        energy *= kev_joul * 1000;                                         // T eV
         /* energy temp - par */
         PetscCall(PetscDSSetConstants(prob, 2, user));
         PetscCall(PetscDSSetObjective(prob, 0, &f0_v2_par_shift));
@@ -270,7 +275,7 @@ PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void *actx)
         e_perp *= kev_joul * 1000; // eV
         if (grid == 0) PetscCall(PetscPrintf(PETSC_COMM_WORLD, "step %4d) time= %e temperature (eV): ", (int)stepi, (double)time));
         PetscCall(PetscPrintf(PETSC_COMM_WORLD, "%s T= %9.4e T_par= %9.4e T_perp= %9.4e ", (grid == 0) ? "electron:" : ";ion:", (double)energy, (double)e_par, (double)e_perp));
-        if (n_cm3[grid]==0) n_cm3[grid] = ctx->n_0 * n * 1e-6; // does not change m^3 --> cm^3
+        if (n_cm3[grid] == 0) n_cm3[grid] = ctx->n_0 * n * 1e-6; // does not change m^3 --> cm^3
         T[grid] = energy;
       }
       // cleanup
@@ -279,20 +284,20 @@ PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void *actx)
     }
   }
   /* evolve NRL data */
-  if (n_cm3[NUM_TEMPS/2-1] < 0 && ts_nrl) {
+  if (n_cm3[NUM_TEMPS / 2 - 1] < 0 && ts_nrl) {
     PetscCall(TSDestroy(&ts_nrl));
     ctx->data = NULL;
     if (printing) PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\nSTOP printing NRL Ts\n"));
   } else if (ts_nrl) {
     const PetscScalar *x;
-    PetscReal dt_real, dt, TPerp_par[2];
-    Vec U;
+    PetscReal          dt_real, dt, TPerp_par[2];
+    Vec                U;
     PetscCall(TSGetTimeStep(ts, &dt)); // dt for NEXT time step
     dt_real = dt * ctx->t_0;
     PetscCall(TSGetSolution(ts_nrl, &U));
     if (printing) {
       PetscCall(VecGetArrayRead(U, &x));
-      PetscCall(PetscPrintf(PETSC_COMM_WORLD,"NRL_i_par= %9.4e NRL_i_perp= %9.4e ",PetscRealPart(x[I_PAR_IDX]), PetscRealPart(x[I_PERP_IDX])));
+      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "NRL_i_par= %9.4e NRL_i_perp= %9.4e ", PetscRealPart(x[I_PAR_IDX]), PetscRealPart(x[I_PERP_IDX])));
       TPerp_par[1] = x[I_PERP_IDX] - x[I_PAR_IDX];
       if (n_cm3[0] > 0) {
         PetscCall(PetscPrintf(PETSC_COMM_WORLD, "NRL_e_par= %9.4e NRL_e_perp= %9.4e\n", PetscRealPart(x[E_PAR_IDX]), PetscRealPart(x[E_PERP_IDX])));
@@ -302,14 +307,12 @@ PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void *actx)
     }
     // we have the next time step, so need to advance now
     PetscCall(TSSetTimeStep(ts_nrl, dt_real));
-    PetscCall(TSSetMaxSteps(ts_nrl, stepi+1)); // next step
+    PetscCall(TSSetMaxSteps(ts_nrl, stepi + 1)); // next step
     PetscCall(TSSolve(ts_nrl, NULL));
     //if (printing && n_cm3[0] > 0 && TPerp_par[0] < 1) n_cm3[0] = -1; // this will stop next one
     //if (printing && n_cm3[1] > 0 && TPerp_par[1] < 1) n_cm3[1] = -1; // this will stop next one
   } else if (printing) PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n"));
-  if (printing) {
-    PetscCall(DMPlexLandauPrintNorms(X, stepi /*id + 1*/));
-  }
+  if (printing) { PetscCall(DMPlexLandauPrintNorms(X, stepi /*id + 1*/)); }
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -319,11 +322,12 @@ int main(int argc, char **argv)
   DM          pack;
   Vec         X;
   PetscInt    dim = 2, nDMs;
-  TS          ts,ts_nrl=NULL;
+  TS          ts, ts_nrl = NULL;
   Mat         J;
   Vec        *XsubArray = NULL;
   LandauCtx  *ctx;
   PetscMPIInt rank;
+  PetscBool   use_nrl = PETSC_TRUE;
 
   PetscFunctionBeginUser;
   PetscCall(PetscInitialize(&argc, &argv, NULL, help));
@@ -343,6 +347,7 @@ int main(int argc, char **argv)
     //PetscCall(PetscOptionsClearValue(NULL, "-"));
   }
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-dim", &dim, NULL));
+  PetscCall(PetscOptionsGetBool(NULL, NULL, "-use_nrl", &use_nrl, NULL));
   /* Create a mesh */
   PetscCall(DMPlexLandauCreateVelocitySpace(PETSC_COMM_SELF, dim, "", &X, &J, &pack));
   PetscCall(DMSetUp(pack));
@@ -379,10 +384,10 @@ int main(int argc, char **argv)
   PetscCall(TSSetSolution(ts, X));
   PetscCall(TSMonitorSet(ts, Monitor, ctx, NULL));
   /* Create NRL timestepping */
-  if (ctx->verbose) {
-    Vec      NRL_vec;
+  if (use_nrl) {
+    Vec NRL_vec;
     PetscCall(createVec_NRL(ctx, &NRL_vec));
-    PetscCall(createTS_NRL(ctx,NRL_vec));
+    PetscCall(createTS_NRL(ctx, NRL_vec));
     PetscCall(VecDestroy(&NRL_vec));
   }
   /* solve */
