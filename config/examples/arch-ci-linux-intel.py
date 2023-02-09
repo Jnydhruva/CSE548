@@ -33,5 +33,6 @@ if __name__ == '__main__':
     '--download-cmake', # need cmake-3.16+ to build Kokkos
     '--download-raja',
     '--with-strict-petscerrorcode',
+    '--with-coverage',
   ]
   configure.petsc_configure(configure_options)

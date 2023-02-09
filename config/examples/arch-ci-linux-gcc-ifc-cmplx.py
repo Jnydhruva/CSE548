@@ -31,6 +31,7 @@ configure_options = [
   '--download-kokkos-kernels=1',
   '--download-fblaslapack=1',
   '--with-strict-petscerrorcode',
+  '--with-coverage',
   ]
 
 if __name__ == '__main__':

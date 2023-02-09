@@ -21,6 +21,7 @@ configure_options = [
   '--download-scalapack=1',
   '--download-mumps=1',
   '--with-strict-petscerrorcode',
+  '--with-coverage',
   ]
 
 if __name__ == '__main__':

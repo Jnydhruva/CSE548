@@ -15,6 +15,7 @@ if __name__ == '__main__':
     '--with-mpi-dir=/nfs/gce/projects/petsc/soft/gcc-7.4.0/mpich-3.3.2',
     '--with-mpi-f90module-visibility=0',
     '--with-strict-petscerrorcode',
+    '--with-coverage',
   ]
   configure.petsc_configure(configure_options)
 
