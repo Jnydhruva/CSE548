@@ -11,8 +11,6 @@
 
 stages:
   - stage-1
-  - stage-2
-  - stage-3
   - stage-4
 variables:
   GIT_STRATEGY: fetch
@@ -257,7 +255,7 @@ pause-for-approval:
     - make CFLAGS="${MAKE_CFLAGS}" CXXFLAGS="${MAKE_CXXFLAGS}" FFLAGS="${MAKE_FFLAGS}" check || if [ -f naglicenseproblem ]; then exit 126; else exit 1; fi
     - make updatedatafiles
     - if [ -z ${DISABLE_PETSC4PY_TESTS+x} ]; then if [ -z ${ENABLE_PETSC4PY_LDPRELOAD+x} ]; then echo "NOT using LD_PRELOAD"; make petsc4pytest; else echo "using LD_PRELOAD"; LD_PRELOAD=${PWD}/${TEST_ARCH}/lib/libpetsc.so make petsc4pytest; fi; fi
-    - if [ -z ${DISABLE_TESTS+x} ]; then make CFLAGS="${MAKE_CFLAGS}" CXXFLAGS="${MAKE_CXXFLAGS}" FFLAGS="${MAKE_FFLAGS}" cleantest allgtests-tap TIMEOUT=${TIMEOUT}  ${TEST_OPTS} || if [ -f naglicenseproblem ]; then exit 126; else exit 1; fi; fi
+    - if [ -z ${DISABLE_TESTS+x} ]; then make cleantest && make CFLAGS="${MAKE_CFLAGS}" CXXFLAGS="${MAKE_CXXFLAGS}" FFLAGS="${MAKE_FFLAGS}" allgtests-tap TIMEOUT=${TIMEOUT}  ${TEST_OPTS} || if [ -f naglicenseproblem ]; then exit 126; else exit 1; fi; fi
     - if [ ! -z ${RUN_GCOV_OPTIONS+x} ]; then printf "RUN_GCOV_OPTIONS:$RUN_GCOV_OPTIONS\n"; fi
     - if [ ! -z ${RUN_GCOV+x} ]; then make gcov PETSC_GCOV_OPTIONS="${RUN_GCOV_OPTIONS}"; fi
   artifacts:
@@ -278,11 +276,11 @@ pause-for-approval:
 
 .stage-2:
   extends: .stage-23
-  stage: stage-2
+  stage: stage-1
 
 .stage-3:
   extends: .stage-23
-  stage: stage-3
+  stage: stage-1
 
 #
 # The following provide templates for various OSes for pre/post info
@@ -1098,7 +1096,7 @@ analyze-pipeline:
 # Base job for a documentation build
 #
 .docs:
-  stage: stage-3
+  stage: stage-1
   tags:
     - gce-stage2
   before_script:
