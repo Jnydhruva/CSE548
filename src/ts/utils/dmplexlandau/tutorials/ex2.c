@@ -754,6 +754,6 @@ int main(int argc, char **argv)
     requires: !complex double defined(PETSC_USE_DMLANDAU_2D)
     suffix: single
     nsize: 1
-    args: -dm_refine 2 -dm_landau_num_species_grid 1 -dm_landau_thermal_temps 1 -dm_landau_electron_shift 1.25 -petscspace_degree 3 -snes_converged_reason -ts_type beuler -ts_dt .1 -ex2_plot_dt .1 -ts_max_steps 1 -ex2_grid_view_idx 0 -ex2_dm_view -snes_rtol 1.e-13 -snes_stol 1.e-13 -dm_landau_verbose 2 -ex2_print_period 1 -ksp_type preonly -pc_type lu 
+    args: -dm_refine 2 -dm_landau_num_species_grid 1 -dm_landau_thermal_temps 1 -dm_landau_electron_shift 1.25 -petscspace_degree 3 -snes_converged_reason -ts_type beuler -ts_dt .1 -ex2_plot_dt .1 -ts_max_steps 1 -ex2_grid_view_idx 0 -ex2_dm_view -snes_rtol 1.e-13 -snes_stol 1.e-13 -dm_landau_verbose 2 -ex2_print_period 1 -ksp_type preonly -pc_type lu
 
 TEST*/
