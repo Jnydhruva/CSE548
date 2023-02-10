@@ -225,10 +225,10 @@ PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void *actx)
     TSConvergedReason reason;
     PetscCall(TSGetConvergedReason(ts, &reason));
     if (stepi % ctx->verbose == 0 || reason || stepi == 1 || ctx->verbose < 0) {
-      PetscInt  nDMs, id;
-      DM        pack;
-      Vec      *XsubArray = NULL;
-      printing = 1;
+      PetscInt nDMs, id;
+      DM       pack;
+      Vec     *XsubArray = NULL;
+      printing           = 1;
       PetscCall(TSGetDM(ts, &pack));
       PetscCall(DMCompositeGetNumberDM(pack, &nDMs));
       PetscCall(DMGetOutputSequenceNumber(ctx->plex[0], &id, NULL));
