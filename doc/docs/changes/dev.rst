@@ -157,7 +157,7 @@ Changes: Development
 .. rubric:: TS:
 
 - Add ``TSPruneIJacobianColor()`` to improve the MFFD coloring
-- Add support for first-order adjoint calculation for ARKIMEX
+- Add support for first-order adjoint calculation for ``TSARKIMEX``
 
 .. rubric:: TAO:
 
