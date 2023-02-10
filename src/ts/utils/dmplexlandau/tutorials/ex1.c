@@ -143,26 +143,26 @@ PetscErrorCode   FormFunction(TS ts, PetscReal tdummy, Vec X, Vec F, void *ptr)
 
   PetscFunctionBeginUser;
   PetscCall(VecGetArrayRead(X, &x));
-  Te = (2 * x[E_PERP_IDX] + x[E_PAR_IDX]) / 3, Ti = (2 * x[I_PERP_IDX] + x[I_PAR_IDX]) / 3;
+  Te = PetscRealPart(2 * x[E_PERP_IDX] + x[E_PAR_IDX]) / 3, Ti = PetscRealPart(2 * x[I_PERP_IDX] + x[I_PAR_IDX]) / 3;
   v_abT = 1.8e-19 * PetscSqrtReal(m_cgs[0] * m_cgs[1]) * n_cm3[0] * ctx->lnLam * PetscPowReal(m_cgs[0] * Ti + m_cgs[1] * Te, -1.5);
   PetscCall(VecGetArray(F, &f));
   for (PetscInt ii = 0; ii < 2; ii++) {
-    TeDiff = x[2 * ii + E_PERP_IDX] - x[2 * ii + E_PAR_IDX];
-    AA     = x[2 * ii + E_PERP_IDX] / x[2 * ii + E_PAR_IDX] - 1;
+    PetscReal tPerp = PetscRealPart(x[2 * ii + E_PERP_IDX]), tPar = PetscRealPart(x[2 * ii + E_PAR_IDX]);
+    TeDiff = tPerp - tPar;
+    AA     = tPerp / tPar - 1;
     if (AA < 1e-6) t1 = 0;
     else {
       sqrtA = PetscSqrtReal(AA);
       t1    = (-3 + (AA + 3) * PetscAtanReal(sqrtA) / sqrtA) / PetscSqr(AA);
       //PetscReal vTeB = 8.2e-7 * n_cm3[0] * ctx->lnLam * PetscPowReal(Te, -1.5);
       vTe = 2 * PetscSqrtReal(PETSC_PI / m_cgs[ii]) * PetscSqr(PetscSqr(e_cgs)) * n_cm3[0] * ctx->lnLam * PetscPowReal(k_B * x[E_PAR_IDX], -1.5) * t1;
-      t1  = vTe * TeDiff * PetscSqrtReal(PETSC_PI); // ?????
+      t1  = vTe * TeDiff * PetscSqrtReal(PETSC_PI); // scaling form NRL that makes it work ???
     }
     f[2 * ii + E_PAR_IDX]  = 2 * t1; // par
     f[2 * ii + E_PERP_IDX] = -t1;    // perp
     Tdiff                  = (ii == 0) ? (Ti - Te) : (Te - Ti);
     f[2 * ii + E_PAR_IDX] += v_abT * Tdiff;
     f[2 * ii + E_PERP_IDX] += v_abT * Tdiff;
-    //PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n*** %d) INC: vTe= %e TeDiff= %e alpha=%g v_abT=%g\n", ii, vTe, TeDiff, AA, v_abT));
   }
   PetscCall(VecRestoreArrayRead(X, &x));
   PetscCall(VecRestoreArray(F, &f));
@@ -228,7 +228,6 @@ PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void *actx)
       PetscInt  nDMs, id;
       DM        pack;
       Vec      *XsubArray = NULL;
-      PetscReal T[2];
       printing = 1;
       PetscCall(TSGetDM(ts, &pack));
       PetscCall(DMCompositeGetNumberDM(pack, &nDMs));
@@ -277,7 +276,6 @@ PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void *actx)
         if (grid == 0) PetscCall(PetscPrintf(PETSC_COMM_WORLD, "step %4d) time= %e temperature (eV): ", (int)stepi, (double)time));
         PetscCall(PetscPrintf(PETSC_COMM_WORLD, "%s T= %9.4e T_par= %9.4e T_perp= %9.4e ", (grid == 0) ? "electron:" : ";ion:", (double)energy, (double)e_par, (double)e_perp));
         if (n_cm3[grid] == 0) n_cm3[grid] = ctx->n_0 * n * 1e-6; // does not change m^3 --> cm^3
-        T[grid] = energy;
       }
       // cleanup
       PetscCall(DMCompositeRestoreAccessArray(pack, X, nDMs, NULL, XsubArray));
@@ -291,18 +289,16 @@ PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void *actx)
     if (printing) PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\nSTOP printing NRL Ts\n"));
   } else if (ts_nrl) {
     const PetscScalar *x;
-    PetscReal          dt_real, dt, TPerp_par[2];
+    PetscReal          dt_real, dt;
     Vec                U;
     PetscCall(TSGetTimeStep(ts, &dt)); // dt for NEXT time step
     dt_real = dt * ctx->t_0;
     PetscCall(TSGetSolution(ts_nrl, &U));
     if (printing) {
       PetscCall(VecGetArrayRead(U, &x));
-      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "NRL_i_par= %9.4e NRL_i_perp= %9.4e ", PetscRealPart(x[I_PAR_IDX]), PetscRealPart(x[I_PERP_IDX])));
-      TPerp_par[1] = x[I_PERP_IDX] - x[I_PAR_IDX];
+      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "NRL_i_par= %9.4e NRL_i_perp= %9.4e ", (double)PetscRealPart(x[I_PAR_IDX]), (double)PetscRealPart(x[I_PERP_IDX])));
       if (n_cm3[0] > 0) {
-        PetscCall(PetscPrintf(PETSC_COMM_WORLD, "NRL_e_par= %9.4e NRL_e_perp= %9.4e\n", PetscRealPart(x[E_PAR_IDX]), PetscRealPart(x[E_PERP_IDX])));
-        TPerp_par[0] = x[E_PERP_IDX] - x[E_PAR_IDX];
+        PetscCall(PetscPrintf(PETSC_COMM_WORLD, "NRL_e_par= %9.4e NRL_e_perp= %9.4e\n", (double)PetscRealPart(x[E_PAR_IDX]), (double)PetscRealPart(x[E_PERP_IDX])));
       } else PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n"));
       PetscCall(VecRestoreArrayRead(U, &x));
     }
@@ -310,8 +306,6 @@ PetscErrorCode Monitor(TS ts, PetscInt stepi, PetscReal time, Vec X, void *actx)
     PetscCall(TSSetTimeStep(ts_nrl, dt_real));
     PetscCall(TSSetMaxSteps(ts_nrl, stepi + 1)); // next step
     PetscCall(TSSolve(ts_nrl, NULL));
-    //if (printing && n_cm3[0] > 0 && TPerp_par[0] < 1) n_cm3[0] = -1; // this will stop next one
-    //if (printing && n_cm3[1] > 0 && TPerp_par[1] < 1) n_cm3[1] = -1; // this will stop next one
   } else if (printing) PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n"));
   if (printing) { PetscCall(DMPlexLandauPrintNorms(X, stepi /*id + 1*/)); }
 
