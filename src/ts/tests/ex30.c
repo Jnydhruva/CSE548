@@ -120,6 +120,7 @@ PetscErrorCode gridToParticles(const DM dm, DM sw, Vec rhs, Vec work, Mat M_p, M
       PetscCall(MatViewFromOptions(D, NULL, "-ftop2_D_mat_view"));
       PetscCall(MatViewFromOptions(M_p, NULL, "-ftop2_Mp_mat_view"));
       PetscCall(MatViewFromOptions(matshellctx->MpTrans, NULL, "-ftop2_MpTranspose_mat_view"));
+      PetscCall(MatViewFromOptions(MtM, NULL, "-ftop2_MtM_mat_view"));
     }
   }
   if (is_lsqr) {
@@ -357,7 +358,7 @@ PetscErrorCode go(TS ts, Vec X, const PetscInt NUserV, const PetscInt a_Np, cons
             DM             dm   = grid_dm[grid];
             DM             sw   = globSwarmArray[LAND_PACK_IDX(b_id, grid)];
             Vec            subX = globXArray[LAND_PACK_IDX(b_id, grid)], work = t_fhat[grid][tid];
-            PetscInfo(pack, "particlesToGrid %" PetscInt_FMT ".%" PetscInt_FMT ") particlesToGrid for local batch %" PetscInt_FMT "\n", global_batch_id, grid, LAND_PACK_IDX(b_id, grid));
+            PetscCall(PetscInfo(pack, "particlesToGrid %" PetscInt_FMT ".%" PetscInt_FMT ") particlesToGrid for local batch %" PetscInt_FMT "\n", global_batch_id, grid, LAND_PACK_IDX(b_id, grid)));
             ierr_t = particlesToGrid(dm, sw, Np_t[grid][tid], tid, dim, xx_t[grid][tid], yy_t[grid][tid], zz_t[grid][tid], wp_t[grid][tid], subX, &globMpArray[LAND_PACK_IDX(b_id, grid)]);
             if (ierr_t) ierr = ierr_t;
             // u = M^_1 f_w
@@ -398,7 +399,7 @@ PetscErrorCode go(TS ts, Vec X, const PetscInt NUserV, const PetscInt a_Np, cons
         if ((glb_b_id = global_batch_id + b_id) < NUserV) {
           for (PetscInt grid = 0; grid < ctx->num_grids; grid++) { // add same particels for all grids
             PetscErrorCode ierr_t;
-            PetscInfo(pack, "gridToParticles: global batch %" PetscInt_FMT ", local batch b=%" PetscInt_FMT ", grid g=%" PetscInt_FMT ", index(b,g) %" PetscInt_FMT "\n", global_batch_id, b_id, grid, LAND_PACK_IDX(b_id, grid));
+            PetscCall(PetscInfo(pack, "gridToParticles: global batch %" PetscInt_FMT ", local batch b=%" PetscInt_FMT ", grid g=%" PetscInt_FMT ", index(b,g) %" PetscInt_FMT "\n", global_batch_id, b_id, grid, LAND_PACK_IDX(b_id, grid)));
             ierr_t = gridToParticles(grid_dm[grid], globSwarmArray[LAND_PACK_IDX(b_id, grid)], globXArray[LAND_PACK_IDX(b_id, grid)], t_fhat[grid][tid], globMpArray[LAND_PACK_IDX(b_id, grid)], g_Mass[grid]);
             if (ierr_t) ierr = ierr_t;
           }
@@ -536,11 +537,11 @@ int main(int argc, char **argv)
           -dm_landau_amr_post_refine 0 -number_particles_per_dimension 5 -dm_plex_hash_location \
           -dm_landau_batch_size 1 -number_spatial_vertices 1 -dm_landau_batch_view_idx 0 -view_vertex_target 0 -view_grid_target 0 \
           -dm_landau_n 1.000018,1,1e-6 -dm_landau_thermal_temps 2,1,1 -dm_landau_ion_masses 2,180 -dm_landau_ion_charges 1,18 \
-          -ftop_ksp_converged_reason -ftop_ksp_rtol 1e-6 -ftop_ksp_type cg -ftop_pc_type jacobi \
+          -ftop_ksp_converged_reason -ftop_ksp_rtol 1e-12 -ftop_ksp_type cg -ftop_pc_type jacobi \
           -ksp_type preonly -pc_type lu \
           -ptof_ksp_type cg -ptof_pc_type jacobi -ptof_ksp_converged_reason -ptof_ksp_rtol 1e-6\
           -snes_converged_reason -snes_monitor -snes_rtol 1e-9 -snes_stol 1e-9\
-          -ts_dt 0.1 -ts_exact_final_time stepover -ts_max_snes_failures -1 -ts_max_steps 1 -ts_monitor -ts_type beuler -info :vec -dm_landau_use_relativistic_corrections
+          -ts_dt 0.1 -ts_exact_final_time stepover -ts_max_snes_failures -1 -ts_max_steps 1 -ts_monitor -ts_type beuler -info :vec
 
     test:
       suffix: cpu_3d
