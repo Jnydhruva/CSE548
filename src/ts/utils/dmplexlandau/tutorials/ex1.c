@@ -155,7 +155,7 @@ PetscErrorCode   FormFunction(TS ts, PetscReal tdummy, Vec X, Vec F, void *ptr)
       sqrtA = PetscSqrtReal(AA);
       t1    = (-3 + (AA + 3) * PetscAtanReal(sqrtA) / sqrtA) / PetscSqr(AA);
       //PetscReal vTeB = 8.2e-7 * n_cm3[0] * ctx->lnLam * PetscPowReal(Te, -1.5);
-      vTe = 2 * PetscSqrtReal(PETSC_PI / m_cgs[ii]) * PetscSqr(PetscSqr(e_cgs)) * n_cm3[0] * ctx->lnLam * PetscPowReal(k_B * x[E_PAR_IDX], -1.5) * t1;
+      vTe = PetscRealPart(2 * PetscSqrtReal(PETSC_PI / m_cgs[ii]) * PetscSqr(PetscSqr(e_cgs)) * n_cm3[0] * ctx->lnLam * PetscPowReal(k_B * x[E_PAR_IDX], -1.5)) * t1;
       t1  = vTe * TeDiff * PetscSqrtReal(PETSC_PI); // scaling form NRL that makes it work ???
     }
     f[2 * ii + E_PAR_IDX]  = 2 * t1; // par
