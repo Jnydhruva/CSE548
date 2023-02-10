@@ -1164,10 +1164,10 @@ static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, Pet
       for (nz = d = 0; d < Nv; d++) {
         PetscReal z = PetscRealPart(coef[d * dim + (dim - 1)]), x = PetscSqr(PetscRealPart(coef[d * dim + 0])) + ((dim == 3) ? PetscSqr(PetscRealPart(coef[d * dim + 1])) : 0);
         x = PetscSqrtReal(x);
-        if (type == 0 && (z < PETSC_MACHINE_EPSILON * 10. || z > ctx->re_radius - PETSC_MACHINE_EPSILON * 10.)) outside++; /* first pass don't refine bottom */
-        else if (x < PETSC_MACHINE_EPSILON * 10. && PetscAbs(z) < PETSC_MACHINE_EPSILON * 10.) doit = 1;                   /* refine origin */
-        else if (type == 1 && (z > ctx->vperp0_radius1 || z < -ctx->vperp0_radius1)) outside++;                            /* don't refine outside electron refine radius */
-        else if (type == 3 && (z > ctx->vperp0_radius2 || z < -ctx->vperp0_radius2)) outside++;                            /* don't refine outside ion refine radius */
+        if (type == 0 && ctx->re_radius > 0 && (z < -PETSC_MACHINE_EPSILON * 10. || z > ctx->re_radius + PETSC_MACHINE_EPSILON * 10.)) outside++; /* first pass don't refine bottom */
+        else if (x < PETSC_MACHINE_EPSILON * 10. && PetscAbs(z) < PETSC_MACHINE_EPSILON * 10.) doit = 1;                                          /* refine origin */
+        else if (type == 1 && (z > ctx->vperp0_radius1 || z < -ctx->vperp0_radius1)) outside++;                                                   /* don't refine outside electron refine radius */
+        else if (type == 3 && (z > ctx->vperp0_radius2 || z < -ctx->vperp0_radius2)) outside++;                                                   /* don't refine outside ion refine radius */
         if (x < PETSC_MACHINE_EPSILON * 10.) nz++;
       }
       PetscCall(DMPlexVecRestoreClosure(cdm, cs, coords, c, &csize, &coef));
