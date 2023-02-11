@@ -1168,8 +1168,8 @@ static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, Pet
           if (ctx->re_radius > PETSC_SQRT_MACHINE_EPSILON && (z < -PETSC_MACHINE_EPSILON * 10. || z > ctx->re_radius + PETSC_MACHINE_EPSILON * 10.)) outside++; /* first pass don't refine bottom */
         } else if (type == 2 && x < PETSC_MACHINE_EPSILON * 10. && PetscAbs(z) < PETSC_MACHINE_EPSILON * 10.) doit = 1;                                         /* refine origin */
         else if (type == 1 && (z > ctx->vperp0_radius1 || z < -ctx->vperp0_radius1)) outside++;                                                                 /* don't refine outside electron refine radius */
-        else if (type == 3 && (z > ctx->vperp0_radius2 || z < -ctx->vperp0_radius2)) outside++;                                                                 /* don't refine outside ion refine radius */
-        if (x < PETSC_MACHINE_EPSILON * 10.) nz++;
+        else if (type == 3 && (z > ctx->vperp0_radius2 || z < -ctx->vperp0_radius2)) outside++;                                                                 /* refine r=0 cells on refinement front */
+        if (x < PETSC_MACHINE_EPSILON * 10. && type != 0) nz++;
       }
       PetscCall(DMPlexVecRestoreClosure(cdm, cs, coords, c, &csize, &coef));
       if (doit || (outside < Nv && nz)) {
