@@ -507,58 +507,104 @@ PetscErrorCode DMGetFirstLabeledPoint(DM dm, DM odm, DMLabel label, PetscInt num
 }
 
 /*
-  4.   Check cone each point for input point
+  Input Paramters:
++ pdm   - The parent DM list
+. l     - The index in the parent list of the parent DM
+. tr    - The transform of the parent DM
+. p     - Point in the parent mesh
+. pdim  - The dimension for k-cells
+- point - The original point for which I want a cell in the star
+
+  Output Paramters:
+. cell - The k-cell which has p in its star
+
+*/
+static PetscErrorCode HandlePoint_Private(DM pdm[], PetscInt l, PetscInt p, PetscInt pdim, PetscInt point, PetscInt *cell)
+{
+  DMPlexTransform tr = ((DM_Plex *) pdm[l-1]->data)->tr;
+  DMPolytopeType *rct;
+  DMPolytopeType  ct;
+  PetscInt       *rsize, *cone, *ornt;
+  PetscInt        rt, Nct, pNew;
+
+  PetscFunctionBegin;
+  PetscCall(DMPlexGetCellType(pdm[l], p, &ct));
+  PetscCall(DMPlexTransformCellTransform(tr, ct, p, &rt, &Nct, &rct, &rsize, &cone, &ornt));
+
+  for (PetscInt n = 0; n < Nct; ++n) {
+    for (PetscInt r = 0; r < rsize[n]; ++r) {
+      PetscCall(DMPlexTransformGetTargetPoint(tr, ct, rct[n], p, r, &pNew));
+      if (l > 1) {
+        PetscCall(HandlePoint_Private(pdm, l - 1, pNew, pdim, point, cell));
+      } else if (DMPolytopeTypeGetDim(rct[n]) == pdim) {
+        PetscInt *closure = NULL;
+        PetscInt  closureSize;
+
+        PetscCheck(l == 1, PETSC_COMM_SELF, PETSC_ERR_ARG_OUTOFRANGE, "Level must be 1, not %" PetscInt_FMT, l);
+        PetscCall(DMPlexGetTransitiveClosure(pdm[l - 1], pNew, PETSC_TRUE, &closureSize, &closure));
+        for (PetscInt cl = 0; cl < closureSize * 2; cl += 2) {
+          if (closure[cl] == point) {
+            *cell = pNew;
+            break;
+          }
+        }
+        PetscCall(DMPlexRestoreTransitiveClosure(pdm[l - 1], pNew, PETSC_TRUE, &closureSize, &closure));
+        if (*cell >= 0) break;
+      }
+    }
+    if (*cell >= 0) break;
+  }
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+/*
+  FindPointInSupport_Private - Find a mesh point 'cell' of given height in the support of 'point'
+
+  1-level algorithm:
+    - Get star of parent point
+    - For each star point, find child points at given height
+    -   Check that the given point is in the closure of the child point
+
+  k-level algorithm: Just extend the links between parent and child
+    - We need to prove the multilevel inclusion of closures and stars
+    - Get star of parent on first concrete mesh
+    - For each star point, iterate through chains of children
 */
 static PetscErrorCode FindPointInSupport_Private(DM dm, PetscInt point, PetscInt height, PetscInt *cell)
 {
   DMPlexTransform tr = ((DM_Plex *) dm->data)->tr;
   DMPolytopeType  ct, ctNew;
-  DM              odm;
+  DM             *pdm, odm;
   PetscInt       *support = NULL;
   PetscInt        supportSize;
-  PetscInt        dim, op, or;
+  PetscInt        dim, L = 1, op, or;
 
   PetscFunctionBegin;
   *cell = -1;
   PetscCall(DMGetDimension(dm, &dim));
-  // Get star of parent point in original mesh
+  // Get parent point on first concrete mesh
   PetscCall(DMPlexTransformGetDM(tr, &odm));
   PetscCall(DMPlexTransformGetSourcePoint(tr, point, &ct, &ctNew, &op, &or));
-  PetscCall(DMPlexGetTransitiveClosure(odm, op, PETSC_FALSE, &supportSize, &support));
-  // Iterate, starting from cells
+  while (((DM_Plex *)odm->data)->tr) {
+    tr = ((DM_Plex*)odm->data)->tr;
+    PetscCall(DMPlexTransformGetDM(tr, &odm));
+    PetscCall(DMPlexTransformGetSourcePoint(tr, op, &ct, &ctNew, &op, &or));
+    ++L;
+  }
+  PetscCall(PetscMalloc1(L + 1, &pdm));
+  pdm[0] = dm;
+  for (PetscInt l = 1; l <= L; ++l) PetscCall(DMPlexTransformGetDM(((DM_Plex*)pdm[l-1]->data)->tr, &pdm[l]));
+  // Iterate over star of parent, starting from cells
+  PetscCall(DMPlexGetTransitiveClosure(pdm[L], op, PETSC_FALSE, &supportSize, &support));
   for (PetscInt sp = supportSize - 1; sp > 0; --sp) {
-    const PetscInt  p = support[sp * 2];
-    DMPolytopeType *rct;
-    PetscInt       *rsize, *cone, *ornt;
-    PetscInt        rt, Nct, pNew;
-
-    PetscCall(DMPlexGetCellType(odm, p, &ct));
-    PetscCall(DMPlexTransformCellTransform(tr, ct, p, &rt, &Nct, &rct, &rsize, &cone, &ornt));
-    for (PetscInt n = 0; n < Nct; ++n) {
-      if (DMPolytopeTypeGetDim(rct[n]) == dim - height) {
-        for (PetscInt r = 0; r < rsize[n]; ++r) {
-          PetscInt       *closure = NULL;
-          PetscInt        closureSize;
-
-          PetscCall(DMPlexTransformGetTargetPoint(tr, ct, rct[n], p, r, &pNew));
-          PetscCall(DMPlexGetTransitiveClosure(dm, pNew, PETSC_TRUE, &closureSize, &closure));
-          for (PetscInt cl = 0; cl < closureSize * 2; cl += 2) {
-            if (closure[cl] == point) {
-              *cell = pNew;
-              break;
-            }
-          }
-          PetscCall(DMPlexRestoreTransitiveClosure(dm, pNew, PETSC_TRUE, &closureSize, &closure));
-          if (*cell >= 0) break;
-        }
-      }
-      if (*cell >= 0) break;
-    }
+    PetscCall(HandlePoint_Private(pdm, L, support[sp * 2], dim - height, point, cell));
     if (*cell >= 0) break;
   }
-  PetscCall(DMPlexRestoreTransitiveClosure(odm, op, PETSC_FALSE, &supportSize, &support));
+  PetscCall(DMPlexRestoreTransitiveClosure(pdm[L], op, PETSC_FALSE, &supportSize, &support));
+  PetscCall(PetscFree(pdm));
 
 #if 0
+  // This is the trivial algorithm, in the case that ephemeral meshes had supports
   PetscInt *closure = NULL;
   PetscInt  closureSize, cl;
   PetscCall(DMPlexGetTransitiveClosure(dm, point, PETSC_FALSE, &closureSize, &closure));
