@@ -1087,7 +1087,7 @@ static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, Pet
   PetscCall(PetscQuadratureGetData(quad, NULL, NULL, &Nq, NULL, NULL));
   PetscCheck(Nq <= LANDAU_MAX_NQ, ctx->comm, PETSC_ERR_ARG_WRONG, "Order too high. Nq = %" PetscInt_FMT " > LANDAU_MAX_NQ (%d)", Nq, LANDAU_MAX_NQ);
   PetscCall(PetscDSGetDimensions(prob, &Nb));
-  PetscCall(PetscInfo(sol, "Refine phase: %s\n", s_refine_names[type]));
+  PetscCall(PetscInfo(sol, "%" PetscInt_FMT ") Refine phase: %s\n", grid, s_refine_names[type]));
   if (type == 4) {
     for (c = cStart; c < cEnd; c++) PetscCall(DMLabelSetValue(adaptLabel, c, DM_ADAPT_REFINE));
   } else if (type == 2) {
@@ -1104,18 +1104,18 @@ static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, Pet
           minRad         = r;
           nr             = 0;
           rCellIdx[nr++] = c;
-          PetscCall(PetscInfo(sol, "\t\tFound first inner r=%e, cell %" PetscInt_FMT ", qp %" PetscInt_FMT "/%" PetscInt_FMT "\n", (double)r, c, qj + 1, Nq));
+          PetscCall(PetscInfo(sol, "\t\t%" PetscInt_FMT ") Found first inner r=%e, cell %" PetscInt_FMT ", qp %" PetscInt_FMT "/%" PetscInt_FMT "\n", grid, (double)r, c, qj + 1, Nq));
         } else if ((r - minRad) < PETSC_SQRT_MACHINE_EPSILON * 100. && nr < nrmax) {
           for (k = 0; k < nr; k++)
             if (c == rCellIdx[k]) break;
           if (k == nr) {
             rCellIdx[nr++] = c;
-            PetscCall(PetscInfo(sol, "\t\t\tFound another inner r=%e, cell %" PetscInt_FMT ", qp %" PetscInt_FMT "/%" PetscInt_FMT ", d=%e\n", (double)r, c, qj + 1, Nq, (double)(r - minRad)));
+            PetscCall(PetscInfo(sol, "\t\t\t%" PetscInt_FMT ") Found another inner r=%e, cell %" PetscInt_FMT ", qp %" PetscInt_FMT "/%" PetscInt_FMT ", d=%e\n", grid,(double)r, c, qj + 1, Nq, (double)(r - minRad)));
           }
         }
         if (ctx->sphere) {
           if ((tt = r - ctx->e_radius) > 0) {
-            PetscCall(PetscInfo(sol, "\t\t\t %" PetscInt_FMT " cell r=%g\n", c, (double)tt));
+            PetscCall(PetscInfo(sol, "%" PetscInt_FMT ") %" PetscInt_FMT " cell r=%g\n", grid,c, (double)tt));
             if (tt < eMinRad - PETSC_SQRT_MACHINE_EPSILON * 100.) {
               eMinRad             = tt;
               eMaxIdx             = 0;
@@ -1140,14 +1140,14 @@ static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, Pet
     if (ctx->sphere) {
       for (c = 0; c < eMaxIdx; c++) {
         PetscCall(DMLabelSetValue(adaptLabel, eCellIdx[c], DM_ADAPT_REFINE));
-        PetscCall(PetscInfo(sol, "\t\tRefine sphere e cell %" PetscInt_FMT " r=%g\n", eCellIdx[c], (double)eMinRad));
+        PetscCall(PetscInfo(sol, "\t\t%" PetscInt_FMT ") Refine sphere e cell %" PetscInt_FMT " r=%g\n", grid,eCellIdx[c], (double)eMinRad));
       }
       for (c = 0; c < iMaxIdx; c++) {
         PetscCall(DMLabelSetValue(adaptLabel, iCellIdx[c], DM_ADAPT_REFINE));
-        PetscCall(PetscInfo(sol, "\t\tRefine sphere i cell %" PetscInt_FMT " r=%g\n", iCellIdx[c], (double)iMinRad));
+        PetscCall(PetscInfo(sol, "\t\t%" PetscInt_FMT ") Refine sphere i cell %" PetscInt_FMT " r=%g\n", grid,iCellIdx[c], (double)iMinRad));
       }
     }
-    PetscCall(PetscInfo(sol, "\t\t\tRefined origin cells %" PetscInt_FMT ",%" PetscInt_FMT " r=%g\n", rCellIdx[0], rCellIdx[1], (double)minRad));
+    PetscCall(PetscInfo(sol, "\t\t\t%" PetscInt_FMT ") Refined origin cells %" PetscInt_FMT ",%" PetscInt_FMT " r=%g\n", grid,rCellIdx[0], rCellIdx[1], (double)minRad));
   } else if (type == 0 || type == 1 || type == 3) { /* refine along r=0 axis */
     PetscScalar *coef = NULL;
     Vec          coords;
@@ -1177,7 +1177,7 @@ static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, Pet
         nrefined++;
       }
     }
-    PetscCall(PetscInfo(sol, "\tRefined %" PetscInt_FMT " cells\n", nrefined));
+    PetscCall(PetscInfo(sol, "\t%" PetscInt_FMT ") Refined %" PetscInt_FMT " cells\n", grid,nrefined));
   }
   PetscCall(DMDestroy(&plex));
   PetscCall(DMAdaptLabel(forest, adaptLabel, &adaptedDM));
@@ -1189,7 +1189,7 @@ static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, Pet
     } else exit(33);                                           // ???????
     PetscCall(DMConvert(adaptedDM, DMPLEX, &plex));
     PetscCall(DMPlexGetHeightStratum(plex, 0, &cStart, &cEnd));
-    PetscCall(PetscInfo(sol, "\t\t\t\t%" PetscInt_FMT " cells, %" PetscInt_FMT " total quadrature points\n", cEnd - cStart, Nq * (cEnd - cStart)));
+    PetscCall(PetscInfo(sol, "\t\t\t\t%" PetscInt_FMT ") %" PetscInt_FMT " cells, %" PetscInt_FMT " total quadrature points\n", grid,cEnd - cStart, Nq * (cEnd - cStart)));
     PetscCall(DMDestroy(&plex));
   } else *newForest = NULL;
   PetscFunctionReturn(PETSC_SUCCESS);
