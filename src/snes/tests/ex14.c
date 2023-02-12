@@ -3,15 +3,15 @@ static char help[] = "Finite element discretization on mesh patches.\n\n\n";
 /*
   KNOWN BUGS:
 
-  1) Ephemeral meshes do not implement supports. However, we need the support to "add cells" for projection, which we need to insert boundary values. Yuck.
-
-  2) Coordinates created at the beginning in the ephemeral mesh. We really want to create only coordinate patches when we are asked to do so for FEGeom.
+  1) Coordinates created at the beginning in the ephemeral mesh. We really want to create only coordinate patches when we are asked to do so for FEGeom.
 
   IMPLEMENTATION:
 
   The corrector $C$ expresses maps the fine space $V$ into the kernel of restriction, or detail space $W$, and the complementary projector $I - C$ is a bijection between the coarse space $V_H$ and the optimized space $V_{vms}$. The example code makes a matrix $G$ whose rows are the optimized basis encoded in terms of fine space basis functions, so that it is $n \times N$. It is composed of the difference between the embedding of the original coarse basis $P_H$ and the corrector $C$, both of which have the same dimensions $n \times N$.
 
   We should be able to decompose this operation into projection at the element matrix level. I think we can bracket the element matrix with the transformation element matrices.
+
+  I have implemented a special check that finds a k-cell of given height in the support of any point. This allows us to impose boundary conditions on ephemeral meshes.
 
 */
 
@@ -28,6 +28,7 @@ const char *PatchSystemTypes[] = {"identity", "lod", "PatchSystemType", "PATCH_S
 
 typedef struct {
   PatchSystemType patchSysType; // Type of patch system
+  PetscBool       snesCheck;    // Check KSP solves with equivalent SNES solves
 } AppCtx;
 
 static PetscErrorCode zero(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nc, PetscScalar *u, void *ctx)
@@ -92,11 +93,13 @@ static PetscErrorCode ProcessOptions(MPI_Comm comm, AppCtx *options)
 {
   PetscFunctionBeginUser;
   options->patchSysType = PATCH_SYS_IDENTITY;
+  options->snesCheck    = PETSC_FALSE;
 
   PetscOptionsBegin(comm, "", "Mesh Patch Integration Options", "DMPLEX");
-  PetscOptionsEnum("-patch_sys_type", "The type of patch system, e.g. LOD", NULL, PatchSystemTypes, (PetscEnum) options->patchSysType, (PetscEnum *) &options->patchSysType, NULL);
+  PetscCall(PetscOptionsEnum("-patch_sys_type", "The type of patch system, e.g. LOD", NULL, PatchSystemTypes, (PetscEnum) options->patchSysType, (PetscEnum *) &options->patchSysType, NULL));
+  PetscCall(PetscOptionsBool("-snes_check", "Check KSP solves with equivalent SNES", NULL, options->snesCheck, &options->snesCheck, NULL));
   PetscOptionsEnd();
-  PetscFunctionReturn(0);
+  PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 static PetscErrorCode CreateMesh(MPI_Comm comm, AppCtx *user, DM *dm)
@@ -108,7 +111,7 @@ static PetscErrorCode CreateMesh(MPI_Comm comm, AppCtx *user, DM *dm)
   PetscCall(DMSetFromOptions(*dm));
   PetscCall(DMSetApplicationContext(*dm, user));
   PetscCall(DMViewFromOptions(*dm, NULL, "-dm_view"));
-  PetscFunctionReturn(0);
+  PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 static PetscErrorCode RefineMesh(DM dm, DM *rdm) {
@@ -129,7 +132,7 @@ static PetscErrorCode RefineMesh(DM dm, DM *rdm) {
   PetscCall(DMPlexTransformDestroy(&tr));
   PetscCall(DMPlexSetRegularRefinement(*rdm, PETSC_TRUE));
   PetscCall(DMSetCoarseDM(*rdm, dm));
-  PetscFunctionReturn(0);
+  PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 // TODO: Patch should be on PETSC_COMM_SELF
@@ -163,7 +166,7 @@ static PetscErrorCode CreatePatch(DM dm, PetscInt cell, DM *patch) {
   PetscCall(DMViewFromOptions(*patch, NULL, "-patch_view"));
   PetscCall(DMPlexTransformDestroy(&tr));
   PetscCall(DMPlexSetLocationAlg(*patch, DM_PLEX_LOCATE_GRID_HASH));
-  PetscFunctionReturn(0);
+  PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 static PetscErrorCode RefinePatch(DM patch, DM *rpatch) {
@@ -182,7 +185,7 @@ static PetscErrorCode RefinePatch(DM patch, DM *rpatch) {
   PetscCall(PetscObjectSetName((PetscObject)*rpatch, "Ephemeral Refined Patch"));
   PetscCall(DMViewFromOptions(*rpatch, NULL, "-patch_view"));
   PetscCall(DMPlexTransformDestroy(&tr));
-  PetscFunctionReturn(0);
+  PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 static PetscErrorCode SetupPrimalProblem(DM dm, AppCtx *user)
@@ -205,7 +208,7 @@ static PetscErrorCode SetupPrimalProblem(DM dm, AppCtx *user)
     PetscCall(PetscDSSetJacobian(ds, 1, 1, g0_mumu, NULL, NULL, NULL));
     PetscCall(PetscDSSetExactSolution(ds, 1, const_mu, user));
   }
-  PetscFunctionReturn(0);
+  PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 static PetscErrorCode SetupDiscretization(DM dm, PetscInt Nf, const char *names[], PetscErrorCode (*setup)(DM, AppCtx *), AppCtx *user)
@@ -233,7 +236,7 @@ static PetscErrorCode SetupDiscretization(DM dm, PetscInt Nf, const char *names[
     PetscCall(DMCopyDisc(dm, cdm));
     PetscCall(DMGetCoarseDM(cdm, &cdm));
   }
-  PetscFunctionReturn(0);
+  PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 static PetscErrorCode SetupPatchProblem_Identity(DM dm, AppCtx *user)
@@ -248,7 +251,7 @@ static PetscErrorCode SetupPatchProblem_Identity(DM dm, AppCtx *user)
   PetscCall(PetscDSSetResidual(ds, 0, f0_id_phi, NULL));
   PetscCall(PetscDSSetJacobian(ds, 0, 0, g0_id_phi, NULL, NULL, NULL));
   PetscCall(DMAddBoundary(dm, DM_BC_ESSENTIAL, "wall", label, 1, &id, 0, 0, NULL, (void (*)(void))zero, NULL, user, NULL));
-  PetscFunctionReturn(0);
+  PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 static PetscErrorCode SetupPatchProblem_LOD(DM dm, AppCtx *user)
@@ -267,7 +270,7 @@ static PetscErrorCode SetupPatchProblem_LOD(DM dm, AppCtx *user)
   PetscCall(PetscDSSetResidual(ds, 1, f0_mu, NULL));
   PetscCall(PetscDSSetJacobian(ds, 1, 1, g0_mumu, NULL, NULL, NULL));
   PetscCall(PetscDSSetExactSolution(ds, 1, const_mu, user));
-  PetscFunctionReturn(0);
+  PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 static PetscErrorCode SetupPatchProblem(DM patch, AppCtx *user)
@@ -283,7 +286,7 @@ static PetscErrorCode SetupPatchProblem(DM patch, AppCtx *user)
     PetscCall(SetupDiscretization(patch, 2, names, SetupPatchProblem_LOD, user));
     break;
   }
-  PetscFunctionReturn(0);
+  PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 
@@ -298,7 +301,7 @@ static PetscErrorCode PrintMatSetValues(PetscViewer viewer, Mat A, PetscInt poin
   for (i = 0; i < numRIndices; i++) PetscCall(PetscViewerASCIIPrintf(viewer, "[%d]mat row indices[%" PetscInt_FMT "] = %" PetscInt_FMT "\n", rank, i, rindices[i]));
   for (i = 0; i < numCIndices; i++) PetscCall(PetscViewerASCIIPrintf(viewer, "[%d]mat col indices[%" PetscInt_FMT "] = %" PetscInt_FMT "\n", rank, i, cindices[i]));
   numCIndices = numCIndices ? numCIndices : numRIndices;
-  if (!values) PetscFunctionReturn(0);
+  if (!values) PetscFunctionReturn(PETSC_SUCCESS);
   for (i = 0; i < numRIndices; i++) {
     PetscCall(PetscViewerASCIIPrintf(viewer, "[%d]", rank));
     for (j = 0; j < numCIndices; j++) {
@@ -310,7 +313,7 @@ static PetscErrorCode PrintMatSetValues(PetscViewer viewer, Mat A, PetscInt poin
     }
     PetscCall(PetscViewerASCIIPrintf(viewer, "\n"));
   }
-  PetscFunctionReturn(0);
+  PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 /*
@@ -471,7 +474,37 @@ static PetscErrorCode PatchSolve(DM dm, DM patch, PetscInt c, DM rdm, DM rpatch,
   PetscCall(SNESDestroy(&snes));
   PetscCall(MatDestroy(&P));
   PetscCall(PetscFree3(rows, cols, elemP));
-  PetscFunctionReturn(0);
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+// u is the KSP solution
+static PetscErrorCode SolveSystem_SNES(DM dm, Vec u)
+{
+  SNES      snes;
+  Vec       uTmp;
+  PetscReal nrm;
+  AppCtx    *user;
+
+  PetscFunctionBegin;
+  PetscCall(DMGetApplicationContext(dm, (void **)&user));
+  if (!user->snesCheck) PetscFunctionReturn(PETSC_SUCCESS);
+  PetscCall(DMGetGlobalVector(dm, &uTmp));
+  PetscCall(PetscObjectSetName((PetscObject)uTmp, "Coarse SNES Solution"));
+  PetscCall(SNESCreate(PetscObjectComm((PetscObject)dm), &snes));
+  PetscCall(SNESSetOptionsPrefix(snes, "check_"));
+  PetscCall(SNESSetDM(snes, dm));
+  PetscCall(SNESSetErrorIfNotConverged(snes, PETSC_TRUE));
+  PetscCall(SNESSetTolerances(snes, 10*PETSC_MACHINE_EPSILON, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT));
+  PetscCall(SNESSetFromOptions(snes));
+  PetscCall(DMPlexSetSNESLocalFEM(dm, user, user, user));
+  PetscCall(DMSNESCheckFromOptions(snes, uTmp));
+  PetscCall(SNESSolve(snes, NULL, uTmp));
+  PetscCall(SNESDestroy(&snes));
+  PetscCall(VecAXPY(uTmp, -1., u));
+  PetscCall(VecNorm(uTmp, NORM_INFINITY, &nrm));
+  PetscCall(DMRestoreGlobalVector(dm, &uTmp));
+  PetscCheck(nrm < PETSC_SMALL, PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "SNES Solution does not match KSP solution");
+  PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 static PetscErrorCode SolveSystems(DM dm, DM rdm, Mat P)
@@ -485,6 +518,7 @@ static PetscErrorCode SolveSystems(DM dm, DM rdm, Mat P)
   PetscFunctionBegin;
   // Create original coarse system
   PetscCall(DMCreateGlobalVector(dm, &u));
+  PetscCall(PetscObjectSetName((PetscObject)u, "Coarse Solution"));
   PetscCall(DMCreateGlobalVector(dm, &b));
   {
     Vec ul, bl;
@@ -495,6 +529,7 @@ static PetscErrorCode SolveSystems(DM dm, DM rdm, Mat P)
     PetscCall(VecSet(ul, 0.));
     PetscCall(DMPlexSNESComputeBoundaryFEM(dm, ul, NULL));
     PetscCall(DMPlexSNESComputeResidualFEM(dm, ul, bl, NULL));
+    PetscCall(VecScale(bl, -1.));
     PetscCall(DMLocalToGlobal(dm, bl, ADD_VALUES, b));
     PetscCall(DMRestoreLocalVector(dm, &ul));
     PetscCall(DMRestoreLocalVector(dm, &bl));
@@ -510,6 +545,7 @@ static PetscErrorCode SolveSystems(DM dm, DM rdm, Mat P)
   PetscCall(VecDestroy(&b));
   PetscCall(DMComputeL2Diff(dm, 0.0, exacts, NULL, u, &err));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Coarse L_2 Error: %g\n", (double)err));
+  PetscCall(SolveSystem_SNES(dm, u));
   PetscCall(VecDestroy(&u));
   // Create refined system
   PetscCall(DMCreateGlobalVector(rdm, &uref));
@@ -524,6 +560,7 @@ static PetscErrorCode SolveSystems(DM dm, DM rdm, Mat P)
     PetscCall(VecSet(ul, 0.));
     PetscCall(DMPlexSNESComputeBoundaryFEM(rdm, ul, NULL));
     PetscCall(DMPlexSNESComputeResidualFEM(rdm, ul, bl, NULL));
+    PetscCall(VecScale(bl, -1.));
     PetscCall(DMLocalToGlobal(rdm, bl, ADD_VALUES, bref));
     PetscCall(DMRestoreLocalVector(rdm, &ul));
     PetscCall(DMRestoreLocalVector(rdm, &bl));
@@ -557,7 +594,7 @@ static PetscErrorCode SolveSystems(DM dm, DM rdm, Mat P)
   }
   PetscCall(MatDestroy(&Aref));
   PetscCall(VecDestroy(&bref));
-  PetscFunctionReturn(0);
+  PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 int main(int argc, char **argv)
@@ -576,8 +613,8 @@ int main(int argc, char **argv)
   PetscCall(RefineMesh(dm, &rdm));
   PetscCall(SetupDiscretization(dm, 1, names, SetupPrimalProblem, &user));
   PetscCall(SetupDiscretization(rdm, 1, names, SetupPrimalProblem, &user));
-  PetscCall(SolveSystems(dm, rdm, P));
-  goto end;
+  //PetscCall(SolveSystems(dm, rdm, P));
+  //goto end;
   // Create global prolongator
   {
     PetscSection gs, rgs;
@@ -643,7 +680,8 @@ int main(int argc, char **argv)
     suffix: check_id
     args: -select_dm_plex_transform_type transform_filter \
           -patch_sys_type identity -phi_petscspace_degree 1 -pc_type lu \
-          -snes_error_if_not_converged -ksp_error_if_not_converged -snes_converged_reason -snes_monitor
+          -snes_error_if_not_converged -ksp_error_if_not_converged -snes_converged_reason -snes_monitor \
+            -ksp_rtol 1e-10
 
   test:
     suffix: check_lod
