@@ -25,7 +25,7 @@ class Configure(config.base.Configure):
     self.flibs            = []  # libraries needed for linking using the C or C++ compiler Fortran source code compiled with Fortran
     self.clibs            = []  # libraries needed for linking using the C++ or Fortran compiler C source code compiled with C
     self.cxxlibs          = []  # libraries needed for linking using the C or Fortran compiler C++ source code compiled with C++
-                                # clibs is only used in this file. The final link line that PETSc users includes cxxlibs and flibs
+                                # clibs is only used in this file. The final link line that PETSc users use includes cxxlibs and flibs
     self.skipdefaultpaths = []
     self.cxxCompileC      = False
     self.cxxRestrict      = ' '
@@ -444,7 +444,7 @@ class Configure(config.base.Configure):
     self.popLanguage()
 
   def checkCxxLibraries(self):
-    '''Determines the libraries needed to link using the C or Fortran compiler C+ source code compiled with C++. Result is stored in cxxlibs'''
+    '''Determines the libraries needed to link using the C or Fortran compiler C++ source code compiled with C++. Result is stored in cxxlibs'''
     skipcxxlibraries = 1
     self.setCompilers.saveLog()
     body   = '''#include <iostream>\n#include <vector>\nvoid asub(void)\n{std::vector<int> v;\ntry  { throw 20;  }  catch (int e)  { std::cout << "An exception occurred";  }}'''
@@ -512,10 +512,10 @@ class Configure(config.base.Configure):
       try:
         if self.checkCrossLink(body,"     program main\n      print*,'testing'\n      stop\n      end\n",language1='C++',language2='FC'):
           self.logWrite(self.setCompilers.restoreLog())
-          self.logPrint('additional C++ libraries are not needed when using FC linker')
+          self.logPrint('Additional C++ libraries are not needed when using FC linker')
         else:
           self.logWrite(self.setCompilers.restoreLog())
-          self.logPrint('additional C++ libraries are needed when using FC linker')
+          self.logPrint('Additional C++ libraries are needed when using FC linker')
           skipcxxlibraries = 0
       except RuntimeError as e:
         self.logWrite(self.setCompilers.restoreLog())
