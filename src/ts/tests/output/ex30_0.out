@@ -3,12 +3,12 @@ charges:       e=-1.602e-19; charges in elementary units:  1.000e+00  1.800e+01
 n:             e:  1.000e+00                           i:  1.000e+00  1.000e-06
 thermal T (K): e= 2.321e+07 i= 1.160e+07  1.160e+07. Normalization grid 0: v_0= 1.876e+07 ( 6.256e-02c) n_0= 1.000e+20 t_0= 1.637e-05 2 batched, view batch 1
 Domain radius (AMR levels) grid 0: par= 5.000e+00 perp= 5.000e+00 (0) , 1: par= 5.835e-02 perp= 5.835e-02 (0) , 2: par= 6.151e-03 perp= 6.151e-03 (0) 
-[0] <vec> adaptToleranceFEM(): Refine phase: Uniform
-[0] <vec> adaptToleranceFEM(): 				8 cells, 128 total quadrature points
-[0] <vec> adaptToleranceFEM(): Refine phase: Uniform
-[0] <vec> adaptToleranceFEM(): 				8 cells, 128 total quadrature points
-[0] <vec> adaptToleranceFEM(): Refine phase: Uniform
-[0] <vec> adaptToleranceFEM(): 				8 cells, 128 total quadrature points
+[0] <vec> adaptToleranceFEM(): 0) Refine phase: Uniform
+[0] <vec> adaptToleranceFEM(): 				0) 8 cells, 128 total quadrature points
+[0] <vec> adaptToleranceFEM(): 1) Refine phase: Uniform
+[0] <vec> adaptToleranceFEM(): 				1) 8 cells, 128 total quadrature points
+[0] <vec> adaptToleranceFEM(): 2) Refine phase: Uniform
+[0] <vec> adaptToleranceFEM(): 				2) 8 cells, 128 total quadrature points
 nu_beta:  3.232545e-23 3.232545e-23 1.047344e-20
 alpha[i]*beta[j]:
 alpha_nu[0,:]: 3.093538e+22:  1.000000e+00 1.000000e+00 3.240000e+02
@@ -28,11 +28,11 @@ Linear ptof_ solve converged due to CONVERGED_RTOL iterations 6
 0 TS dt 0.01 time 0.
     0 SNES Function norm 5.344593165923e-01 
     1 SNES Function norm 2.969210895755e-03 
-    2 SNES Function norm 2.186312537689e-05 
-    3 SNES Function norm 1.561519078742e-07 
-    4 SNES Function norm 1.154564011748e-09 
-    5 SNES Function norm 8.465231382297e-12 
-    6 SNES Function norm 6.034882931281e-14 
+    2 SNES Function norm 2.186312537808e-05 
+    3 SNES Function norm 1.561519079414e-07 
+    4 SNES Function norm 1.154565548455e-09 
+    5 SNES Function norm 8.466845607431e-12 
+    6 SNES Function norm 6.257625667182e-14 
   Nonlinear solve converged due to CONVERGED_SNORM_RELATIVE iterations 6
 1 TS dt 0.01 time 0.01
   1) species-0: charge density= -1.6162729305797e+01 z-momentum=  3.1953182136387e-18 energy=  4.8199648394544e+04
@@ -57,9 +57,9 @@ Linear ptof_ solve converged due to CONVERGED_RTOL iterations 6
     1 SNES Function norm 5.907229981917e-01 
     2 SNES Function norm 3.117890333223e-03 
     3 SNES Function norm 2.163651186069e-05 
-    4 SNES Function norm 1.491601578990e-07 
-    5 SNES Function norm 1.057795933157e-09 
-    6 SNES Function norm 7.572530922604e-12 
+    4 SNES Function norm 1.491601579003e-07 
+    5 SNES Function norm 1.057795935703e-09 
+    6 SNES Function norm 7.572545280786e-12 
   Nonlinear solve converged due to CONVERGED_SNORM_RELATIVE iterations 6
 1 TS dt 0.01 time 0.01
   1) species-0: charge density= -1.5216951533628e+01 z-momentum=  1.1417010904210e-18 energy=  4.2559628280316e+04
@@ -69,4 +69,4 @@ Linear ptof_ solve converged due to CONVERGED_RTOL iterations 6
 Linear ftop_ solve converged due to CONVERGED_RTOL iterations 3
 Linear ftop_ solve converged due to CONVERGED_RTOL iterations 3
 Linear ftop_ solve converged due to CONVERGED_RTOL iterations 3
-[0] <vec> go(): Total number density:   3.369774668056e-07 (  3.369774668056e-07); x-momentum =  -9.644911496659e-17 (  6.455110808139e-18); energy =   1.445347319404e+05 (  1.445347319404e+05) error = 1.774001e-13 (log10 of error = -12), 288 particles. Use 1 threads
+[0] <vec> go(): Total number density:   3.369774668056e-07 (  3.369774668056e-07); x-momentum =  -9.644914060194e-17 (  6.455110808139e-18); energy =   1.445347319404e+05 (  1.445347319404e+05) error = 1.767960e-13 (log10 of error = -12), 288 particles. Use 1 threads
