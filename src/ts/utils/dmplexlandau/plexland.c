@@ -1110,12 +1110,12 @@ static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, Pet
             if (c == rCellIdx[k]) break;
           if (k == nr) {
             rCellIdx[nr++] = c;
-            PetscCall(PetscInfo(sol, "\t\t\t%" PetscInt_FMT ") Found another inner r=%e, cell %" PetscInt_FMT ", qp %" PetscInt_FMT "/%" PetscInt_FMT ", d=%e\n", grid,(double)r, c, qj + 1, Nq, (double)(r - minRad)));
+            PetscCall(PetscInfo(sol, "\t\t\t%" PetscInt_FMT ") Found another inner r=%e, cell %" PetscInt_FMT ", qp %" PetscInt_FMT "/%" PetscInt_FMT ", d=%e\n", grid, (double)r, c, qj + 1, Nq, (double)(r - minRad)));
           }
         }
         if (ctx->sphere) {
           if ((tt = r - ctx->e_radius) > 0) {
-            PetscCall(PetscInfo(sol, "%" PetscInt_FMT ") %" PetscInt_FMT " cell r=%g\n", grid,c, (double)tt));
+            PetscCall(PetscInfo(sol, "%" PetscInt_FMT ") %" PetscInt_FMT " cell r=%g\n", grid, c, (double)tt));
             if (tt < eMinRad - PETSC_SQRT_MACHINE_EPSILON * 100.) {
               eMinRad             = tt;
               eMaxIdx             = 0;
@@ -1140,14 +1140,14 @@ static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, Pet
     if (ctx->sphere) {
       for (c = 0; c < eMaxIdx; c++) {
         PetscCall(DMLabelSetValue(adaptLabel, eCellIdx[c], DM_ADAPT_REFINE));
-        PetscCall(PetscInfo(sol, "\t\t%" PetscInt_FMT ") Refine sphere e cell %" PetscInt_FMT " r=%g\n", grid,eCellIdx[c], (double)eMinRad));
+        PetscCall(PetscInfo(sol, "\t\t%" PetscInt_FMT ") Refine sphere e cell %" PetscInt_FMT " r=%g\n", grid, eCellIdx[c], (double)eMinRad));
       }
       for (c = 0; c < iMaxIdx; c++) {
         PetscCall(DMLabelSetValue(adaptLabel, iCellIdx[c], DM_ADAPT_REFINE));
-        PetscCall(PetscInfo(sol, "\t\t%" PetscInt_FMT ") Refine sphere i cell %" PetscInt_FMT " r=%g\n", grid,iCellIdx[c], (double)iMinRad));
+        PetscCall(PetscInfo(sol, "\t\t%" PetscInt_FMT ") Refine sphere i cell %" PetscInt_FMT " r=%g\n", grid, iCellIdx[c], (double)iMinRad));
       }
     }
-    PetscCall(PetscInfo(sol, "\t\t\t%" PetscInt_FMT ") Refined origin cells %" PetscInt_FMT ",%" PetscInt_FMT " r=%g\n", grid,rCellIdx[0], rCellIdx[1], (double)minRad));
+    PetscCall(PetscInfo(sol, "\t\t\t%" PetscInt_FMT ") Refined origin cells %" PetscInt_FMT ",%" PetscInt_FMT " r=%g\n", grid, rCellIdx[0], rCellIdx[1], (double)minRad));
   } else if (type == 0 || type == 1 || type == 3) { /* refine along r=0 axis */
     PetscScalar *coef = NULL;
     Vec          coords;
@@ -1177,7 +1177,7 @@ static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, Pet
         nrefined++;
       }
     }
-    PetscCall(PetscInfo(sol, "\t%" PetscInt_FMT ") Refined %" PetscInt_FMT " cells\n", grid,nrefined));
+    PetscCall(PetscInfo(sol, "\t%" PetscInt_FMT ") Refined %" PetscInt_FMT " cells\n", grid, nrefined));
   }
   PetscCall(DMDestroy(&plex));
   PetscCall(DMAdaptLabel(forest, adaptLabel, &adaptedDM));
@@ -1189,7 +1189,7 @@ static PetscErrorCode adaptToleranceFEM(PetscFE fem, Vec sol, PetscInt type, Pet
     } else exit(33);                                           // ???????
     PetscCall(DMConvert(adaptedDM, DMPLEX, &plex));
     PetscCall(DMPlexGetHeightStratum(plex, 0, &cStart, &cEnd));
-    PetscCall(PetscInfo(sol, "\t\t\t\t%" PetscInt_FMT ") %" PetscInt_FMT " cells, %" PetscInt_FMT " total quadrature points\n", grid,cEnd - cStart, Nq * (cEnd - cStart)));
+    PetscCall(PetscInfo(sol, "\t\t\t\t%" PetscInt_FMT ") %" PetscInt_FMT " cells, %" PetscInt_FMT " total quadrature points\n", grid, cEnd - cStart, Nq * (cEnd - cStart)));
     PetscCall(DMDestroy(&plex));
   } else *newForest = NULL;
   PetscFunctionReturn(PETSC_SUCCESS);
