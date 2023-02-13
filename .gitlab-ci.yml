@@ -244,7 +244,7 @@ pause-for-approval:
     - if [ ! -z ${LOAD_MODULES+x} ]; then module --trace load ${LOAD_MODULES}; module list; fi
     - if [ ! -z ${GCOV_MODULES+x} ]; then module --trace load ${GCOV_MODULES}; module list; fi
     - if [ ! -z ${INIT_SCRIPT+x} ]; then echo "sourcing ${INIT_SCRIPT}"; source ${INIT_SCRIPT}; fi
-    - if [ ! -z ${RUN_GCOV+x} ]; then gcovr --version; fi
+    - if [ ! -z ${RUN_GCOV+x} ] && [ ${RUN_GCOV} == "1" ]; then gcovr --version; fi
     - if [ -d ${HOME}/petsc-hash-pkgs/ ]; then find ${HOME}/petsc-hash-pkgs/ -maxdepth 1 -mindepth 1 -type d -mtime +25 -exec rm -rf {} \; ; fi
     - printf "PATH:$PATH\n"
     - printf "PYTHONPATH:$PYTHONPATH\n"
@@ -258,8 +258,8 @@ pause-for-approval:
     - make updatedatafiles
     - if [ -z ${DISABLE_PETSC4PY_TESTS+x} ]; then if [ -z ${ENABLE_PETSC4PY_LDPRELOAD+x} ]; then echo "NOT using LD_PRELOAD"; make petsc4pytest; else echo "using LD_PRELOAD"; LD_PRELOAD=${PWD}/${TEST_ARCH}/lib/libpetsc.so make petsc4pytest; fi; fi
     - if [ -z ${DISABLE_TESTS+x} ]; then make cleantest && make CFLAGS="${MAKE_CFLAGS}" CXXFLAGS="${MAKE_CXXFLAGS}" FFLAGS="${MAKE_FFLAGS}" allgtests-tap TIMEOUT=${TIMEOUT}  ${TEST_OPTS} || if [ -f naglicenseproblem ]; then exit 126; else exit 1; fi; fi
-    - if [ ! -z ${RUN_GCOV_OPTIONS+x} ]; then printf "RUN_GCOV_OPTIONS:$RUN_GCOV_OPTIONS\n"; fi
-    - if [ ! -z ${RUN_GCOV+x} ]; then make gcov PETSC_GCOV_OPTIONS="${RUN_GCOV_OPTIONS}"; fi
+    - if [ ! -z ${RUN_GCOV_OPTIONS+x} ] && [ ${RUN_GCOV} == "1" ]; then printf "RUN_GCOV_OPTIONS:$RUN_GCOV_OPTIONS\n"; fi
+    - if [ ! -z ${RUN_GCOV+x} ] && [ ${RUN_GCOV} == "1" ]; then make gcov PETSC_GCOV_OPTIONS="${RUN_GCOV_OPTIONS}"; fi
   artifacts:
     reports:
       junit: ${TEST_ARCH}/tests/testresults.xml
@@ -275,6 +275,8 @@ pause-for-approval:
     expire_in: 4 days
   variables:
     OPENBLAS_NUM_THREADS: 1
+    RUN_GCOV: 1
+    RUN_GCOV_OPTIONS: --decisions
 
 .stage-2:
   extends: .stage-23
@@ -410,6 +412,7 @@ freebsd-cxx-cmplx-64idx-dbg:
     - os:fbsd
   variables:
     TEST_ARCH: arch-ci-freebsd-cxx-cmplx-64idx-dbg
+    RUN_GCOV: 0
 
 freebsd-c-single-opt:
   extends:
@@ -419,6 +422,7 @@ freebsd-c-single-opt:
     - os:fbsd
   variables:
     TEST_ARCH: arch-ci-freebsd-c-single-opt
+    RUN_GCOV: 0
 
 mswin-opt-impi:
   extends:
