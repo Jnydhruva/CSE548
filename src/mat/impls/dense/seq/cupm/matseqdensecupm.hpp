@@ -89,14 +89,40 @@ public:
   static PetscErrorCode Convert_SeqDenseCUPM_SeqDense(Mat, MatType, MatReuse, Mat *) noexcept;
 
   template <PetscMemType, PetscMemoryAccessMode>
-  static PetscErrorCode GetArray(Mat, PetscScalar **, PetscDeviceContext) noexcept;
+  static PetscErrorCode GetArray(Mat, PetscScalar **, PetscDeviceContext = nullptr) noexcept;
   template <PetscMemType, PetscMemoryAccessMode>
-  static PetscErrorCode RestoreArray(Mat, PetscScalar **, PetscDeviceContext) noexcept;
+  static PetscErrorCode RestoreArray(Mat, PetscScalar **, PetscDeviceContext = nullptr) noexcept;
   template <PetscMemoryAccessMode>
-  static PetscErrorCode GetArrayAndMemType(Mat, PetscScalar **, PetscMemType *, PetscDeviceContext) noexcept;
+  static PetscErrorCode GetArrayAndMemType(Mat, PetscScalar **, PetscMemType *, PetscDeviceContext = nullptr) noexcept;
   template <PetscMemoryAccessMode>
-  static PetscErrorCode RestoreArrayAndMemType(Mat, PetscScalar **, PetscDeviceContext) noexcept;
+  static PetscErrorCode RestoreArrayAndMemType(Mat, PetscScalar **, PetscDeviceContext = nullptr) noexcept;
 
+private:
+  template <PetscMemType mtype, PetscMemoryAccessMode mode>
+  static PetscErrorCode GetArrayC_(Mat m, PetscScalar **p) noexcept
+  {
+    return GetArray<mtype, mode>(m, p);
+  }
+
+  template <PetscMemType mtype, PetscMemoryAccessMode mode>
+  static PetscErrorCode RestoreArrayC_(Mat m, PetscScalar **p) noexcept
+  {
+    return RestoreArray<mtype, mode>(m, p);
+  }
+
+  template <PetscMemoryAccessMode mode>
+  static PetscErrorCode GetArrayAndMemTypeC_(Mat m, PetscScalar **p, PetscMemType *tp) noexcept
+  {
+    return GetArrayAndMemType<mode>(m, p, tp);
+  }
+
+  template <PetscMemoryAccessMode mode>
+  static PetscErrorCode RestoreArrayAndMemTypeC_(Mat m, PetscScalar **p) noexcept
+  {
+    return RestoreArrayAndMemType<mode>(m, p);
+  }
+
+public:
   static PetscErrorCode PlaceArray(Mat, const PetscScalar *) noexcept;
   static PetscErrorCode ReplaceArray(Mat, const PetscScalar *) noexcept;
   static PetscErrorCode ResetArray(Mat) noexcept;
@@ -894,12 +920,12 @@ inline PetscErrorCode MatSeqDense_CUPM<T>::Reset(Mat A) noexcept
 template <device::cupm::DeviceType T>
 inline PetscErrorCode MatSeqDense_CUPM<T>::BindToCPU(Mat A, PetscBool usehost) noexcept
 {
-  const auto a    = MatIMPLCast(A);
+  const auto mimpl    = MatIMPLCast(A);
   const auto pobj = PetscObjectCast(A);
 
   PetscFunctionBegin;
-  PetscCheck(!a->vecinuse, PETSC_COMM_SELF, PETSC_ERR_ORDER, "Need to call MatDenseRestoreColumnVec() first");
-  PetscCheck(!a->matinuse, PETSC_COMM_SELF, PETSC_ERR_ORDER, "Need to call MatDenseRestoreSubMatrix() first");
+  PetscCheck(!mimpl->vecinuse, PETSC_COMM_SELF, PETSC_ERR_ORDER, "Need to call MatDenseRestoreColumnVec() first");
+  PetscCheck(!mimpl->matinuse, PETSC_COMM_SELF, PETSC_ERR_ORDER, "Need to call MatDenseRestoreSubMatrix() first");
   A->boundtocpu = usehost;
   PetscCall(PetscStrFreeAllocpy(usehost ? PETSCRANDER48 : PETSCDEVICERAND(), &A->defaultrandtype));
   if (usehost) {
@@ -911,79 +937,65 @@ inline PetscErrorCode MatSeqDense_CUPM<T>::BindToCPU(Mat A, PetscBool usehost) n
   } else {
     PetscBool iscupm;
 
-    PetscCall(PetscObjectTypeCompare(PetscObjectCast(a->cvec), VecSeq_CUPM::VECSEQCUPM(), &iscupm));
-    if (!iscupm) PetscCall(VecDestroy(&a->cvec));
-    PetscCall(PetscObjectTypeCompare(PetscObjectCast(a->cmat), MATSEQDENSECUPM(), &iscupm));
-    if (!iscupm) PetscCall(MatDestroy(&a->cmat));
+    PetscCall(PetscObjectTypeCompare(PetscObjectCast(mimpl->cvec), VecSeq_CUPM::VECSEQCUPM(), &iscupm));
+    if (!iscupm) PetscCall(VecDestroy(&mimpl->cvec));
+    PetscCall(PetscObjectTypeCompare(PetscObjectCast(mimpl->cmat), MATSEQDENSECUPM(), &iscupm));
+    if (!iscupm) PetscCall(MatDestroy(&mimpl->cmat));
   }
 
-  // clang-format off
   MatComposeOp_CUPM(
     usehost, pobj, "MatDenseGetArray_C",
     MatDenseGetArray_SeqDense,
-    [](Mat m, PetscScalar **ptr) { return GetArray<PETSC_MEMTYPE_HOST, PETSC_MEMORY_ACCESS_READ_WRITE>(m, ptr); }
+    GetArrayC_<PETSC_MEMTYPE_HOST, PETSC_MEMORY_ACCESS_READ_WRITE>
   );
 
   MatComposeOp_CUPM(
     usehost, pobj, "MatDenseGetArrayRead_C",
     MatDenseGetArray_SeqDense,
-    [](Mat m, const PetscScalar **ptr) { return GetArray<PETSC_MEMTYPE_HOST, PETSC_MEMORY_ACCESS_READ>(m, const_cast<PetscScalar **>(ptr)); }
+    GetArrayC_<PETSC_MEMTYPE_HOST, PETSC_MEMORY_ACCESS_READ>
   );
 
   MatComposeOp_CUPM(
     usehost, pobj, "MatDenseGetArrayWrite_C",
     MatDenseGetArray_SeqDense,
-    [](Mat m, PetscScalar **ptr) { return GetArray<PETSC_MEMTYPE_HOST, PETSC_MEMORY_ACCESS_WRITE>(m, ptr); }
+    GetArrayC_<PETSC_MEMTYPE_HOST, PETSC_MEMORY_ACCESS_WRITE>
   );
 
   MatComposeOp_CUPM(
     usehost, pobj, "MatDenseGetArrayAndMemType_C",
     nullptr,
-    [](Mat m, PetscScalar **ptr) { return GetArrayAndMemType<PETSC_MEMORY_ACCESS_READ_WRITE>(m, ptr); }
+    GetArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_READ_WRITE>
   );
 
   MatComposeOp_CUPM(
     usehost, pobj, "MatDenseRestoreArrayAndMemType_C",
     nullptr,
-    [](Mat m, PetscScalar **ptr) { return RestoreArrayAndMemType<PETSC_MEMORY_ACCESS_READ_WRITE>(m, ptr); }
+    RestoreArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_READ_WRITE>
   );
 
   MatComposeOp_CUPM(
     usehost, pobj, "MatDenseGetArrayReadAndMemType_C",
     nullptr,
-    [](Mat m, const PetscScalar **ptr)
-    {
-      return GetArrayAndMemType<PETSC_MEMORY_ACCESS_READ>(m, const_cast<PetscScalar **>(ptr));
-    }
+    GetArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_READ>
   );
 
   MatComposeOp_CUPM(
     usehost, pobj, "MatDenseRestoreArrayReadAndMemType_C",
     nullptr,
-    [](Mat m, const PetscScalar **ptr)
-    {
-      return RestoreArrayAndMemType<PETSC_MEMORY_ACCESS_READ>(m, const_cast<PetscScalar **>(ptr));
-    }
+    RestoreArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_READ>
   );
 
   MatComposeOp_CUPM(
     usehost, pobj, "MatDenseGetArrayWriteAndMemType_C",
     nullptr,
-    [](Mat m, PetscScalar **ptr)
-    {
-      return GetArrayAndMemType<PETSC_MEMORY_ACCESS_WRITE>(m, ptr);
-    }
+    GetArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_WRITE>
   );
 
   MatComposeOp_CUPM(
     usehost, pobj, "MatDenseRestoreArrayWriteAndMemType_C",
     nullptr,
-    [](Mat m, PetscScalar **ptr)
-    {
-      return RestoreArrayAndMemType<PETSC_MEMORY_ACCESS_WRITE>(m, ptr);
-    }
+    RestoreArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_WRITE>
   );
-  // clang-format on
 
   MatComposeOp_CUPM(usehost, pobj, "MatDenseGetColumnVec_C", MatDenseGetColumnVec_SeqDense, GetColumnVec<PETSC_MEMORY_ACCESS_READ_WRITE>);
   MatComposeOp_CUPM(usehost, pobj, "MatDenseRestoreColumnVec_C", MatDenseRestoreColumnVec_SeqDense, RestoreColumnVec<PETSC_MEMORY_ACCESS_READ_WRITE>);
@@ -1017,7 +1029,7 @@ inline PetscErrorCode MatSeqDense_CUPM<T>::BindToCPU(Mat A, PetscBool usehost) n
   // seemingly always the same
   A->ops->productsetfromoptions = MatProductSetFromOptions_SeqDense;
 
-  if (const auto cmat = a->cmat) PetscCall(MatBindToCPU(cmat, usehost));
+  if (const auto cmat = mimpl->cmat) PetscCall(MatBindToCPU(cmat, usehost));
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -1073,12 +1085,12 @@ inline PetscErrorCode MatSeqDense_CUPM<T>::Convert_SeqDense_SeqDenseCUPM(Mat M, 
     PetscCall(PetscStrFreeAllocpy(VecSeq_CUPM::VECCUPM(), &B->defaultvectype));
     PetscCall(PetscObjectChangeTypeName(pobj, MATSEQDENSECUPM()));
     PetscCall(PetscObjectComposeFunction(pobj, MatConvert_seqdensecupm_seqdense_C(), Convert_SeqDenseCUPM_SeqDense));
-    PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMGetArray_C(), GetArray<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_READ_WRITE>));
-    PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMGetArrayRead_C(), GetArray<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_READ>));
-    PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMGetArrayWrite_C(), GetArray<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_WRITE>));
-    PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMRestoreArray_C(), RestoreArray<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_READ_WRITE>));
-    PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMRestoreArrayRead_C(), RestoreArray<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_READ>));
-    PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMRestoreArrayWrite_C(), RestoreArray<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_WRITE>));
+    PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMGetArray_C(), GetArrayC_<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_READ_WRITE>));
+    PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMGetArrayRead_C(), GetArrayC_<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_READ>));
+    PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMGetArrayWrite_C(), GetArrayC_<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_WRITE>));
+    PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMRestoreArray_C(), RestoreArrayC_<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_READ_WRITE>));
+    PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMRestoreArrayRead_C(), RestoreArrayC_<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_READ>));
+    PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMRestoreArrayWrite_C(), RestoreArrayC_<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_WRITE>));
     PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMPlaceArray_C(), PlaceArray));
     PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMResetArray_C(), ResetArray));
     PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMReplaceArray_C(), ReplaceArray));
@@ -1112,6 +1124,7 @@ inline PetscErrorCode MatSeqDense_CUPM<T>::GetArray(Mat m, PetscScalar **array, 
 
   PetscFunctionBegin;
   static_assert((mtype == PETSC_MEMTYPE_HOST) || (mtype == PETSC_MEMTYPE_DEVICE), "");
+  PetscCall(PetscDeviceContextGetOptionalNullContext_Internal(&dctx));
   if (hostmem) {
     if (read_access) {
       PetscCall(DeviceToHost_(m, dctx));
@@ -1239,7 +1252,9 @@ template <device::cupm::DeviceType T>
 template <bool transpose_A, bool transpose_B>
 inline PetscErrorCode MatSeqDense_CUPM<T>::MatMatMult_Numeric_Dispatch(Mat A, Mat B, Mat C) noexcept
 {
-  const auto         m = C->rmap->n, n = C->cmap->n, k = transpose_A ? A->rmap->n : A->cmap->n;
+  const auto         m = C->rmap->n;
+  const auto         n = C->cmap->n;
+  const auto         k = transpose_A ? A->rmap->n : A->cmap->n;
   PetscInt           alda, blda, clda;
   PetscBool          Aiscupm, Biscupm;
   PetscDeviceContext dctx;

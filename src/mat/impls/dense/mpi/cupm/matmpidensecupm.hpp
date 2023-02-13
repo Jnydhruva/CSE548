@@ -48,10 +48,24 @@ public:
   static PetscErrorCode Convert_MPIDense_MPIDenseCUPM(Mat, MatType, MatReuse, Mat *) noexcept;
 
   template <PetscMemType, PetscMemoryAccessMode>
-  static PetscErrorCode GetArray(Mat, PetscScalar **, PetscDeviceContext) noexcept;
+  static PetscErrorCode GetArray(Mat, PetscScalar **, PetscDeviceContext = nullptr) noexcept;
   template <PetscMemType, PetscMemoryAccessMode>
-  static PetscErrorCode RestoreArray(Mat, PetscScalar **, PetscDeviceContext) noexcept;
+  static PetscErrorCode RestoreArray(Mat, PetscScalar **, PetscDeviceContext = nullptr) noexcept;
 
+private:
+  template <PetscMemType mtype, PetscMemoryAccessMode mode>
+  static PetscErrorCode GetArrayC_(Mat m, PetscScalar **p) noexcept
+  {
+    return GetArray<mtype, mode>(m, p);
+  }
+
+  template <PetscMemType mtype, PetscMemoryAccessMode mode>
+  static PetscErrorCode RestoreArrayC_(Mat m, PetscScalar **p) noexcept
+  {
+    return RestoreArray<mtype, mode>(m, p);
+  }
+
+public:
   template <PetscMemoryAccessMode>
   static PetscErrorCode GetColumnVec(Mat, PetscInt, Vec *) noexcept;
   template <PetscMemoryAccessMode>
@@ -234,12 +248,12 @@ inline PetscErrorCode MatMPIDense_CUPM<T>::Convert_MPIDense_MPIDenseCUPM(Mat M, 
   PetscCall(PetscObjectComposeFunction(pobj, MatProductSetFromOptions_mpiaijcupmsparse_mpidensecupm_C(), MatProductSetFromOptions_MPIAIJ_MPIDense));
   PetscCall(PetscObjectComposeFunction(pobj, MatProductSetFromOptions_mpidensecupm_mpiaij_C(), MatProductSetFromOptions_MPIDense_MPIAIJ));
   PetscCall(PetscObjectComposeFunction(pobj, MatProductSetFromOptions_mpidensecupm_mpiaijcupmsparse_C(), MatProductSetFromOptions_MPIDense_MPIAIJ));
-  PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMGetArray_C(), GetArray<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_READ_WRITE>));
-  PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMGetArrayRead_C(), GetArray<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_READ>));
-  PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMGetArrayWrite_C(), GetArray<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_WRITE>));
-  PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMRestoreArray_C(), RestoreArray<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_READ_WRITE>));
-  PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMRestoreArrayRead_C(), RestoreArray<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_READ>));
-  PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMRestoreArrayWrite_C(), RestoreArray<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_WRITE>));
+  PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMGetArray_C(), GetArrayC_<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_READ_WRITE>));
+  PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMGetArrayRead_C(), GetArrayC_<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_READ>));
+  PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMGetArrayWrite_C(), GetArrayC_<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_WRITE>));
+  PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMRestoreArray_C(), RestoreArrayC_<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_READ_WRITE>));
+  PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMRestoreArrayRead_C(), RestoreArrayC_<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_READ>));
+  PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMRestoreArrayWrite_C(), RestoreArrayC_<PETSC_MEMTYPE_DEVICE, PETSC_MEMORY_ACCESS_WRITE>));
   PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMPlaceArray_C(), PlaceArray));
   PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMResetArray_C(), ResetArray));
   PetscCall(PetscObjectComposeFunction(pobj, MatDenseCUPMReplaceArray_C(), ReplaceArray));
