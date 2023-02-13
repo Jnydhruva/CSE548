@@ -268,7 +268,7 @@ struct BlasInterfaceImpl<DeviceType::CUDA> : Interface<DeviceType::CUDA> {
   // BLAS extensions
   PETSC_CUPMBLAS_ALIAS_BLAS_FUNCTION(STANDARD, geam)
 
-  static const char *cupmBlasGetErrorName(cupmBlasError_t status) noexcept { return PetscCUBLASGetErrorName(status); }
+  PETSC_NODISCARD static const char *cupmBlasGetErrorName(cupmBlasError_t status) noexcept { return PetscCUBLASGetErrorName(status); }
 };
     #undef PETSC_CUPMBLAS_PREFIX
     #undef PETSC_CUPMBLAS_PREFIX_U
@@ -333,7 +333,7 @@ struct BlasInterfaceImpl<DeviceType::HIP> : Interface<DeviceType::HIP> {
   // BLAS extensions
   PETSC_CUPMBLAS_ALIAS_BLAS_FUNCTION(STANDARD, geam)
 
-  static const char *cupmBlasGetErrorName(cupmBlasError_t status) noexcept { return PetscHIPBLASGetErrorName(status); }
+  PETSC_NODISCARD static const char *cupmBlasGetErrorName(cupmBlasError_t status) noexcept { return PetscHIPBLASGetErrorName(status); }
 };
     #undef PETSC_CUPMBLAS_PREFIX
     #undef PETSC_CUPMBLAS_PREFIX_U

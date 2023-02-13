@@ -511,9 +511,6 @@ struct InterfaceImpl<DeviceType::HIP> : InterfaceBase<DeviceType::HIP> {
     using ::Petsc::device::cupm::impl::InterfaceImpl<T>::cupmMemset2DAsync; \
     using ::Petsc::device::cupm::impl::InterfaceImpl<T>::cupmLaunchHostFunc
 
-template <DeviceType>
-struct Interface;
-
 // The actual interface class
 template <DeviceType T>
 struct Interface : InterfaceImpl<T> {
