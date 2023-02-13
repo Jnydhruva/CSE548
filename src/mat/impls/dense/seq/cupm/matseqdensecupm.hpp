@@ -920,8 +920,8 @@ inline PetscErrorCode MatSeqDense_CUPM<T>::Reset(Mat A) noexcept
 template <device::cupm::DeviceType T>
 inline PetscErrorCode MatSeqDense_CUPM<T>::BindToCPU(Mat A, PetscBool usehost) noexcept
 {
-  const auto mimpl    = MatIMPLCast(A);
-  const auto pobj = PetscObjectCast(A);
+  const auto mimpl = MatIMPLCast(A);
+  const auto pobj  = PetscObjectCast(A);
 
   PetscFunctionBegin;
   PetscCheck(!mimpl->vecinuse, PETSC_COMM_SELF, PETSC_ERR_ORDER, "Need to call MatDenseRestoreColumnVec() first");
@@ -943,60 +943,15 @@ inline PetscErrorCode MatSeqDense_CUPM<T>::BindToCPU(Mat A, PetscBool usehost) n
     if (!iscupm) PetscCall(MatDestroy(&mimpl->cmat));
   }
 
-  MatComposeOp_CUPM(
-    usehost, pobj, "MatDenseGetArray_C",
-    MatDenseGetArray_SeqDense,
-    GetArrayC_<PETSC_MEMTYPE_HOST, PETSC_MEMORY_ACCESS_READ_WRITE>
-  );
-
-  MatComposeOp_CUPM(
-    usehost, pobj, "MatDenseGetArrayRead_C",
-    MatDenseGetArray_SeqDense,
-    GetArrayC_<PETSC_MEMTYPE_HOST, PETSC_MEMORY_ACCESS_READ>
-  );
-
-  MatComposeOp_CUPM(
-    usehost, pobj, "MatDenseGetArrayWrite_C",
-    MatDenseGetArray_SeqDense,
-    GetArrayC_<PETSC_MEMTYPE_HOST, PETSC_MEMORY_ACCESS_WRITE>
-  );
-
-  MatComposeOp_CUPM(
-    usehost, pobj, "MatDenseGetArrayAndMemType_C",
-    nullptr,
-    GetArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_READ_WRITE>
-  );
-
-  MatComposeOp_CUPM(
-    usehost, pobj, "MatDenseRestoreArrayAndMemType_C",
-    nullptr,
-    RestoreArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_READ_WRITE>
-  );
-
-  MatComposeOp_CUPM(
-    usehost, pobj, "MatDenseGetArrayReadAndMemType_C",
-    nullptr,
-    GetArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_READ>
-  );
-
-  MatComposeOp_CUPM(
-    usehost, pobj, "MatDenseRestoreArrayReadAndMemType_C",
-    nullptr,
-    RestoreArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_READ>
-  );
-
-  MatComposeOp_CUPM(
-    usehost, pobj, "MatDenseGetArrayWriteAndMemType_C",
-    nullptr,
-    GetArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_WRITE>
-  );
-
-  MatComposeOp_CUPM(
-    usehost, pobj, "MatDenseRestoreArrayWriteAndMemType_C",
-    nullptr,
-    RestoreArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_WRITE>
-  );
-
+  MatComposeOp_CUPM(usehost, pobj, "MatDenseGetArray_C", MatDenseGetArray_SeqDense, GetArrayC_<PETSC_MEMTYPE_HOST, PETSC_MEMORY_ACCESS_READ_WRITE>);
+  MatComposeOp_CUPM(usehost, pobj, "MatDenseGetArrayRead_C", MatDenseGetArray_SeqDense, GetArrayC_<PETSC_MEMTYPE_HOST, PETSC_MEMORY_ACCESS_READ>);
+  MatComposeOp_CUPM(usehost, pobj, "MatDenseGetArrayWrite_C", MatDenseGetArray_SeqDense, GetArrayC_<PETSC_MEMTYPE_HOST, PETSC_MEMORY_ACCESS_WRITE>);
+  MatComposeOp_CUPM(usehost, pobj, "MatDenseGetArrayAndMemType_C", nullptr, GetArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_READ_WRITE>);
+  MatComposeOp_CUPM(usehost, pobj, "MatDenseRestoreArrayAndMemType_C", nullptr, RestoreArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_READ_WRITE>);
+  MatComposeOp_CUPM(usehost, pobj, "MatDenseGetArrayReadAndMemType_C", nullptr, GetArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_READ>);
+  MatComposeOp_CUPM(usehost, pobj, "MatDenseRestoreArrayReadAndMemType_C", nullptr, RestoreArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_READ>);
+  MatComposeOp_CUPM(usehost, pobj, "MatDenseGetArrayWriteAndMemType_C", nullptr, GetArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_WRITE>);
+  MatComposeOp_CUPM(usehost, pobj, "MatDenseRestoreArrayWriteAndMemType_C", nullptr, RestoreArrayAndMemTypeC_<PETSC_MEMORY_ACCESS_WRITE>);
   MatComposeOp_CUPM(usehost, pobj, "MatDenseGetColumnVec_C", MatDenseGetColumnVec_SeqDense, GetColumnVec<PETSC_MEMORY_ACCESS_READ_WRITE>);
   MatComposeOp_CUPM(usehost, pobj, "MatDenseRestoreColumnVec_C", MatDenseRestoreColumnVec_SeqDense, RestoreColumnVec<PETSC_MEMORY_ACCESS_READ_WRITE>);
   MatComposeOp_CUPM(usehost, pobj, "MatDenseGetColumnVecRead_C", MatDenseGetColumnVecRead_SeqDense, GetColumnVec<PETSC_MEMORY_ACCESS_READ>);
