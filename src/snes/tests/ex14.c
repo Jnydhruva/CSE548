@@ -29,6 +29,7 @@ const char *PatchSystemTypes[] = {"identity", "lod", "PatchSystemType", "PATCH_S
 typedef struct {
   PatchSystemType patchSysType; // Type of patch system
   PetscBool       snesCheck;    // Check KSP solves with equivalent SNES solves
+  PetscBool       viewPatchSol; // View patch solution injected into the global P
 } AppCtx;
 
 static PetscErrorCode zero(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nc, PetscScalar *u, void *ctx)
@@ -94,10 +95,12 @@ static PetscErrorCode ProcessOptions(MPI_Comm comm, AppCtx *options)
   PetscFunctionBeginUser;
   options->patchSysType = PATCH_SYS_IDENTITY;
   options->snesCheck    = PETSC_FALSE;
+  options->viewPatchSol = PETSC_FALSE;
 
   PetscOptionsBegin(comm, "", "Mesh Patch Integration Options", "DMPLEX");
   PetscCall(PetscOptionsEnum("-patch_sys_type", "The type of patch system, e.g. LOD", NULL, PatchSystemTypes, (PetscEnum) options->patchSysType, (PetscEnum *) &options->patchSysType, NULL));
   PetscCall(PetscOptionsBool("-snes_check", "Check KSP solves with equivalent SNES", NULL, options->snesCheck, &options->snesCheck, NULL));
+  PetscCall(PetscOptionsBool("-patch_sol_view", "View the patch solution injected into the global P", NULL, options->viewPatchSol, &options->viewPatchSol, NULL));
   PetscOptionsEnd();
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -320,9 +323,12 @@ static PetscErrorCode PrintMatSetValues(PetscViewer viewer, Mat A, PetscInt poin
   PatchSolve - Solve the saddle-point system on the refined patch and inject the results into the corrector
 
   Input Parameters:
-+ patch  - The patch from the coarse grid
++ dm     - The coarse mesh over the whole domain
+. patch  - The patch from the coarse grid
 . c      - The central cell for this patch
+. rdm    - The refined mesh over the whole domain
 . rpatch - The patch from the fine grid
+. dP     - The global prolongator matrix
 - user   - A user context
 
   Note:
@@ -334,7 +340,6 @@ static PetscErrorCode PrintMatSetValues(PetscViewer viewer, Mat A, PetscInt poin
 */
 static PetscErrorCode PatchSolve(DM dm, DM patch, PetscInt c, DM rdm, DM rpatch, Mat dP, AppCtx *user)
 {
-  const PetscInt  debug = 0;
   SNES            snes;
   Mat             P, M;
   Vec             u, b, psi, cpsi;
@@ -348,7 +353,7 @@ static PetscErrorCode PatchSolve(DM dm, DM patch, PetscInt c, DM rdm, DM rpatch,
   PetscFunctionBegin;
   PetscCall(SetupPatchProblem(patch, user));
   PetscCall(SetupPatchProblem(rpatch, user));
-  {
+  { // Check that the patch contains cell c
     PetscInt n;
 
     PetscCall(DMPlexGetSubpointIS(patch, &subpIS));
@@ -416,6 +421,7 @@ static PetscErrorCode PatchSolve(DM dm, DM patch, PetscInt c, DM rdm, DM rpatch,
   PetscCall(DMCreateInterpolation(patch, rpatch, &P, NULL));
 
   PetscCall(SNESCreate(PetscObjectComm((PetscObject)rpatch), &snes));
+  PetscCall(SNESSetOptionsPrefix(snes, "patch_"));
   PetscCall(SNESSetDM(snes, rpatch));
   PetscCall(SNESSetFromOptions(snes));
   PetscCall(DMPlexSetSNESLocalFEM(rpatch, user, user, user));
@@ -431,6 +437,7 @@ static PetscErrorCode PatchSolve(DM dm, DM patch, PetscInt c, DM rdm, DM rpatch,
   PetscCall(PetscObjectSetName((PetscObject)cpsi, "coarse basis"));
   PetscCall(VecZeroEntries(cpsi));
   PetscCall(DMSNESCheckFromOptions(snes, u));
+  if (user->viewPatchSol) PetscCall(PetscPrintf(PetscObjectComm((PetscObject)dm), "Patch for cell %" PetscInt_FMT "\n", c));
   PetscCall(DMPlexGetTransitiveClosure(patch, cell, PETSC_TRUE, &Ncl, &closure));
   for (PetscInt cl = 0; cl < Ncl*2; cl += 2) {
     const PetscScalar *a;
@@ -464,7 +471,7 @@ static PetscErrorCode PatchSolve(DM dm, DM patch, PetscInt c, DM rdm, DM rpatch,
   }
   PetscCall(DMPlexRestoreTransitiveClosure(patch, cell, PETSC_TRUE, &Ncl, &closure));
   PetscCheck(j == Ncoarse, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "Number of columns %" PetscInt_FMT " != %" PetscInt_FMT " coarse space size", j, Ncoarse);
-  if (debug) PetscCall(PrintMatSetValues(PETSC_VIEWER_STDOUT_SELF, dP, c, Nfine, rows, Ncoarse, cols, elemP));
+  if (user->viewPatchSol) PetscCall(PrintMatSetValues(PETSC_VIEWER_STDOUT_SELF, dP, c, Nfine, rows, Ncoarse, cols, elemP));
   PetscCall(MatSetValues(dP, Nfine, rows, Ncoarse, cols, elemP, INSERT_VALUES));
   PetscCall(DMRestoreGlobalVector(rpatch, &u));
   PetscCall(DMRestoreGlobalVector(rpatch, &b));
@@ -682,20 +689,19 @@ int main(int argc, char **argv)
           -patch_sys_type lod -phi_petscspace_degree 1 -mu_petscspace_degree 1 -pc_type lu \
           -snes_converged_reason -snes_monitor
 
-  test:
-    suffix: check_id_0
+  testset:
     args: -select_dm_plex_transform_type transform_filter \
-          -patch_sys_type identity -phi_petscspace_degree 1 -pc_type lu -snes_check \
+          -patch_sys_type identity -phi_petscspace_degree 1 -pc_type lu -patch_pc_type lu -snes_check \
           -snes_error_if_not_converged -ksp_error_if_not_converged -snes_converged_reason -snes_monitor \
-            -ksp_rtol 1e-10
+          -patch_snes_error_if_not_converged -patch_ksp_error_if_not_converged -patch_snes_converged_reason -patch_snes_monitor
 
-  # With -orig_dm_refine 1, b_red is not exactly b_coarse
-  test:
-    suffix: check_id_1
-    args: -orig_dm_refine 1 -select_dm_plex_transform_type transform_filter \
-          -patch_sys_type identity -phi_petscspace_degree 1 -pc_type lu -snes_check \
-          -snes_error_if_not_converged -ksp_error_if_not_converged -snes_converged_reason -snes_monitor \
-            -ksp_rtol 1e-10
+    test:
+      suffix: check_id_0
+
+    # With -orig_dm_refine 1, b_red is not exactly b_coarse
+    test:
+      suffix: check_id_1
+      args: -orig_dm_refine 1
 
   test:
     suffix: check_lod
