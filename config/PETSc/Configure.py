@@ -1000,12 +1000,15 @@ char assert_aligned[(sizeof(struct mystruct)==16)*2-1];
     log_print('{} to find an executable'.format('REQUIRED' if required else 'NOT required'))
     if arg_opt in {'auto', 'default-auto', '1'}:
       # detect it based on the C language compiler, hopefully this does not clash!
-      compiler = self.getCompiler(lang=self.setCompilers.languages.clanguage)
+      lang     = self.setCompilers.languages.clanguage
+      compiler = self.getCompiler(lang=lang)
       log_print('User did not explicitly set coverage exec (got {}), trying to auto-detect based on compiler {}'.format(quoted(arg_opt), quoted(compiler)))
       if self.setCompilers.isGNU(compiler, self.log):
-        exec_names = ['gcov']
+        compiler_version_re = re.compile(r'[gG][cC\+\-]+[0-9]* \(.+\) (\d+)\.(\d+)\.(\d+)')
+        exec_names          = ['gcov']
       elif self.setCompilers.isClang(compiler, self.log):
-        exec_names = ['llvm-cov']
+        compiler_version_re = re.compile(r'clang version (\d+)\.(\d+)\.(\d+)')
+        exec_names          = ['llvm-cov']
         if self.setCompilers.isDarwin(self.log):
           # macOS masquerades llvm-cov as just 'gcov', so we add this to the list in case
           # bare llvm-cov does not work
@@ -1018,6 +1021,19 @@ char assert_aligned[(sizeof(struct mystruct)==16)*2-1];
         # implies 'auto' explicitly set by user, or we were required to find
         # something. either way we should error
         raise RuntimeError('Could not auto-detect coverage tool for {}, please set coverage tool name explicitly'.format(quoted(compiler)))
+
+      try:
+        compiler_version_str = self.compilerFlags.version[lang]
+      except KeyError:
+        compiler_version_str = 'Unknown'
+
+      log_print('Searching version string {} (for compiler {}) using pattern {}'.format(quoted(compiler_version_str), quoted(compiler), quoted(compiler_version_re.pattern)))
+      major_version = compiler_version_re.search(compiler_version_str)
+      if major_version is not None:
+        log_print('Found major = {}, minor = {}, patch = {}'.format(major_version.group(1), major_version.group(2), major_version.group(3)))
+        # form [llvm-cov-14, llvm-cov, etc.]
+        versioned_coverage_exec = '-'.join((exec_names[0], major_version.group(1)))
+        exec_names.insert(0, versioned_coverage_exec)
     else:
       log_print('User explicitly set coverage exec as {}'.format(quoted(arg_opt)))
       par_dir = os.path.dirname(arg_opt)
