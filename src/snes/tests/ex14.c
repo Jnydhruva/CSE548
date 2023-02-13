@@ -520,6 +520,7 @@ static PetscErrorCode SolveSystems(DM dm, DM rdm, Mat P)
   PetscCall(DMCreateGlobalVector(dm, &u));
   PetscCall(PetscObjectSetName((PetscObject)u, "Coarse Solution"));
   PetscCall(DMCreateGlobalVector(dm, &b));
+  PetscCall(PetscObjectSetName((PetscObject)b, "Coarse Rhs"));
   {
     Vec ul, bl;
 
@@ -536,6 +537,7 @@ static PetscErrorCode SolveSystems(DM dm, DM rdm, Mat P)
   }
   PetscCall(DMCreateMatrix(dm, &A));
   PetscCall(DMPlexSNESComputeJacobianFEM(dm, u, A, A, NULL));
+  PetscCall(MatViewFromOptions(A, NULL, "-coarse_mat_view"));
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
   PetscCall(KSPSetOperators(ksp, A, A));
   PetscCall(KSPSetFromOptions(ksp));
@@ -567,6 +569,7 @@ static PetscErrorCode SolveSystems(DM dm, DM rdm, Mat P)
   }
   PetscCall(DMCreateMatrix(rdm, &Aref));
   PetscCall(DMPlexSNESComputeJacobianFEM(rdm, uref, Aref, Aref, NULL));
+  PetscCall(MatViewFromOptions(Aref, NULL, "-fine_mat_view"));
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &kspRef));
   PetscCall(KSPSetOperators(kspRef, Aref, Aref));
   PetscCall(KSPSetFromOptions(kspRef));
@@ -578,9 +581,12 @@ static PetscErrorCode SolveSystems(DM dm, DM rdm, Mat P)
   // Create reduced system
   if (P) {
     PetscCall(DMCreateGlobalVector(dm, &ured));
+    PetscCall(PetscObjectSetName((PetscObject)ured, "Reduced Solution"));
     PetscCall(DMCreateGlobalVector(dm, &bred));
+    PetscCall(PetscObjectSetName((PetscObject)bred, "Reduced Rhs"));
     PetscCall(MatMultTranspose(P, bref, bred));
     PetscCall(MatPtAP(Aref, P, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Ared));
+    PetscCall(MatViewFromOptions(Ared, NULL, "-reduced_mat_view"));
     PetscCall(KSPCreate(PETSC_COMM_WORLD, &kspRed));
     PetscCall(KSPSetOperators(kspRed, Ared, Ared));
     PetscCall(KSPSetFromOptions(kspRed));
@@ -647,6 +653,7 @@ int main(int argc, char **argv)
   PetscCall(MatAssemblyBegin(P, MAT_FINAL_ASSEMBLY));
   PetscCall(MatAssemblyEnd(P, MAT_FINAL_ASSEMBLY));
   PetscCall(DMSetBasicAdjacency(dm, useCone, useClosure));
+  PetscCall(SolveSystems(dm, rdm, P));
   if (user.patchSysType == PATCH_SYS_IDENTITY) {
     Mat       gP;
     PetscReal nrm, gnrm;
@@ -659,7 +666,6 @@ int main(int argc, char **argv)
     PetscCheck(nrm < PETSC_SMALL, PETSC_COMM_WORLD, PETSC_ERR_PLIB, "Identity prolongator does not match canonical computation");
     PetscCall(MatDestroy(&gP));
   }
-  PetscCall(SolveSystems(dm, rdm, P));
   end:
   PetscCall(MatDestroy(&P));
   PetscCall(DMDestroy(&rdm));
@@ -677,9 +683,17 @@ int main(int argc, char **argv)
           -snes_converged_reason -snes_monitor
 
   test:
-    suffix: check_id
+    suffix: check_id_0
     args: -select_dm_plex_transform_type transform_filter \
-          -patch_sys_type identity -phi_petscspace_degree 1 -pc_type lu \
+          -patch_sys_type identity -phi_petscspace_degree 1 -pc_type lu -snes_check \
+          -snes_error_if_not_converged -ksp_error_if_not_converged -snes_converged_reason -snes_monitor \
+            -ksp_rtol 1e-10
+
+  # With -orig_dm_refine 1, b_red is not exactly b_coarse
+  test:
+    suffix: check_id_1
+    args: -orig_dm_refine 1 -select_dm_plex_transform_type transform_filter \
+          -patch_sys_type identity -phi_petscspace_degree 1 -pc_type lu -snes_check \
           -snes_error_if_not_converged -ksp_error_if_not_converged -snes_converged_reason -snes_monitor \
             -ksp_rtol 1e-10
 
