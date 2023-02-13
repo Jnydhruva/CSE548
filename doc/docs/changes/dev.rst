@@ -105,6 +105,8 @@ Changes: Development
 
 .. rubric:: PetscViewer:
 
+- Add ``PetscDrawSetVisible()`` to set if the drawing surface (the 'window') is visible on its display
+
 .. rubric:: PetscDraw:
 
 .. rubric:: AO:
