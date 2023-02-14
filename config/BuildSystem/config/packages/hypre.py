@@ -9,7 +9,7 @@ class Configure(config.package.GNUPackage):
     self.versionname     = 'HYPRE_RELEASE_VERSION'
     self.versioninclude  = 'HYPRE_config.h'
     self.requiresversion = 1
-    self.gitcommit       = 'aff83e81fce70563edc614edfef76fa998ba96fd' # 2.26.0 + $(MAKE) fix
+    self.gitcommit       = 'c920f2a8179878891b17882255846d6e90bb469e' # autoconf-update feb-14-2023
     self.download        = ['git://https://github.com/hypre-space/hypre','https://github.com/hypre-space/hypre/archive/'+self.gitcommit+'.tar.gz']
     self.functions       = ['HYPRE_IJMatrixCreate']
     self.includes        = ['HYPRE.h']
