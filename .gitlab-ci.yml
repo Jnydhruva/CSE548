@@ -349,6 +349,8 @@ pause-for-approval:
   after_script:
     - date
     - ccache --show-stats
+  variables:
+    RUN_GCOV: 0
 
 .osx_test:
   variables:
@@ -412,7 +414,6 @@ freebsd-cxx-cmplx-64idx-dbg:
     - os:fbsd
   variables:
     TEST_ARCH: arch-ci-freebsd-cxx-cmplx-64idx-dbg
-    RUN_GCOV: 0
 
 freebsd-c-single-opt:
   extends:
@@ -422,7 +423,6 @@ freebsd-c-single-opt:
     - os:fbsd
   variables:
     TEST_ARCH: arch-ci-freebsd-c-single-opt
-    RUN_GCOV: 0
 
 mswin-opt-impi:
   extends:
