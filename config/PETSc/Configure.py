@@ -891,8 +891,15 @@ char assert_aligned[(sizeof(struct mystruct)==16)*2-1];
     On success:
     - defines PETSC_USE_COVERAGE to 1
     """
+    try:
+      import inspect
+
+      FUNC_NAME = inspect.currentframe().f_code.co_name
+    except:
+      FUNC_NAME = 'Unknown'
+
     def log_print(msg, *args, **kwargs):
-      self.logPrint('checkCoverage: '+str(msg), *args, **kwargs)
+      self.logPrint('{}(): {}'.format(FUNC_NAME, msg), *args, **kwargs)
       return
 
     def quoted(string):
@@ -921,22 +928,36 @@ char assert_aligned[(sizeof(struct mystruct)==16)*2-1];
     coverage_flags = make_flag_list('--coverage', extra_coverage_flags)
     log_print('Checking set of coverage flags: {}'.format(coverage_flags))
 
-    found = 0
+    found = None
     with self.Language(lang):
       with self.setCompilers.Language(lang):
         for flag in coverage_flags:
-          if self.setCompilers.checkCompilerFlag(flag) and self.checkLink():
-            # compilerOnly = False, the linker also needs to see the coverage flag
-            self.setCompilers.insertCompilerFlag(flag, False)
-            found = 1
-            break
+          # the linker also needs to see the coverage flag
+          with self.setCompilers.extraCompilerFlags([flag], compilerOnly=False) as skip_flags:
+            if not skip_flags and self.checkRun():
+              # flag was accepted
+              found = flag
+              break
+
           log_print(
             'Compiler {} did not accept coverage flag {}'.format(quoted(compiler), quoted(flag))
           )
 
-    if not found:
-      log_print('Compiler {} did not accept ANY coverage flags: {}, bailing!'.format(quoted(compiler), coverage_flags))
-      return
+        if found is None:
+          log_print(
+            'Compiler {} did not accept ANY coverage flags: {}, bailing!'.format(
+              quoted(compiler), coverage_flags
+            )
+          )
+          return
+
+        # must do this exactly here since:
+        #
+        # 1. setCompilers.extraCompilerFlags() will reset the compiler flags on __exit__()
+        #    (so cannot do it in the loop)
+        # 2. we need to set the compiler flag while setCompilers.Language() is still in
+        #    effect (so cannot do it outside the with statements)
+        self.setCompilers.insertCompilerFlag(flag, False)
 
     if not self.functions.haveFunction('__gcov_dump'):
       self.functions.checkClassify(['__gcov_dump'])
